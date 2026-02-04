@@ -21,10 +21,11 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-app);
   color: var(--text-main);
-  padding-bottom: var(--bottom-nav-height);
+  padding-bottom: var(--bottom-nav-height); /* Espaço para menu inferior */
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Layouts */
 .app-layout { min-height: 100vh; position: relative; }
 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
 .full-screen-center {
@@ -33,6 +34,7 @@ body {
   padding: 20px; box-sizing: border-box;
 }
 
+/* Overrides Material */
 .mat-mdc-card {
   background: var(--white) !important;
   border-radius: var(--radius-card) !important;
@@ -55,6 +57,7 @@ body {
   border-radius: 8px 8px 0 0 !important;
 }
 
+/* Headers Padrão */
 .header-simple {
   background: var(--white);
   padding: 15px 20px;
@@ -64,9 +67,11 @@ body {
 }
 .header-simple h1 { font-size: 1.1rem; margin: 0; font-weight: 600; color: var(--text-main); }
 
+/* Animações */
 .fade-in { animation: fadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
+/* Botões de Ação Rápida */
 .shortcut-btn {
   display: flex; flex-direction: column; align-items: center; cursor: pointer;
   background: none; border: none; padding: 0;
@@ -80,25 +85,3 @@ body {
 }
 .shortcut-btn:active .shortcut-icon { transform: scale(0.95); background: #eef2ff; }
 .shortcut-label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }
-
-/* Notificações Toast */
-.snackbar-success {
-  background-color: #00D09E !important; /* Verde Nubank */
-  color: #004d40 !important;
-  font-weight: 600;
-}
-.snackbar-success .mat-mdc-snack-bar-action { color: #004d40 !important; }
-
-.snackbar-error {
-  background-color: #ff5252 !important;
-  color: white !important;
-  font-weight: 600;
-}
-.snackbar-error .mat-mdc-snack-bar-action { color: white !important; }
-
-/* Loading Spinner Centralizado */
-.loading-shade {
-  position: absolute; top: 0; left: 0; bottom: 56px; right: 0;
-  background: rgba(255,255,255,0.8); z-index: 50;
-  display: flex; align-items: center; justify-content: center;
-}

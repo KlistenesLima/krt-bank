@@ -5,7 +5,6 @@ import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule, Routes } from '@angular/router';
 
-// Angular Material Imports
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,9 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-// Components Imports
 import { AppComponent } from './app.component';
 import { LoginComponent } from './modules/auth/pages/login/login.component';
 import { CreateAccountComponent } from './modules/onboarding/pages/create-account/create-account.component';
@@ -37,8 +34,8 @@ const routes: Routes = [
   { path: 'dashboard', component: DashboardPageComponent },
   { path: 'extract', component: StatementPageComponent },
   { path: 'pix', component: PixPageComponent },
-  { path: 'pix/keys', component: PixKeysComponent },
-  { path: 'boleto', component: BoletoComponent },
+  { path: 'pix/keys', component: PixKeysComponent }, // Rota Chaves
+  { path: 'boleto', component: BoletoComponent },     // Rota Boleto
   { path: 'profile', component: ProfilePageComponent },
   { path: 'cards', component: CardsPageComponent },
   { path: 'receipt/:id', component: ReceiptComponent },
@@ -67,15 +64,13 @@ const routes: Routes = [
     HttpClientModule,
     BrowserAnimationsModule,
     RouterModule.forRoot(routes),
-    // Material Modules
     MatCardModule,
     MatInputModule,
     MatButtonModule,
     MatIconModule,
     MatListModule,
     MatDividerModule,
-    MatSnackBarModule,
-    MatProgressSpinnerModule
+    MatSnackBarModule
   ],
   providers: [],
   bootstrap: [AppComponent]
