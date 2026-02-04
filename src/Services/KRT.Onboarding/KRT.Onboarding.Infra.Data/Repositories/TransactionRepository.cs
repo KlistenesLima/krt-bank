@@ -1,4 +1,4 @@
-﻿using KRT.Onboarding.Domain.Entities;
+using KRT.Onboarding.Domain.Entities;
 using KRT.Onboarding.Domain.Interfaces;
 using KRT.Onboarding.Infra.Data.Context;
 
@@ -13,8 +13,8 @@ public class TransactionRepository : ITransactionRepository
         _context = context;
     }
 
-    public async Task AddAsync(Transaction transaction)
+    public async Task AddAsync(Transaction transaction, CancellationToken cancellationToken)
     {
-        await _context.Transactions.AddAsync(transaction);
+        await _context.Transactions.AddAsync(transaction, cancellationToken);
     }
 }

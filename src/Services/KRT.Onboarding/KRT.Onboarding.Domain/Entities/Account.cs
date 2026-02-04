@@ -1,6 +1,5 @@
-ï»¿using KRT.BuildingBlocks.Domain;
-using KRT.Onboarding.Domain.Enums;
-using KRT.Onboarding.Domain.Events;
+using KRT.BuildingBlocks.Domain;
+using KRT.Onboarding.Domain.Exceptions;
 
 namespace KRT.Onboarding.Domain.Entities;
 
@@ -9,18 +8,12 @@ public class Account : Entity, IAggregateRoot
     public string CustomerName { get; private set; }
     public string Cpf { get; private set; }
     public string Email { get; private set; }
-    public string AccountNumber { get; private set; }
-    public AccountStatus Status { get; private set; }
+    public string AccountNumber { get; private set; } // Propriedade Restaurada
     public decimal Balance { get; private set; }
 
-    // Propriedades Computadas para Mapeamento (DTO Compatibilidade)
+    // Propriedades Computadas para compatibilidade
     public string CustomerDocument => Cpf;
     public string CustomerEmail => Email;
-    public Guid CustomerId => Id; // SimplificaÃ§Ã£o: 1 Cliente = 1 Conta
-    public string BranchCode => "0001"; // Fixo por enquanto
-    public string Type => "Checking";   // Fixo por enquanto
-    public string Currency => "BRL";    // Fixo
-    public decimal AvailableBalance => Balance;
 
     protected Account() { }
 
@@ -30,29 +23,24 @@ public class Account : Entity, IAggregateRoot
         CustomerName = name;
         Cpf = cpf;
         Email = email;
-        AccountNumber = new Random().Next(10000, 99999).ToString();
-        Status = AccountStatus.Active;
+        
+        // Gera um número de conta aleatório (Simulação de Agência/Conta)
+        AccountNumber = new Random().Next(10000, 99999).ToString() + "-9";
+        
         Balance = 0;
         CreatedAt = DateTime.UtcNow;
-        
-        AddDomainEvent(new AccountCreatedEvent(Id, name, cpf, email, AccountNumber));
     }
 
-    public void Block(string reason = "Bloqueio administrativo") 
+    public void Debit(decimal amount)
     {
-        Status = AccountStatus.Blocked;
-        AddDomainEvent(new AccountBlockedEvent(Id, AccountNumber, reason));
+        if (amount <= 0) throw new DomainException("Valor deve ser maior que zero");
+        if (Balance < amount) throw new DomainException("Saldo insuficiente");
+        Balance -= amount;
     }
 
-    public void Unblock()
+    public void Credit(decimal amount)
     {
-        Status = AccountStatus.Active;
-        AddDomainEvent(new AccountUnblockedEvent(Id, AccountNumber));
-    }
-
-    public void Close(string reason = "SolicitaÃ§Ã£o do cliente")
-    {
-        Status = AccountStatus.Closed;
-        AddDomainEvent(new AccountClosedEvent(Id, AccountNumber, reason));
+        if (amount <= 0) throw new DomainException("Valor deve ser maior que zero");
+        Balance += amount;
     }
 }

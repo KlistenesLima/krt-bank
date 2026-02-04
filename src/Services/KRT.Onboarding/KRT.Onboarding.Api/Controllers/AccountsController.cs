@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using KRT.Onboarding.Application.DTOs;
 using KRT.Onboarding.Infra.Data.Context;
 using KRT.Onboarding.Application.Commands;
@@ -24,34 +24,15 @@ public class AccountsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateAccountCommand command)
     {
         var result = await _mediator.Send(command);
-        
-        if (!result.IsValid) 
-            return BadRequest(new { errors = result.Errors });
-
-        // CORREÇÃO: Retorna um Objeto JSON anônimo, não uma string crua.
-        // Isso satisfaz o parser do Angular.
+        if (!result.IsValid) return BadRequest(new { errors = result.Errors });
         return Ok(new { id = result.Id });
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var account = await _context.Accounts
-            .AsNoTracking()
-            .Where(a => a.Id == id)
-            .Select(a => new AccountDto 
-            { 
-                AccountId = a.Id,
-                CustomerName = a.CustomerName,
-                CustomerDocument = a.Cpf,
-                CustomerEmail = a.Email,
-                Balance = a.Balance,
-                Status = a.Status.ToString()
-            })
-            .FirstOrDefaultAsync();
-
+        var account = await _context.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
         if (account == null) return NotFound();
-
         return Ok(account);
     }
 
@@ -60,20 +41,34 @@ public class AccountsController : ControllerBase
     {
         var acc = await _context.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
         if (acc == null) return NotFound();
-
-        return Ok(new BalanceDto 
-        { 
-            AccountId = id, 
-            AvailableAmount = acc.Balance 
-        });
+        return Ok(new BalanceDto { AccountId = id, AvailableAmount = acc.Balance });
     }
 
     [HttpGet("{id}/statement")]
     public async Task<IActionResult> GetStatement(Guid id)
     {
-        var exists = await _context.Accounts.AnyAsync(a => a.Id == id);
-        if (!exists) return NotFound();
+        var txs = await _context.Transactions
+            .AsNoTracking()
+            .Where(t => t.AccountId == id)
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => new StatementDto 
+            { 
+                Id = t.Id, 
+                Amount = t.Amount, 
+                Type = t.Description, 
+                CreatedAt = t.CreatedAt 
+            })
+            .ToListAsync();
 
-        return Ok(new List<StatementDto>());
+        return Ok(txs);
+    }
+
+    [HttpPost("{id}/pix")]
+    public async Task<IActionResult> PerformPix(Guid id, [FromBody] PerformPixCommand command)
+    {
+        command.AccountId = id; 
+        var result = await _mediator.Send(command);
+        if (!result.IsValid) return BadRequest(new { errors = result.Errors });
+        return Ok(new { transactionId = result.Id });
     }
 }

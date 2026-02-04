@@ -1,9 +1,8 @@
-﻿using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Domain.Entities;
 
 namespace KRT.Onboarding.Domain.Interfaces;
 
-public interface ITransactionRepository : IRepository<Transaction>
+public interface ITransactionRepository
 {
-    Task AddAsync(Transaction transaction);
+    Task AddAsync(Transaction transaction, CancellationToken cancellationToken);
 }

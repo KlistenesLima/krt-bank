@@ -1,4 +1,4 @@
-﻿using KRT.Onboarding.Infra.IoC;
+using KRT.Onboarding.Infra.IoC;
 using KRT.Onboarding.Application.Commands; // Para registrar o MediatR
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,7 +29,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll"); // Aplica CORS
-app.UseAuthorization();
+using (var scope = app.Services.CreateScope()) { var db = scope.ServiceProvider.GetRequiredService<KRT.Onboarding.Infra.Data.Context.ApplicationDbContext>(); db.Database.EnsureDeleted(); db.Database.EnsureCreated(); } 
+ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
