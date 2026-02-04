@@ -1,53 +1,60 @@
-version: '3.8'
+name: krt-bank
 
 services:
   postgres:
-    image: postgres:latest
-    container_name: krtbank-postgres
+    image: postgres:15
+    container_name: krt-postgres
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=krtbank_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: krt_bank
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
-    volumes:
-      - krtbank_postgres_data:/var/lib/postgresql/data
+      - "5433:5432"
+    networks:
+      - krt-network
+    restart: always
 
   redis:
     image: redis:alpine
-    container_name: krtbank-redis
+    container_name: krt-redis
     ports:
       - "6379:6379"
+    networks:
+      - krt-network
+    restart: always
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: krtbank-zookeeper
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: krt-zookeeper
     environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - krt-network
 
   kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: krtbank-kafka
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: krt-kafka
     depends_on:
       - zookeeper
     ports:
       - "9092:9092"
     environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: krtbank-rabbitmq
-    ports:
-      - "15672:15672"
-      - "5672:5672"
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - krt-network
 
 volumes:
-  krtbank_postgres_data:
+  pgdata:
+
+networks:
+  krt-network:
+    driver: bridge
