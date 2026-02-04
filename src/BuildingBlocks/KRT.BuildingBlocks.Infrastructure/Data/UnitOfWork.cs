@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.Domain;
+﻿using KRT.BuildingBlocks.Domain;
 using KRT.BuildingBlocks.Infrastructure.Outbox;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace KRT.BuildingBlocks.Infrastructure.Data;
 
 /// <summary>
-/// Implementação base do Unit of Work com suporte a Domain Events e Outbox
+/// ImplementaÃ§Ã£o base do Unit of Work com suporte a Domain Events e Outbox
 /// </summary>
 public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
 {
@@ -26,7 +26,7 @@ public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
         // Processa Domain Events antes de salvar
         await DispatchDomainEventsAsync(ct);
 
-        // Salva mudanças
+        // Salva mudanÃ§as
         return await _context.SaveChangesAsync(ct);
     }
 

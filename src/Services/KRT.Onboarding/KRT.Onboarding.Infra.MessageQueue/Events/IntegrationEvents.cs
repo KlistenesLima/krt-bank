@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.EventBus;
+﻿using KRT.BuildingBlocks.EventBus;
 using KRT.Onboarding.Domain.Entities;
 using KRT.Onboarding.Domain.Enums; // <--- ADICIONADO: Onde vive o AccountType
 

@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.Domain;
+﻿using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Domain.Entities;
 
 namespace KRT.Onboarding.Domain.Interfaces;

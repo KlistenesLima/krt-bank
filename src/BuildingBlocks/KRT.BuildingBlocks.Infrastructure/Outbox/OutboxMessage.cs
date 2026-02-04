@@ -1,7 +1,7 @@
-namespace KRT.BuildingBlocks.Infrastructure.Outbox;
+﻿namespace KRT.BuildingBlocks.Infrastructure.Outbox;
 
 /// <summary>
-/// Mensagem do Outbox para garantir consistência entre DB e eventos
+/// Mensagem do Outbox para garantir consistÃªncia entre DB e eventos
 /// </summary>
 public class OutboxMessage
 {

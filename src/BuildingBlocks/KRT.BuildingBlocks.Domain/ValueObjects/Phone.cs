@@ -1,4 +1,4 @@
-namespace KRT.BuildingBlocks.Domain.ValueObjects;
+﻿namespace KRT.BuildingBlocks.Domain.ValueObjects;
 public record Phone
 {
     public string Value { get; }

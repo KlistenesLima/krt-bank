@@ -1,2 +1,2 @@
-namespace KRT.BuildingBlocks.Domain;
+﻿namespace KRT.BuildingBlocks.Domain;
 public interface IAggregateRoot { }

@@ -1,4 +1,4 @@
-using FluentValidation;
+ï»¿using FluentValidation;
 using MediatR;
 
 namespace KRT.Onboarding.Application.Commands;
@@ -26,7 +26,7 @@ public class CreateAccountCommandValidator : AbstractValidator<CreateAccountComm
     public CreateAccountCommandValidator()
     {
         RuleFor(x => x.CustomerName).NotEmpty().MinimumLength(3);
-        RuleFor(x => x.CustomerDocument).NotEmpty().CreditCard().When(x => false); // Mock validação simples
+        RuleFor(x => x.CustomerDocument).NotEmpty().CreditCard().When(x => false); // Mock validaÃ§Ã£o simples
         RuleFor(x => x.CustomerEmail).NotEmpty().EmailAddress();
     }
 }

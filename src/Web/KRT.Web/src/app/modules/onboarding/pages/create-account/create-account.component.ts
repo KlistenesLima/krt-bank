@@ -1,66 +1,76 @@
-import { Component } from '@angular/core';
+ï»¿import { Component } from '@angular/core';
 import { AccountService } from '../../../../core/services/account.service';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-create-account',
   template: `
-    <div class="container">
-      <h2>Abra sua conta KRT</h2>
-      <form (ngSubmit)="onSubmit()">
-        <div>
-          <label>Nome:</label>
-          <input [(ngModel)]="model.customerName" name="name" required placeholder="Seu nome completo">
+    <div class="full-screen-center">
+      <mat-card class="auth-card fade-in">
+        <div class="header-left">
+            <button mat-icon-button (click)="back()"><mat-icon>arrow_back</mat-icon></button>
+            <h2>Criar Conta</h2>
         </div>
-        <div>
-          <label>CPF:</label>
-          <input [(ngModel)]="model.customerDocument" name="doc" required placeholder="Apenas números">
-        </div>
-        <div>
-          <label>Email:</label>
-          <input [(ngModel)]="model.customerEmail" name="email" required placeholder="seu@email.com">
-        </div>
-        <button type="submit">Criar Conta</button>
-      </form>
+
+        <mat-card-content>
+          <form (ngSubmit)="onSubmit()">
+            <mat-form-field appearance="outline">
+              <mat-label>Nome Completo</mat-label>
+              <input matInput [(ngModel)]="model.customerName" name="name" required>
+              <mat-icon matSuffix>person</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>CPF</mat-label>
+              <input matInput [(ngModel)]="model.customerDocument" name="doc" required>
+              <mat-icon matSuffix>badge</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput [(ngModel)]="model.customerEmail" name="email" required type="email">
+              <mat-icon matSuffix>email</mat-icon>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" class="full-width-btn" type="submit">
+              CONFIRMAR CADASTRO
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
     </div>
-  `
+  `,
+  styles: [`
+    .auth-card { width: 100%; max-width: 400px; padding: 30px; }
+    .header-left { display: flex; align-items: center; margin-bottom: 25px; gap: 10px; }
+    .header-left h2 { margin: 0; color: var(--primary-dark); }
+    .full-width-btn { width: 100%; margin-top: 15px; }
+  `]
 })
 export class CreateAccountComponent {
   model = { customerName: '', customerDocument: '', customerEmail: '' };
-
   constructor(private accountService: AccountService, private router: Router) {}
 
   onSubmit() {
-    const request = {
-        ...this.model,
-        branchCode: '0001' 
-    };
-
+    const request = { ...this.model, branchCode: '0001' };
     this.accountService.create(request).subscribe({
       next: (res: any) => {
-        console.log('Resposta bruta da API:', res);
-
-        // CORREÇÃO: Verifica se a resposta JÁ É o ID (string) ou um objeto
+        // CorreÃ§Ã£o de parsing manual do ID
         let id = '';
-        if (typeof res === 'string') {
-            id = res;
-        } else {
-            id = res.id || res.accountId;
-        }
-        
+        if (typeof res === 'string') id = res;
+        else if (res && res.id) id = res.id;
+        else if (res && res.accountId) id = res.accountId;
+
         if (id) {
-            alert('Conta criada! ID: ' + id);
             localStorage.setItem('krt_account_id', id); 
             this.router.navigate(['/dashboard']);
         } else {
-            alert('Erro: ID não identificado na resposta.');
+            alert('Conta criada, mas houve erro ao logar. Tente entrar novamente.');
+            this.router.navigate(['/login']);
         }
       },
-      error: (err) => {
-        console.error(err);
-        const msg = err.error?.errors ? JSON.stringify(err.error.errors) : JSON.stringify(err);
-        alert('Erro ao criar conta: ' + msg);
-      }
+      error: (err) => alert('Erro: ' + JSON.stringify(err))
     });
   }
+  back() { this.router.navigate(['/login']); }
 }

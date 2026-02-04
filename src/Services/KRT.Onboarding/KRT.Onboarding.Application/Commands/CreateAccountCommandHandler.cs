@@ -1,5 +1,5 @@
-using KRT.Onboarding.Domain.Entities;
-using KRT.Onboarding.Domain.Interfaces; // Agora usa a Interface, n„o o Contexto direto
+Ôªøusing KRT.Onboarding.Domain.Entities;
+using KRT.Onboarding.Domain.Interfaces; // Agora usa a Interface, n√£o o Contexto direto
 using MediatR;
 
 namespace KRT.Onboarding.Application.Commands;
@@ -17,7 +17,7 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
     {
         var account = new Account(request.CustomerName, request.CustomerDocument, request.CustomerEmail);
 
-        // O Handler n„o sabe o que È EF Core ou DbContext, ele sÛ manda salvar
+        // O Handler n√£o sabe o que √© EF Core ou DbContext, ele s√≥ manda salvar
         await _repository.AddAsync(account, cancellationToken);
 
         return CommandResult.Success(account.Id);

@@ -1,4 +1,4 @@
-export interface AccountResponse {
+﻿export interface AccountResponse {
     accountId: string;
     customerName: string;
     customerDocument: string;
@@ -19,5 +19,5 @@ export interface CreateAccountRequest {
     customerName: string;
     customerDocument: string;
     customerEmail: string;
-    branchCode: string; // <--- NOVO CAMPO OBRIGAT�RIO
+    branchCode: string; // <--- NOVO CAMPO OBRIGATÓRIO
 }

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 namespace KRT.BuildingBlocks.Domain;
 
 public interface IDomainEvent : INotification

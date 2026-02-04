@@ -1,4 +1,4 @@
-namespace KRT.Onboarding.Application.DTOs;
+﻿namespace KRT.Onboarding.Application.DTOs;
 
 public class AccountDto
 {

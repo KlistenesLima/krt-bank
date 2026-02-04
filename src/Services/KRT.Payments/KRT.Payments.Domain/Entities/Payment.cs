@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.Domain;
+﻿using KRT.BuildingBlocks.Domain;
 using KRT.Payments.Domain.Enums;
 
 namespace KRT.Payments.Domain.Entities;

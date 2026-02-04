@@ -1,4 +1,4 @@
-namespace KRT.Onboarding.Application.Accounts.DTOs.Requests;
+﻿namespace KRT.Onboarding.Application.Accounts.DTOs.Requests;
 
 public record CreateAccountRequest(
     string CustomerName, 

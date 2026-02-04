@@ -1,4 +1,4 @@
-namespace KRT.Onboarding.Application.Accounts.DTOs.Responses;
+﻿namespace KRT.Onboarding.Application.Accounts.DTOs.Responses;
 
 public record AccountResponse(
     Guid AccountId,

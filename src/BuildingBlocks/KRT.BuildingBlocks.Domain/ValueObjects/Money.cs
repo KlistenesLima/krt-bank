@@ -1,9 +1,9 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace KRT.BuildingBlocks.Domain.ValueObjects;
 
 /// <summary>
-/// Value Object para representar valores monetários
+/// Value Object para representar valores monetÃ¡rios
 /// </summary>
 public sealed class Money : ValueObject
 {

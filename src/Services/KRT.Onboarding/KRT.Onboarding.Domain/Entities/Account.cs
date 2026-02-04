@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.Domain;
+ï»¿using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Domain.Enums;
 using KRT.Onboarding.Domain.Events;
 
@@ -16,7 +16,7 @@ public class Account : Entity, IAggregateRoot
     // Propriedades Computadas para Mapeamento (DTO Compatibilidade)
     public string CustomerDocument => Cpf;
     public string CustomerEmail => Email;
-    public Guid CustomerId => Id; // Simplificação: 1 Cliente = 1 Conta
+    public Guid CustomerId => Id; // SimplificaÃ§Ã£o: 1 Cliente = 1 Conta
     public string BranchCode => "0001"; // Fixo por enquanto
     public string Type => "Checking";   // Fixo por enquanto
     public string Currency => "BRL";    // Fixo
@@ -50,7 +50,7 @@ public class Account : Entity, IAggregateRoot
         AddDomainEvent(new AccountUnblockedEvent(Id, AccountNumber));
     }
 
-    public void Close(string reason = "Solicitação do cliente")
+    public void Close(string reason = "SolicitaÃ§Ã£o do cliente")
     {
         Status = AccountStatus.Closed;
         AddDomainEvent(new AccountClosedEvent(Id, AccountNumber, reason));

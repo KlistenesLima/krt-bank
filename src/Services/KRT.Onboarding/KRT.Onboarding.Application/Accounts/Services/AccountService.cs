@@ -1,4 +1,4 @@
-using AutoMapper;
+Ôªøusing AutoMapper;
 using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Application.Accounts.DTOs.Requests;
 using KRT.Onboarding.Application.Accounts.DTOs.Responses;
@@ -23,7 +23,7 @@ public class AccountService : IAccountService
     public async Task<Result<Guid>> CreateAsync(CreateAccountRequest request, CancellationToken cancellationToken)
     {
         var existing = await _accountRepository.GetByCpfAsync(request.CustomerDocument, cancellationToken);
-        if (existing != null) return Result.Fail<Guid>("CPF j· cadastrado.");
+        if (existing != null) return Result.Fail<Guid>("CPF j√° cadastrado.");
 
         var account = new Account(request.CustomerName, request.CustomerDocument, request.CustomerEmail);
         
@@ -38,7 +38,7 @@ public class AccountService : IAccountService
     {
         var account = await _accountRepository.GetByIdAsync(id, cancellationToken);
         
-        if (account == null) return Result.Fail<AccountResponse>("Conta n„o encontrada.");
+        if (account == null) return Result.Fail<AccountResponse>("Conta n√£o encontrada.");
         return Result.Ok(_mapper.Map<AccountResponse>(account));
     }
 

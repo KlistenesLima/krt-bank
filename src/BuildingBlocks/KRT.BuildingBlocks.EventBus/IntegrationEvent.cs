@@ -1,7 +1,7 @@
-namespace KRT.BuildingBlocks.EventBus;
+﻿namespace KRT.BuildingBlocks.EventBus;
 
 /// <summary>
-/// Evento de integração para comunicação entre serviços
+/// Evento de integraÃ§Ã£o para comunicaÃ§Ã£o entre serviÃ§os
 /// </summary>
 public abstract record IntegrationEvent
 {
@@ -13,7 +13,7 @@ public abstract record IntegrationEvent
     public int Version { get; init; } = 1;
 
     /// <summary>
-    /// Nome do tipo do evento para serialização
+    /// Nome do tipo do evento para serializaÃ§Ã£o
     /// </summary>
     public string EventType => GetType().Name;
 }

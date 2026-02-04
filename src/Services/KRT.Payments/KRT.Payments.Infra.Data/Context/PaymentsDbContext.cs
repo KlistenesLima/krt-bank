@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+Ôªøusing Microsoft.EntityFrameworkCore;
 using KRT.BuildingBlocks.Domain;
 using KRT.Payments.Domain.Entities;
 
@@ -18,7 +18,7 @@ public class PaymentsDbContext : DbContext, IUnitOfWork
         modelBuilder.Entity<Payment>().Property(p => p.Amount).HasPrecision(18, 2);
     }
 
-    // CORRE«√O: Assinatura exata da interface (int + CancellationToken)
+    // CORRE√á√ÉO: Assinatura exata da interface (int + CancellationToken)
     public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
     {
         return await SaveChangesAsync(cancellationToken);

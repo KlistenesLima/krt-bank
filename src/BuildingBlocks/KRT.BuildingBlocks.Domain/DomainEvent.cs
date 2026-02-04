@@ -1,7 +1,7 @@
-using MediatR;
+ï»¿using MediatR;
 namespace KRT.BuildingBlocks.Domain;
 
-// Mudança Crítica: class -> record
+// MudanÃ§a CrÃ­tica: class -> record
 public abstract record DomainEvent : INotification
 {
     public Guid EventId { get; init; } = Guid.NewGuid();

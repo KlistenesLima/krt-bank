@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+ï»¿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using KRT.Payments.Infra.Data.Context;
@@ -12,7 +12,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPaymentsInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // Correção: Aspas simples na string "DefaultConnection"
+        // CorreÃ§Ã£o: Aspas simples na string "DefaultConnection"
         services.AddDbContext<PaymentsDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 

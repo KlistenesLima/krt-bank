@@ -1,4 +1,4 @@
-using KRT.Payments.Infra.IoC;
+﻿using KRT.Payments.Infra.IoC;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { PaymentService } from '../../../core/services/payment.service';
 import { Router } from '@angular/router';
 
@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
   selector: 'app-pix-area',
   template: `
     <div class="container">
-      <h2>�rea PIX</h2>
+      <h2>Área PIX</h2>
       <div>
         <label>Chave do Recebedor (CPF/Email):</label>
         <input [(ngModel)]="receiverKey">

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Domain.Entities;
 using KRT.Onboarding.Domain.Interfaces;

@@ -1,4 +1,4 @@
-using AutoMapper;
+ï»¿using AutoMapper;
 using KRT.Onboarding.Application.Accounts.DTOs.Responses;
 using KRT.Onboarding.Domain.Entities;
 
@@ -12,7 +12,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.AccountId, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.AccountNumber))
             // Os outros campos (CustomerDocument, etc) agora existem na entidade como propriedades computadas
-            // ou têm o mesmo nome, então o AutoMapper resolve sozinho.
+            // ou tÃªm o mesmo nome, entÃ£o o AutoMapper resolve sozinho.
             ;
     }
 }

@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.Domain;
+Ôªøusing KRT.BuildingBlocks.Domain;
 
 namespace KRT.BuildingBlocks.Domain.ValueObjects;
 
@@ -12,9 +12,9 @@ public record Email
         if (string.IsNullOrWhiteSpace(email)) 
             return Result.Fail<Email>("Email vazio.", "EMPTY_EMAIL");
         
-        // CorreÁ„o: Usando aspas normais "@"
+        // Corre√ß√£o: Usando aspas normais "@"
         if (!email.Contains("@")) 
-            return Result.Fail<Email>("Email inv·lido.", "INVALID_EMAIL");
+            return Result.Fail<Email>("Email inv√°lido.", "INVALID_EMAIL");
 
         return Result.Ok(new Email(email));
     }

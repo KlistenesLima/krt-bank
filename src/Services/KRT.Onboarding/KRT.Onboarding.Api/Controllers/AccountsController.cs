@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+Ôªøusing Microsoft.AspNetCore.Mvc;
 using KRT.Onboarding.Application.DTOs;
 using KRT.Onboarding.Infra.Data.Context;
 using KRT.Onboarding.Application.Commands;
@@ -28,7 +28,7 @@ public class AccountsController : ControllerBase
         if (!result.IsValid) 
             return BadRequest(new { errors = result.Errors });
 
-        // CORRE«√O: Retorna um Objeto JSON anÙnimo, n„o uma string crua.
+        // CORRE√á√ÉO: Retorna um Objeto JSON an√¥nimo, n√£o uma string crua.
         // Isso satisfaz o parser do Angular.
         return Ok(new { id = result.Id });
     }

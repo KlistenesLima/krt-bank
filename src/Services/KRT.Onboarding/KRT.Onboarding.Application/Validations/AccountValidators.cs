@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using KRT.Onboarding.Application.Accounts.DTOs.Requests;
 
 namespace KRT.Onboarding.Application.Validations;

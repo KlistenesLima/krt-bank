@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+ï»¿using Microsoft.EntityFrameworkCore;
 using KRT.BuildingBlocks.Domain;
 using KRT.Payments.Domain.Entities;
 using KRT.Payments.Domain.Interfaces;
@@ -10,8 +10,8 @@ public class PaymentRepository : IPaymentRepository
 {
     private readonly PaymentsDbContext _context;
 
-    // Implementação explícita do UnitOfWork
-    public IUnitOfWork UnitOfWork => (IUnitOfWork)_context; // Cast seguro pois DbContext implementa IUnitOfWork? Não nativamente.
+    // ImplementaÃ§Ã£o explÃ­cita do UnitOfWork
+    public IUnitOfWork UnitOfWork => (IUnitOfWork)_context; // Cast seguro pois DbContext implementa IUnitOfWork? NÃ£o nativamente.
 
     public PaymentRepository(PaymentsDbContext context)
     {

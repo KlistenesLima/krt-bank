@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
@@ -34,7 +34,7 @@ public class RedisCacheService : ICacheService, IDisposable
             PropertyNameCaseInsensitive = true
         };
 
-        // Conecta ao Redis (Lazy connection � melhor, mas vamos manter simples)
+        // Conecta ao Redis (Lazy connection é melhor, mas vamos manter simples)
         _redis = ConnectionMultiplexer.Connect(_settings.ConnectionString);
         _database = _redis.GetDatabase();
 

@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.Domain;
+﻿using KRT.BuildingBlocks.Domain;
 
 namespace KRT.Onboarding.Domain.Events;
 

@@ -1,4 +1,4 @@
-namespace KRT.Onboarding.Domain.Interfaces;
+﻿namespace KRT.Onboarding.Domain.Interfaces;
 
 public interface ICacheService
 {

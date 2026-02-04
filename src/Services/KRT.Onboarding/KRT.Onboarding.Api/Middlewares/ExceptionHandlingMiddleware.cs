@@ -1,4 +1,4 @@
-using System.Net;
+ï»¿using System.Net;
 using System.Text.Json;
 using KRT.BuildingBlocks.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
@@ -34,8 +34,8 @@ public class ExceptionHandlingMiddleware
 
         _logger.LogError(exception, "Unhandled exception. CorrelationId: {CorrelationId}", correlationId);
 
-        // AQUI ESTA A CORREÇÃO DA LÓGICA DO SWITCH
-        // Classes mais específicas (filhas) devem vir ANTES da classe genérica (pai)
+        // AQUI ESTA A CORREÃ‡ÃƒO DA LÃ“GICA DO SWITCH
+        // Classes mais especÃ­ficas (filhas) devem vir ANTES da classe genÃ©rica (pai)
         var (statusCode, problemDetails) = exception switch
         {
             // 1. Filhas de DomainException
@@ -51,12 +51,12 @@ public class ExceptionHandlingMiddleware
                 HttpStatusCode.Conflict,
                 CreateProblemDetails("Concurrency Conflict", concurrencyEx.Message, (int)HttpStatusCode.Conflict, concurrencyEx.Code, correlationId)),
 
-            // 2. Pai (DomainException) - Captura qualquer outra falha de domínio não listada acima
+            // 2. Pai (DomainException) - Captura qualquer outra falha de domÃ­nio nÃ£o listada acima
             DomainException domainEx => (
                 HttpStatusCode.BadRequest,
                 CreateProblemDetails("Domain Error", domainEx.Message, (int)HttpStatusCode.BadRequest, domainEx.Code, correlationId)),
 
-            // 3. Genérico (Exception)
+            // 3. GenÃ©rico (Exception)
             _ => (
                 HttpStatusCode.InternalServerError,
                 CreateProblemDetails("Internal Server Error", "An unexpected error occurred.", (int)HttpStatusCode.InternalServerError, "INTERNAL_ERROR", correlationId))

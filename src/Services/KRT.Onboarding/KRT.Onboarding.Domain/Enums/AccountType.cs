@@ -1,4 +1,4 @@
-namespace KRT.Onboarding.Domain.Enums;
+﻿namespace KRT.Onboarding.Domain.Enums;
 
 public enum AccountType
 {

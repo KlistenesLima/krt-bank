@@ -1,4 +1,4 @@
-namespace KRT.Onboarding.Domain.Enums;
+﻿namespace KRT.Onboarding.Domain.Enums;
 
 /// <summary>
 /// Status da conta
@@ -6,7 +6,7 @@ namespace KRT.Onboarding.Domain.Enums;
 public enum AccountStatus
 {
     /// <summary>
-    /// Conta criada, aguardando ativação
+    /// Conta criada, aguardando ativaÃ§Ã£o
     /// </summary>
     Pending = 1,
 

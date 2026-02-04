@@ -1,4 +1,4 @@
-namespace KRT.BuildingBlocks.Domain;
+﻿namespace KRT.BuildingBlocks.Domain;
 
 public class Result
 {

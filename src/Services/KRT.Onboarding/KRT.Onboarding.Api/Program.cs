@@ -1,4 +1,4 @@
-using KRT.Onboarding.Infra.IoC;
+﻿using KRT.Onboarding.Infra.IoC;
 using KRT.Onboarding.Application.Commands; // Para registrar o MediatR
 
 var builder = WebApplication.CreateBuilder(args);

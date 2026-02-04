@@ -1,4 +1,4 @@
-using KRT.Payments.Application.DTOs;
+Ôªøusing KRT.Payments.Application.DTOs;
 using KRT.Payments.Domain.Entities;
 using KRT.Payments.Domain.Interfaces;
 using KRT.BuildingBlocks.Domain; // Onde vive o IUnitOfWork
@@ -8,12 +8,12 @@ namespace KRT.Payments.Application.UseCases;
 public class PixUseCase
 {
     private readonly IPaymentRepository _repository;
-    // Removido IUnitOfWork direto se o repositÛrio j· gerencia, 
+    // Removido IUnitOfWork direto se o reposit√≥rio j√° gerencia, 
     // mas mantendo para compatibilidade com sua estrutura atual
     private readonly IUnitOfWork _unitOfWork; 
 
-    // Se o RepositÛrio n„o expıe UnitOfWork, injetamos direto.
-    // Mas o ideal È repo.UnitOfWork.
+    // Se o Reposit√≥rio n√£o exp√µe UnitOfWork, injetamos direto.
+    // Mas o ideal √© repo.UnitOfWork.
     public PixUseCase(IPaymentRepository repository)
     {
         _repository = repository;

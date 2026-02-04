@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +33,7 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService where TEvent
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await Task.Yield(); // Libera a thread de inicialização
+        await Task.Yield(); // Libera a thread de inicializaÃ§Ã£o
 
         var config = new ConsumerConfig
         {
@@ -123,7 +123,7 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService where TEvent
                 _topic,
                 correlationId);
 
-            // Aqui você pode implementar lógica de retry ou DLQ
+            // Aqui vocÃª pode implementar lÃ³gica de retry ou DLQ
             throw;
         }
     }

@@ -1,7 +1,7 @@
-namespace KRT.BuildingBlocks.Domain;
+﻿namespace KRT.BuildingBlocks.Domain;
 
 /// <summary>
-/// Classe base para Value Objects - objetos imutáveis identificados por seus valores
+/// Classe base para Value Objects - objetos imutÃ¡veis identificados por seus valores
 /// </summary>
 public abstract class ValueObject
 {

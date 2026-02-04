@@ -1,11 +1,11 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using KRT.BuildingBlocks.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace KRT.BuildingBlocks.Infrastructure.Data;
 
 /// <summary>
-/// Interface base para repositórios
+/// Interface base para repositÃ³rios
 /// </summary>
 public interface IRepository<T> where T : Entity
 {
@@ -23,7 +23,7 @@ public interface IRepository<T> where T : Entity
 }
 
 /// <summary>
-/// Implementação base do repositório genérico
+/// ImplementaÃ§Ã£o base do repositÃ³rio genÃ©rico
 /// </summary>
 public class Repository<T, TContext> : IRepository<T>
     where T : Entity

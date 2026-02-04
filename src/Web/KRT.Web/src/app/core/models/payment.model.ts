@@ -1,4 +1,4 @@
-export interface PixRequest {
+﻿export interface PixRequest {
     accountId: string;
     receiverKey: string;
     amount: number;

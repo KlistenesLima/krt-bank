@@ -1,4 +1,4 @@
-using KRT.Onboarding.Domain.Entities;
+﻿using KRT.Onboarding.Domain.Entities;
 
 namespace KRT.Onboarding.Domain.Interfaces;
 

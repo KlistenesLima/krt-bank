@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Confluent.Kafka;
@@ -18,7 +18,7 @@ public class KafkaSettings
 }
 
 /// <summary>
-/// Implementação do Event Bus usando Kafka
+/// ImplementaÃ§Ã£o do Event Bus usando Kafka
 /// </summary>
 public class KafkaEventBus : IEventBus, IDisposable
 {

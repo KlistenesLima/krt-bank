@@ -1,4 +1,4 @@
-namespace KRT.BuildingBlocks.Domain.Exceptions;
+﻿namespace KRT.BuildingBlocks.Domain.Exceptions;
 
 public abstract class DomainException : Exception
 {
