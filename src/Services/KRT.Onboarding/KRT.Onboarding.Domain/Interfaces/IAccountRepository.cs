@@ -1,11 +1,10 @@
-using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Domain.Entities;
 
 namespace KRT.Onboarding.Domain.Interfaces;
 
-public interface IAccountRepository : IRepository<Account>
+public interface IAccountRepository
 {
-    Task<Account?> GetByCpfAsync(string cpf);
-    Task<Account?> GetByIdAsync(Guid id);
-    Task AddAsync(Account account);
+    Task AddAsync(Account account, CancellationToken cancellationToken);
+    Task<Account?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<Account?> GetByCpfAsync(string cpf, CancellationToken cancellationToken);
 }

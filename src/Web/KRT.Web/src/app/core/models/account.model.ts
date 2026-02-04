@@ -19,4 +19,5 @@ export interface CreateAccountRequest {
     customerName: string;
     customerDocument: string;
     customerEmail: string;
+    branchCode: string; // <--- NOVO CAMPO OBRIGATÓRIO
 }
