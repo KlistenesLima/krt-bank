@@ -1,0 +1,6 @@
+@KRT.Payments.Api_HostAddress = http://localhost:5016
+
+GET {{KRT.Payments.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

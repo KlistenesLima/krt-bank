@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.Domain/KRT.BuildingBlocks.Domain.csproj" />
+    <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.EventBus/KRT.BuildingBlocks.EventBus.csproj" />
+    <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.Infrastructure/KRT.BuildingBlocks.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/KRT.Onboarding/">
+    <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Api/KRT.Onboarding.Api.csproj" />
+    <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Application/KRT.Onboarding.Application.csproj" />
+    <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Domain/KRT.Onboarding.Domain.csproj" />
+    <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Infra.Cache/KRT.Onboarding.Infra.Cache.csproj" />
+    <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Infra.Data/KRT.Onboarding.Infra.Data.csproj" />
+    <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Infra.IoC/KRT.Onboarding.Infra.IoC.csproj" />
+    <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Infra.MessageQueue/KRT.Onboarding.Infra.MessageQueue.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/KRT.Payments/">
+    <Project Path="src/Services/KRT.Payments/KRT.Payments.Api/KRT.Payments.Api.csproj" />
+    <Project Path="src/Services/KRT.Payments/KRT.Payments.Application/KRT.Payments.Application.csproj" />
+    <Project Path="src/Services/KRT.Payments/KRT.Payments.Domain/KRT.Payments.Domain.csproj" />
+    <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.Data/KRT.Payments.Infra.Data.csproj" />
+    <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.IoC/KRT.Payments.Infra.IoC.csproj" />
+  </Folder>
+</Solution>
