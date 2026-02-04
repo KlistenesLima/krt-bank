@@ -1,14 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../../environments/environment';
-
-export interface PixRequest { accountId: string; key: string; amount: number; }
+import { Observable } from 'rxjs';
+import { PaymentResponse, PixRequest } from '../models/payment.model';
 
 @Injectable({ providedIn: 'root' })
-public class PaymentService {
-  constructor(private http: HttpClient) {}
+export class PaymentService {
+    private apiUrl = 'http://localhost:5001/api/v1/payments';
 
-  sendPix(data: PixRequest) {
-    return this.http.post(\\/pix\, data);
-  }
+    constructor(private http: HttpClient) {}
+
+    sendPix(request: PixRequest): Observable<PaymentResponse> {
+        return this.http.post<PaymentResponse>(`${this.apiUrl}/pix`, request);
+    }
 }

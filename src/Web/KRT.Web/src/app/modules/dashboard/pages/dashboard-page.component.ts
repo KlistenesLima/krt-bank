@@ -1,37 +1,46 @@
 import { Component, OnInit } from '@angular/core';
-import { AccountService } from '../../core/services/account.service';
+import { AccountService } from '../../../core/services/account.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
-  template: \
-    <div class="card">
-      <h2>Minha Conta</h2>
-      <div *ngIf="account">
-        <h3>Saldo: {{ account.balance | currency:'BRL' }}</h3>
-        <p>Conta: {{ account.number }}</p>
+  template: `
+    <div class="container" *ngIf="account">
+      <h1>Olá, {{ account.customerName }}</h1>
+      <div class="card">
+        <h3>Saldo: {{ balance | currency:'BRL' }}</h3>
+        <button (click)="goToPix()">Fazer PIX</button>
       </div>
-      <div *ngIf="!account">
-        <button (click)="createAccount()">Abrir Conta Digital</button>
-      </div>
+      
+      <h3>Extrato</h3>
+      <ul>
+        <li *ngFor="let item of statement">
+           {{ item.type }} - {{ item.amount | currency:'BRL' }} em {{ item.createdAt | date:'short' }}
+        </li>
+      </ul>
     </div>
-  \,
-  styles: [\.card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 400px; }\]
+  `
 })
 export class DashboardPageComponent implements OnInit {
-  account: any = null;
+  account: any;
+  balance: number = 0;
+  statement: any[] = [];
+  accountId = localStorage.getItem('krt_account_id');
 
-  constructor(private accountService: AccountService) {}
+  constructor(private accountService: AccountService, private router: Router) {}
 
   ngOnInit() {
-    // Mock para exemplo. Na vida real, pegaria do Backend
-    // this.loadAccount();
+    if(!this.accountId) {
+        this.router.navigate(['/']);
+        return;
+    }
+
+    this.accountService.getById(this.accountId).subscribe(res => this.account = res);
+    this.accountService.getBalance(this.accountId).subscribe((res: any) => this.balance = res.availableAmount);
+    this.accountService.getStatement(this.accountId).subscribe((res: any) => this.statement = res.transactions || []);
   }
 
-  createAccount() {
-    const fakeData = { customerName: "User Demo", cpf: "12345678900", email: "demo@krt.com" };
-    this.accountService.createAccount(fakeData).subscribe({
-      next: (res) => alert('Conta criada com sucesso! ID: ' + res),
-      error: (err) => alert('Erro ao criar conta: ' + JSON.stringify(err))
-    });
+  goToPix() {
+    this.router.navigate(['/pix']);
   }
 }

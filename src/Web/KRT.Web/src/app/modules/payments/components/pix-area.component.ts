@@ -1,49 +1,49 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { PaymentService } from '../../core/services/payment.service';
+import { PaymentService } from '../../../core/services/payment.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-pix-area',
-  template: \
-    <div class="card">
-      <h2>Realizar Transferência PIX</h2>
-      <form [formGroup]="pixForm" (ngSubmit)="onSubmit()">
-        <div style="margin-bottom: 10px">
-          <label>Chave Pix Destino:</label><br>
-          <input formControlName="key" type="text" style="width: 100%; padding: 8px;">
-        </div>
-        
-        <div style="margin-bottom: 10px">
-          <label>Valor (R$):</label><br>
-          <input formControlName="amount" type="number" style="width: 100%; padding: 8px;">
-        </div>
-
-        <button type="submit" [disabled]="pixForm.invalid" 
-                style="background: #004d40; color: white; padding: 10px 20px; border: none; cursor: pointer;">
-          Enviar Pix
-        </button>
-      </form>
+  template: `
+    <div class="container">
+      <h2>Área PIX</h2>
+      <div>
+        <label>Chave do Recebedor (CPF/Email):</label>
+        <input [(ngModel)]="receiverKey">
+      </div>
+      <div>
+        <label>Valor:</label>
+        <input type="number" [(ngModel)]="amount">
+      </div>
+      <button (click)="send()">Enviar Pix</button>
+      <button (click)="back()">Voltar</button>
     </div>
-  \,
-  styles: [\.card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 400px; }\]
+  `
 })
 export class PixAreaComponent {
-  pixForm: FormGroup;
+  accountId = localStorage.getItem('krt_account_id');
+  receiverKey = '';
+  amount = 0;
 
-  constructor(private fb: FormBuilder, private payService: PaymentService) {
-    this.pixForm = this.fb.group({
-      accountId: ['3fa85f64-5717-4562-b3fc-2c963f66afa6'], // Mock ID fixo para teste
-      key: ['', Validators.required],
-      amount: [0, [Validators.required, Validators.min(0.01)]]
+  constructor(private paymentService: PaymentService, private router: Router) {}
+
+  send() {
+    if (!this.accountId) return;
+    
+    this.paymentService.sendPix({
+        accountId: this.accountId,
+        receiverKey: this.receiverKey,
+        amount: this.amount
+    }).subscribe({
+        next: () => {
+            alert('Pix enviado com sucesso!');
+            this.router.navigate(['/dashboard']);
+        },
+        error: (err) => alert('Erro no Pix: ' + JSON.stringify(err))
     });
   }
 
-  onSubmit() {
-    if (this.pixForm.valid) {
-      this.payService.sendPix(this.pixForm.value).subscribe({
-        next: (res: any) => alert('Pix realizado! Status: ' + res.status),
-        error: (err) => alert('Falha no Pix: ' + JSON.stringify(err))
-      });
-    }
+  back() {
+    this.router.navigate(['/dashboard']);
   }
 }
