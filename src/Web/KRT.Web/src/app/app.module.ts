@@ -14,6 +14,8 @@ import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSliderModule } from '@angular/material/slider'; // NOVO
 
 // Components Imports
 import { AppComponent } from './app.component';
@@ -29,6 +31,10 @@ import { PaymentSuccessComponent } from './shared/pages/success/payment-success.
 import { BoletoComponent } from './modules/payments/pages/boleto/boleto.component';
 import { PixKeysComponent } from './modules/payments/pages/pix-keys/pix-keys.component';
 import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.component';
+// NOVOS COMPONENTES
+import { MyDataComponent } from './modules/profile/pages/my-data/my-data.component';
+import { SecurityComponent } from './modules/profile/pages/security/security.component';
+import { NotificationsComponent } from './modules/profile/pages/notifications/notifications.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -40,6 +46,11 @@ const routes: Routes = [
   { path: 'pix/keys', component: PixKeysComponent },
   { path: 'boleto', component: BoletoComponent },
   { path: 'profile', component: ProfilePageComponent },
+  // NOVAS ROTAS
+  { path: 'profile/data', component: MyDataComponent },
+  { path: 'profile/security', component: SecurityComponent },
+  { path: 'profile/notifications', component: NotificationsComponent },
+  
   { path: 'cards', component: CardsPageComponent },
   { path: 'receipt/:id', component: ReceiptComponent },
   { path: 'success', component: PaymentSuccessComponent }
@@ -59,7 +70,10 @@ const routes: Routes = [
     PaymentSuccessComponent,
     BoletoComponent,
     PixKeysComponent,
-    BottomNavComponent
+    BottomNavComponent,
+    MyDataComponent,
+    SecurityComponent,
+    NotificationsComponent
   ],
   imports: [
     BrowserModule,
@@ -75,9 +89,12 @@ const routes: Routes = [
     MatListModule,
     MatDividerModule,
     MatSnackBarModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatSlideToggleModule,
+    MatSliderModule
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
+

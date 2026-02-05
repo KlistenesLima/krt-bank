@@ -1,15 +1,12 @@
 ﻿import { Component, OnInit } from '@angular/core';
 import { AccountService } from '../../../core/services/account.service';
 import { Router } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-dashboard',
   template: `
     <div class="app-layout">
-      <div class="loading-shade" *ngIf="loading">
-         <mat-spinner diameter="40"></mat-spinner>
-      </div>
+      <div class="loading-shade" *ngIf="loading"><mat-spinner diameter="40"></mat-spinner></div>
 
       <div *ngIf="account && !loading">
           <header class="header-section">
@@ -29,17 +26,19 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
                 <mat-card-content>
                     <div class="balance-top">
                         <span class="label">Saldo disponível</span>
-                        <mat-icon>visibility</mat-icon>
+                        <button mat-icon-button (click)="toggleEye()">
+                            <mat-icon>{{ showBalance ? 'visibility' : 'visibility_off' }}</mat-icon>
+                        </button>
                     </div>
-                    <div class="balance-value">
-                        {{ balance | currency:'BRL' }}
+                    <div class="balance-value" [class.blur-text]="!showBalance">
+                        {{ showBalance ? (balance | currency:'BRL') : 'R$ ••••' }}
                     </div>
                 </mat-card-content>
             </mat-card>
 
             <div class="shortcuts-grid">
                 <button class="shortcut-btn" (click)="goToPix()">
-                    <div class="shortcut-icon"><mat-icon>pix</mat-icon></div>
+                    <div class="shortcut-icon"><mat-icon>account_balance</mat-icon></div>
                     <span class="shortcut-label">Área Pix</span>
                 </button>
                 <button class="shortcut-btn" (click)="goToBoleto()">
@@ -72,7 +71,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
                                 <mat-icon matListItemIcon class="tx-icon">payments</mat-icon>
                                 <div matListItemTitle class="tx-title">{{ item.type }}</div>
                                 <div matListItemLine class="tx-date">{{ item.createdAt | date:'dd/MM HH:mm' }}</div>
-                                <div class="tx-amount" [class.positive]="item.amount > 0">
+                                <div class="tx-amount" [class.positive]="item.amount > 0" [class.blur-text]="!showBalance">
                                     {{ item.amount | currency:'BRL' }}
                                 </div>
                             </mat-list-item>
@@ -82,7 +81,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
                 </mat-card>
             </div>
           </main>
-
           <app-bottom-nav></app-bottom-nav>
       </div>
     </div>
@@ -97,15 +95,18 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     .logout-btn { color: white; background: rgba(255,255,255,0.2); border-radius: 12px; }
     .main-content { margin-top: -60px; padding-bottom: 20px; }
     .balance-card { margin-bottom: 25px; padding: 10px; }
-    .balance-top { display: flex; justify-content: space-between; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.9rem; }
-    .balance-value { font-size: 2.2rem; font-weight: 700; color: var(--primary-dark); }
+    .balance-top { display: flex; justify-content: space-between; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.9rem; align-items: center; }
+    .balance-value { font-size: 2.2rem; font-weight: 700; color: var(--primary-dark); transition: filter 0.3s; }
+    
+    .blur-text { filter: blur(6px); opacity: 0.6; user-select: none; }
+
     .shortcuts-grid { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 30px; }
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .statement-list { padding: 0; overflow: hidden; }
     .empty-state { padding: 40px; text-align: center; color: #ccc; }
     .tx-icon { color: var(--primary); background: rgba(0,71,187,0.05); border-radius: 50%; padding: 8px; }
     .tx-title { font-weight: 600; }
-    .tx-amount { font-weight: 700; margin-left: auto; font-size: 1rem; }
+    .tx-amount { font-weight: 700; margin-left: auto; font-size: 1rem; transition: filter 0.3s; }
     .tx-amount.positive { color: var(--accent); }
     mat-list-item { cursor: pointer; }
     mat-list-item:hover { background-color: #f9f9f9; }
@@ -115,18 +116,19 @@ export class DashboardPageComponent implements OnInit {
   account: any;
   balance: number = 0;
   statement: any[] = [];
-  loading = true; // Inicia carregando
+  loading = true;
+  showBalance = true; // Estado da privacidade
   accountId = localStorage.getItem('krt_account_id');
 
   constructor(private accountService: AccountService, private router: Router) {}
 
   ngOnInit() {
     if(!this.accountId) { this.router.navigate(['/login']); return; }
+    // Recupera preferência do usuário
+    const savedState = localStorage.getItem('krt_show_balance');
+    if (savedState !== null) this.showBalance = savedState === 'true';
 
-    // Simula carregamento de rede para dar sensação de app real
-    setTimeout(() => {
-        this.loadData();
-    }, 800); 
+    setTimeout(() => { this.loadData(); }, 800); 
   }
 
   loadData() {
@@ -134,19 +136,19 @@ export class DashboardPageComponent implements OnInit {
         next: (res) => {
             if (typeof res === 'string') this.account = { customerName: 'Cliente KRT' };
             else this.account = res;
-            
-            // Busca o resto em paralelo
             this.accountService.getBalance(this.accountId!).subscribe((b: any) => this.balance = b.availableAmount || 0);
             this.accountService.getStatement(this.accountId!).subscribe((s: any) => {
                 this.statement = s || [];
-                this.loading = false; // Fim do loading
+                this.loading = false;
             });
         },
-        error: () => {
-            this.router.navigate(['/login']);
-            this.loading = false;
-        }
+        error: () => { this.router.navigate(['/login']); this.loading = false; }
     });
+  }
+  
+  toggleEye() {
+      this.showBalance = !this.showBalance;
+      localStorage.setItem('krt_show_balance', String(this.showBalance));
   }
 
   goToPix() { this.router.navigate(['/pix']); }
