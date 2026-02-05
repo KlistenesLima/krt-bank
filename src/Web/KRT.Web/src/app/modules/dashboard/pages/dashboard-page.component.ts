@@ -6,9 +6,22 @@ import { Router } from '@angular/router';
   selector: 'app-dashboard',
   template: `
     <div class="app-layout">
-      <div class="loading-shade" *ngIf="loading"><mat-spinner diameter="40"></mat-spinner></div>
+      <div *ngIf="loading" class="skeleton-layout">
+         <div class="header-section sk-header"></div>
+         <main class="container sk-main">
+            <div class="skeleton sk-card"></div>
+            <div class="sk-grid">
+               <div class="skeleton sk-circle"></div>
+               <div class="skeleton sk-circle"></div>
+               <div class="skeleton sk-circle"></div>
+               <div class="skeleton sk-circle"></div>
+            </div>
+            <div class="skeleton sk-text" style="width: 50%"></div>
+            <div class="skeleton sk-card" style="height: 200px"></div>
+         </main>
+      </div>
 
-      <div *ngIf="account && !loading">
+      <div *ngIf="account && !loading" class="fade-in">
           <header class="header-section">
             <div class="header-content container">
                 <div class="user-greeting" (click)="goToProfile()">
@@ -21,7 +34,7 @@ import { Router } from '@angular/router';
             </div>
           </header>
 
-          <main class="container main-content fade-in">
+          <main class="container main-content">
             <mat-card class="balance-card">
                 <mat-card-content>
                     <div class="balance-top">
@@ -39,19 +52,19 @@ import { Router } from '@angular/router';
             <div class="shortcuts-grid">
                 <button class="shortcut-btn" (click)="goToPix()">
                     <div class="shortcut-icon"><mat-icon>account_balance</mat-icon></div>
-                    <span class="shortcut-label">Área Pix</span>
+                    <span class="shortcut-label">Pix</span>
                 </button>
                 <button class="shortcut-btn" (click)="goToBoleto()">
                     <div class="shortcut-icon"><mat-icon>qr_code_scanner</mat-icon></div>
                     <span class="shortcut-label">Pagar</span>
                 </button>
-                <button class="shortcut-btn" (click)="goToCards()">
-                    <div class="shortcut-icon"><mat-icon>credit_card</mat-icon></div>
-                    <span class="shortcut-label">Cartões</span>
+                <button class="shortcut-btn" (click)="goToInvestments()">
+                    <div class="shortcut-icon"><mat-icon>savings</mat-icon></div>
+                    <span class="shortcut-label">Investir</span>
                 </button>
-                <button class="shortcut-btn" (click)="goToStatement()">
-                    <div class="shortcut-icon"><mat-icon>receipt_long</mat-icon></div>
-                    <span class="shortcut-label">Extrato</span>
+                <button class="shortcut-btn" (click)="goToRecharge()">
+                    <div class="shortcut-icon"><mat-icon>smartphone</mat-icon></div>
+                    <span class="shortcut-label">Recarga</span>
                 </button>
             </div>
 
@@ -81,8 +94,9 @@ import { Router } from '@angular/router';
                 </mat-card>
             </div>
           </main>
-          <app-bottom-nav></app-bottom-nav>
       </div>
+
+      <app-bottom-nav></app-bottom-nav>
     </div>
   `,
   styles: [`
@@ -97,9 +111,7 @@ import { Router } from '@angular/router';
     .balance-card { margin-bottom: 25px; padding: 10px; }
     .balance-top { display: flex; justify-content: space-between; color: var(--text-secondary); margin-bottom: 8px; font-size: 0.9rem; align-items: center; }
     .balance-value { font-size: 2.2rem; font-weight: 700; color: var(--primary-dark); transition: filter 0.3s; }
-    
     .blur-text { filter: blur(6px); opacity: 0.6; user-select: none; }
-
     .shortcuts-grid { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 30px; }
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .statement-list { padding: 0; overflow: hidden; }
@@ -110,6 +122,11 @@ import { Router } from '@angular/router';
     .tx-amount.positive { color: var(--accent); }
     mat-list-item { cursor: pointer; }
     mat-list-item:hover { background-color: #f9f9f9; }
+    
+    /* SKELETON STYLES */
+    .sk-header { height: 120px; background: #e0e0e0; border-radius: 0 0 24px 24px; }
+    .sk-main { margin-top: -60px; }
+    .sk-grid { display: flex; justify-content: space-between; margin-bottom: 30px; }
   `]
 })
 export class DashboardPageComponent implements OnInit {
@@ -117,18 +134,18 @@ export class DashboardPageComponent implements OnInit {
   balance: number = 0;
   statement: any[] = [];
   loading = true;
-  showBalance = true; // Estado da privacidade
+  showBalance = true;
   accountId = localStorage.getItem('krt_account_id');
 
   constructor(private accountService: AccountService, private router: Router) {}
 
   ngOnInit() {
     if(!this.accountId) { this.router.navigate(['/login']); return; }
-    // Recupera preferência do usuário
     const savedState = localStorage.getItem('krt_show_balance');
     if (savedState !== null) this.showBalance = savedState === 'true';
 
-    setTimeout(() => { this.loadData(); }, 800); 
+    // Tempo ajustado para ver o efeito sem piscar rápido demais
+    setTimeout(() => { this.loadData(); }, 1200); 
   }
 
   loadData() {
@@ -153,6 +170,8 @@ export class DashboardPageComponent implements OnInit {
 
   goToPix() { this.router.navigate(['/pix']); }
   goToBoleto() { this.router.navigate(['/boleto']); }
+  goToInvestments() { this.router.navigate(['/investments']); }
+  goToRecharge() { this.router.navigate(['/recharge']); }
   goToStatement() { this.router.navigate(['/extract']); }
   goToProfile() { this.router.navigate(['/profile']); }
   goToCards() { this.router.navigate(['/cards']); }

@@ -15,7 +15,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSliderModule } from '@angular/material/slider'; // NOVO
+import { MatSliderModule } from '@angular/material/slider';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 // Components Imports
 import { AppComponent } from './app.component';
@@ -31,10 +33,11 @@ import { PaymentSuccessComponent } from './shared/pages/success/payment-success.
 import { BoletoComponent } from './modules/payments/pages/boleto/boleto.component';
 import { PixKeysComponent } from './modules/payments/pages/pix-keys/pix-keys.component';
 import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.component';
-// NOVOS COMPONENTES
 import { MyDataComponent } from './modules/profile/pages/my-data/my-data.component';
 import { SecurityComponent } from './modules/profile/pages/security/security.component';
 import { NotificationsComponent } from './modules/profile/pages/notifications/notifications.component';
+import { InvestmentsPageComponent } from './modules/investments/pages/investments-page.component';
+import { RechargeComponent } from './modules/payments/pages/recharge/recharge.component'; // NOVO
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -45,14 +48,14 @@ const routes: Routes = [
   { path: 'pix', component: PixPageComponent },
   { path: 'pix/keys', component: PixKeysComponent },
   { path: 'boleto', component: BoletoComponent },
+  { path: 'recharge', component: RechargeComponent }, // ROTA NOVA
   { path: 'profile', component: ProfilePageComponent },
-  // NOVAS ROTAS
   { path: 'profile/data', component: MyDataComponent },
   { path: 'profile/security', component: SecurityComponent },
   { path: 'profile/notifications', component: NotificationsComponent },
-  
   { path: 'cards', component: CardsPageComponent },
   { path: 'receipt/:id', component: ReceiptComponent },
+  { path: 'investments', component: InvestmentsPageComponent },
   { path: 'success', component: PaymentSuccessComponent }
 ];
 
@@ -73,7 +76,9 @@ const routes: Routes = [
     BottomNavComponent,
     MyDataComponent,
     SecurityComponent,
-    NotificationsComponent
+    NotificationsComponent,
+    InvestmentsPageComponent,
+    RechargeComponent
   ],
   imports: [
     BrowserModule,
@@ -81,7 +86,6 @@ const routes: Routes = [
     HttpClientModule,
     BrowserAnimationsModule,
     RouterModule.forRoot(routes),
-    // Material Modules
     MatCardModule,
     MatInputModule,
     MatButtonModule,
@@ -91,10 +95,11 @@ const routes: Routes = [
     MatSnackBarModule,
     MatProgressSpinnerModule,
     MatSlideToggleModule,
-    MatSliderModule
+    MatSliderModule,
+    MatChipsModule,
+    MatProgressBarModule
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
-

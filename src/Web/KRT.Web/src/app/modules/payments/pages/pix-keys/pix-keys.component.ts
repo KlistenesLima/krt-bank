@@ -1,5 +1,6 @@
 ﻿import { Component } from '@angular/core';
 import { Location } from '@angular/common';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-pix-keys',
@@ -14,7 +15,7 @@ import { Location } from '@angular/common';
       <main class="container fade-in">
         <div class="info-box">
             <mat-icon>info</mat-icon>
-            <p>Gerencie suas chaves para receber Pix.</p>
+            <p>Toque no ícone para copiar sua chave Pix.</p>
         </div>
 
         <h3>Chaves cadastradas</h3>
@@ -23,32 +24,42 @@ import { Location } from '@angular/common';
                 <mat-list-item>
                     <mat-icon matListItemIcon>badge</mat-icon>
                     <div matListItemTitle>CPF</div>
-                    <div matListItemLine>***.111.***-**</div>
-                    <button mat-icon-button matListItemMeta><mat-icon>more_vert</mat-icon></button>
+                    <div matListItemLine>***.452.111-**</div>
+                    <button mat-icon-button matListItemMeta (click)="copy('12345678900')">
+                        <mat-icon color="primary">content_copy</mat-icon>
+                    </button>
                 </mat-list-item>
                 <mat-divider></mat-divider>
                 <mat-list-item>
                     <mat-icon matListItemIcon>shuffle</mat-icon>
-                    <div matListItemTitle>Aleatória</div>
-                    <div matListItemLine>7a8b-9c0d-e1f2-3456</div>
-                    <button mat-icon-button matListItemMeta><mat-icon>content_copy</mat-icon></button>
+                    <div matListItemTitle>Chave Aleatória</div>
+                    <div matListItemLine>a1b2-c3d4-e5f6-7890</div>
+                    <button mat-icon-button matListItemMeta (click)="copy('a1b2-c3d4-e5f6-7890')">
+                        <mat-icon color="primary">content_copy</mat-icon>
+                    </button>
                 </mat-list-item>
             </mat-list>
         </mat-card>
 
         <button mat-stroked-button color="primary" class="add-btn">
-            <mat-icon>add</mat-icon> NOVA CHAVE
+            <mat-icon>add</mat-icon> CADASTRAR NOVA CHAVE
         </button>
       </main>
     </div>
   `,
   styles: [`
-    .info-box { background: #e3f2fd; color: #0d47a1; padding: 15px; border-radius: 8px; display: flex; gap: 10px; margin-bottom: 20px; font-size: 0.9rem; }
+    .info-box { background: #e3f2fd; color: #0d47a1; padding: 15px; border-radius: 8px; display: flex; gap: 10px; font-size: 0.9rem; margin-bottom: 20px; }
     .keys-list { padding: 0; }
     .add-btn { width: 100%; margin-top: 20px; padding: 20px !important; }
   `]
 })
 export class PixKeysComponent {
-  constructor(private location: Location) {}
+  constructor(private location: Location, private notify: NotificationService) {}
+  
+  copy(val: string) {
+      navigator.clipboard.writeText(val);
+      this.notify.success('Chave copiada para a área de transferência!');
+  }
+  
   goBack() { this.location.back(); }
 }

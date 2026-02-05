@@ -100,3 +100,30 @@ body {
   background: rgba(255,255,255,0.8); z-index: 50;
   display: flex; align-items: center; justify-content: center;
 }
+
+/* Skeleton Loading */
+.skeleton {
+  background: #f6f7f8;
+  background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+  background-repeat: no-repeat;
+  background-size: 800px 104px; 
+  display: inline-block;
+  position: relative; 
+  animation-duration: 1s;
+  animation-fill-mode: forwards; 
+  animation-iteration-count: infinite;
+  animation-name: shimmer;
+  animation-timing-function: linear;
+  border-radius: 4px;
+  color: transparent !important;
+}
+.skeleton * { opacity: 0; }
+
+@keyframes shimmer {
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+
+.sk-text { height: 16px; width: 100%; margin-bottom: 8px; }
+.sk-circle { height: 40px; width: 40px; border-radius: 50%; }
+.sk-card { height: 120px; width: 100%; border-radius: 16px; margin-bottom: 20px; }
