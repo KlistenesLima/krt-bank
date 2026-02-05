@@ -14,6 +14,11 @@ import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatBadgeModule } from '@angular/material/badge';
 
 // Components Imports
 import { AppComponent } from './app.component';
@@ -29,20 +34,38 @@ import { PaymentSuccessComponent } from './shared/pages/success/payment-success.
 import { BoletoComponent } from './modules/payments/pages/boleto/boleto.component';
 import { PixKeysComponent } from './modules/payments/pages/pix-keys/pix-keys.component';
 import { BottomNavComponent } from './shared/components/bottom-nav/bottom-nav.component';
+import { MyDataComponent } from './modules/profile/pages/my-data/my-data.component';
+import { SecurityComponent } from './modules/profile/pages/security/security.component';
+import { NotificationsComponent } from './modules/profile/pages/notifications/notifications.component';
+import { InvestmentsPageComponent } from './modules/investments/pages/investments-page.component';
+import { RechargeComponent } from './modules/payments/pages/recharge/recharge.component';
+import { InboxPageComponent } from './modules/notifications/pages/inbox/inbox-page.component';
+import { ChatDialogComponent } from './shared/components/chat-dialog/chat-dialog.component';
+
+// GUARD IMPORT
+import { AuthGuard } from './core/guards/auth.guard';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: CreateAccountComponent },
-  { path: 'dashboard', component: DashboardPageComponent },
-  { path: 'extract', component: StatementPageComponent },
-  { path: 'pix', component: PixPageComponent },
-  { path: 'pix/keys', component: PixKeysComponent },
-  { path: 'boleto', component: BoletoComponent },
-  { path: 'profile', component: ProfilePageComponent },
-  { path: 'cards', component: CardsPageComponent },
-  { path: 'receipt/:id', component: ReceiptComponent },
-  { path: 'success', component: PaymentSuccessComponent }
+  
+  // ROTAS PROTEGIDAS
+  { path: 'dashboard', component: DashboardPageComponent, canActivate: [AuthGuard] },
+  { path: 'extract', component: StatementPageComponent, canActivate: [AuthGuard] },
+  { path: 'pix', component: PixPageComponent, canActivate: [AuthGuard] },
+  { path: 'pix/keys', component: PixKeysComponent, canActivate: [AuthGuard] },
+  { path: 'boleto', component: BoletoComponent, canActivate: [AuthGuard] },
+  { path: 'recharge', component: RechargeComponent, canActivate: [AuthGuard] },
+  { path: 'profile', component: ProfilePageComponent, canActivate: [AuthGuard] },
+  { path: 'profile/data', component: MyDataComponent, canActivate: [AuthGuard] },
+  { path: 'profile/security', component: SecurityComponent, canActivate: [AuthGuard] },
+  { path: 'profile/notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
+  { path: 'cards', component: CardsPageComponent, canActivate: [AuthGuard] },
+  { path: 'receipt/:id', component: ReceiptComponent, canActivate: [AuthGuard] },
+  { path: 'investments', component: InvestmentsPageComponent, canActivate: [AuthGuard] },
+  { path: 'inbox', component: InboxPageComponent, canActivate: [AuthGuard] },
+  { path: 'success', component: PaymentSuccessComponent, canActivate: [AuthGuard] }
 ];
 
 @NgModule({
@@ -59,7 +82,14 @@ const routes: Routes = [
     PaymentSuccessComponent,
     BoletoComponent,
     PixKeysComponent,
-    BottomNavComponent
+    BottomNavComponent,
+    MyDataComponent,
+    SecurityComponent,
+    NotificationsComponent,
+    InvestmentsPageComponent,
+    RechargeComponent,
+    InboxPageComponent,
+    ChatDialogComponent
   ],
   imports: [
     BrowserModule,
@@ -67,7 +97,6 @@ const routes: Routes = [
     HttpClientModule,
     BrowserAnimationsModule,
     RouterModule.forRoot(routes),
-    // Material Modules
     MatCardModule,
     MatInputModule,
     MatButtonModule,
@@ -75,7 +104,12 @@ const routes: Routes = [
     MatListModule,
     MatDividerModule,
     MatSnackBarModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatSlideToggleModule,
+    MatSliderModule,
+    MatChipsModule,
+    MatProgressBarModule,
+    MatBadgeModule
   ],
   providers: [],
   bootstrap: [AppComponent]
