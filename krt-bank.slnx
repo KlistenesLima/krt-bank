@@ -25,4 +25,8 @@
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.Data/KRT.Payments.Infra.Data.csproj" />
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.IoC/KRT.Payments.Infra.IoC.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KRT.IntegrationTests/KRT.IntegrationTests.csproj" />
+    <Project Path="tests/KRT.UnitTests/KRT.UnitTests.csproj" />
+  </Folder>
 </Solution>
