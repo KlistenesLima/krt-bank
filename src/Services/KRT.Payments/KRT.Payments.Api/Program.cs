@@ -2,8 +2,15 @@
 using KRT.Payments.Application.Services;
 using KRT.Payments.Api.Services;
 using KRT.BuildingBlocks.Infrastructure.Idempotency;
+using Serilog;
+using KRT.Payments.Infra.Data.Context;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// SERILOG CONFIG
+builder.Host.UseSerilog((context, config) => 
+    config.ReadFrom.Configuration(context.Configuration));
 
 // DI
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -29,15 +36,27 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure DB created
+// =========================================================
+// CORREÇÃO: GARANTIR QUE O BANCO E TABELAS EXISTAM
+// =========================================================
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider
-        .GetRequiredService<KRT.Payments.Infra.Data.Context.PaymentsDbContext>();
-    db.Database.EnsureCreated();
+    try 
+    {
+        var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
+        // Cria o banco e tabelas se nao existirem
+        db.Database.EnsureCreated();
+        Log.Information("Banco de dados Payments verificado/criado com sucesso.");
+    }
+    catch (Exception ex)
+    {
+        Log.Fatal(ex, "Falha crítica ao criar banco de dados Payments.");
+    }
 }
 
 // Pipeline
+app.UseSerilogRequestLogging(); 
+
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowAll");

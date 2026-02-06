@@ -1,8 +1,13 @@
 ﻿using KRT.Onboarding.Infra.IoC;
 using KRT.Onboarding.Application.Commands;
 using KRT.Onboarding.Api.Middlewares;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// SERILOG CONFIG
+builder.Host.UseSerilog((context, config) => 
+    config.ReadFrom.Configuration(context.Configuration));
 
 // Services
 builder.Services.AddControllers();
@@ -33,6 +38,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Pipeline
+app.UseSerilogRequestLogging(); // LOGGING DE REQUEST AUTOMATICO
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -40,7 +47,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
-app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<CorrelationIdMiddleware>(); // INJETAR LOGCONTEXT
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthorization();
 app.MapControllers();

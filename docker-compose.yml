@@ -28,6 +28,9 @@ services:
     container_name: krt-bank-zookeeper-1
     ports:
       - "32181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     networks:
       - bank-net
 
@@ -60,8 +63,21 @@ services:
     networks:
       - bank-net
 
+  seq:
+    image: datalust/seq:2024.2
+    container_name: krt-bank-seq-1
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:80"
+    volumes:
+      - seq_data:/data
+    networks:
+      - bank-net
+
 volumes:
   bank_pgdata:
+  seq_data:
 
 networks:
   bank-net:

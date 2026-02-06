@@ -1,7 +1,7 @@
 ﻿using KRT.BuildingBlocks.Domain;
 using KRT.BuildingBlocks.Domain.Exceptions;
 using KRT.Onboarding.Domain.Enums;
-using System.ComponentModel.DataAnnotations;
+using System.Text;
 
 namespace KRT.Onboarding.Domain.Entities;
 
@@ -14,8 +14,8 @@ public class Account : AggregateRoot
     public AccountStatus Status { get; private set; }
     public AccountType Type { get; private set; }
 
-    [Timestamp]
-    public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
+    // Concorrência Otimista gerenciada pela aplicação
+    public byte[] RowVersion { get; private set; }
 
     protected Account() { } // EF Core
 
@@ -28,13 +28,16 @@ public class Account : AggregateRoot
         Type = type;
         Status = AccountStatus.Active;
         Balance = 0;
+        
+        // Inicializa token
+        RefreshVersion();
     }
 
     public void Credit(decimal amount)
     {
         if (amount <= 0) throw new BusinessRuleException("Valor deve ser positivo");
         Balance += amount;
-        UpdatedAt = DateTime.UtcNow;
+        UpdateAudit();
     }
 
     public void Debit(decimal amount)
@@ -42,7 +45,7 @@ public class Account : AggregateRoot
         if (amount <= 0) throw new BusinessRuleException("Valor deve ser positivo");
         if (Balance < amount) throw new BusinessRuleException("Saldo insuficiente");
         Balance -= amount;
-        UpdatedAt = DateTime.UtcNow;
+        UpdateAudit();
     }
 
     public void Block(string reason)
@@ -50,7 +53,7 @@ public class Account : AggregateRoot
         if (Status != AccountStatus.Active)
             throw new BusinessRuleException("Apenas contas ativas podem ser bloqueadas");
         Status = AccountStatus.Blocked;
-        UpdatedAt = DateTime.UtcNow;
+        UpdateAudit();
     }
 
     public void Activate()
@@ -58,7 +61,7 @@ public class Account : AggregateRoot
         if (Status == AccountStatus.Closed)
             throw new BusinessRuleException("Contas encerradas não podem ser reativadas");
         Status = AccountStatus.Active;
-        UpdatedAt = DateTime.UtcNow;
+        UpdateAudit();
     }
 
     public void Close(string reason)
@@ -66,6 +69,18 @@ public class Account : AggregateRoot
         if (Balance != 0)
             throw new BusinessRuleException("Conta deve ter saldo zero para ser encerrada");
         Status = AccountStatus.Closed;
+        UpdateAudit();
+    }
+
+    private void UpdateAudit()
+    {
         UpdatedAt = DateTime.UtcNow;
+        RefreshVersion();
+    }
+
+    private void RefreshVersion()
+    {
+        // Gera um novo token simples baseado em Guid ou Random para garantir unicidade na mudança
+        RowVersion = Guid.NewGuid().ToByteArray();
     }
 }
