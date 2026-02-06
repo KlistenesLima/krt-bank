@@ -36,7 +36,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
         opt.Authority = authority;
-        opt.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
+        opt.Audience = builder.Configuration["Keycloak:Audience"] ?? "krt-bank-app";
         opt.RequireHttpsMetadata = false;
         opt.TokenValidationParameters = new TokenValidationParameters
         {
@@ -92,3 +92,4 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+

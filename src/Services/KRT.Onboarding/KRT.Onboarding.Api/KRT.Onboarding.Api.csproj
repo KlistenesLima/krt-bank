@@ -3,7 +3,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>KRT.Onboarding.Api</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
@@ -16,6 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\KRT.Onboarding.Infra.IoC\KRT.Onboarding.Infra.IoC.csproj" />
     <ProjectReference Include="..\KRT.Onboarding.Application\KRT.Onboarding.Application.csproj" />
+    <ProjectReference Include="..\KRT.Onboarding.Infra.MessageQueue\KRT.Onboarding.Infra.MessageQueue.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\KRT.BuildingBlocks.Infrastructure\KRT.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\KRT.BuildingBlocks.Domain\KRT.BuildingBlocks.Domain.csproj" />
   </ItemGroup>
 </Project>

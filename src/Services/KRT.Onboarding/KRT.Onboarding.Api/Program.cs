@@ -20,7 +20,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddOnboardingInfrastructure(builder.Configuration);
 
 builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(CreateAccountCommand).Assembly));
+    cfg.RegisterServicesFromAssemblies(typeof(CreateAccountCommand).Assembly, typeof(KRT.Onboarding.Infra.MessageQueue.Handlers.AccountDomainEventHandler).Assembly));
 builder.Services.AddValidatorsFromAssembly(typeof(CreateAccountCommand).Assembly);
 builder.Services.AddAutoMapper(typeof(CreateAccountCommand).Assembly);
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
@@ -30,7 +30,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
         opt.Authority = authority;
-        opt.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
+        opt.Audience = builder.Configuration["Keycloak:Audience"] ?? "krt-bank-app";
         opt.RequireHttpsMetadata = false;
         opt.TokenValidationParameters = new TokenValidationParameters
         {
@@ -81,3 +81,8 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+
+
+
+

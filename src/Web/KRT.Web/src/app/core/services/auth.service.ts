@@ -1,55 +1,98 @@
 ﻿import { Injectable } from '@angular/core';
+import { KeycloakService } from 'keycloak-angular';
+import { KeycloakProfile } from 'keycloak-js';
 import { Router } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
 
 export interface UserSession {
   accountId: string;
   customerName: string;
   document: string;
   email: string;
+  keycloakId?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly STORAGE_KEY = 'krt_session';
-  private sessionSubject = new BehaviorSubject<UserSession | null>(this.loadSession());
+  private profile: KeycloakProfile | null = null;
 
-  session$ = this.sessionSubject.asObservable();
+  constructor(
+    private keycloak: KeycloakService,
+    private router: Router
+  ) {}
 
-  constructor(private router: Router) {}
+  /** Verifica se está logado no Keycloak */
+  get isLoggedIn(): boolean {
+    try {
+      return this.keycloak.isLoggedIn();
+    } catch {
+      return !!this.currentSession;
+    }
+  }
 
+  /** Dados da sessão (armazenados após vincular conta) */
   get currentSession(): UserSession | null {
-    return this.sessionSubject.value;
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
   }
 
   get accountId(): string | null {
     return this.currentSession?.accountId ?? null;
   }
 
-  get isLoggedIn(): boolean {
-    return !!this.currentSession;
+  /** Pega o token JWT do Keycloak para API calls */
+  async getToken(): Promise<string> {
+    try {
+      return await this.keycloak.getToken();
+    } catch { return ''; }
   }
 
-  login(session: UserSession): void {
+  /** Pega o perfil do Keycloak */
+  async loadProfile(): Promise<KeycloakProfile | null> {
+    try {
+      if (!this.keycloak.isLoggedIn()) return null;
+      this.profile = await this.keycloak.loadUserProfile();
+      return this.profile;
+    } catch { return null; }
+  }
+
+  /** Redireciona para tela de login do Keycloak */
+  login(): void {
+    this.keycloak.login({
+      redirectUri: window.location.origin + '/dashboard'
+    });
+  }
+
+  /** Vincula conta bancária à sessão (após criar ou buscar conta) */
+  saveSession(session: UserSession): void {
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(session));
-    // Manter compatibilidade com código que usa krt_account_id
     localStorage.setItem('krt_account_id', session.accountId);
-    this.sessionSubject.next(session);
   }
 
+  /** Logout: limpa Keycloak + sessão local */
   logout(): void {
     localStorage.removeItem(this.STORAGE_KEY);
     localStorage.removeItem('krt_account_id');
-    this.sessionSubject.next(null);
-    this.router.navigate(['/login']);
+    try {
+      this.keycloak.logout(window.location.origin + '/login');
+    } catch {
+      this.router.navigate(['/login']);
+    }
   }
 
-  private loadSession(): UserSession | null {
+  /** Registrar novo usuário no Keycloak */
+  register(): void {
+    this.keycloak.register({
+      redirectUri: window.location.origin + '/register'
+    });
+  }
+
+  /** Roles do Keycloak */
+  hasRole(role: string): boolean {
     try {
-      const raw = localStorage.getItem(this.STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+      return this.keycloak.isUserInRole(role);
+    } catch { return false; }
   }
 }

@@ -1,9 +1,13 @@
-﻿import { NgModule } from '@angular/core';
+﻿import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule, Routes } from '@angular/router';
+
+// Keycloak
+import { KeycloakAngularModule, KeycloakService } from 'keycloak-angular';
+import { initializeKeycloak } from './core/auth/keycloak-init';
 
 // Angular Material
 import { MatCardModule } from '@angular/material/card';
@@ -51,7 +55,7 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: CreateAccountComponent },
   
-  // Rotas protegidas
+  // Rotas protegidas (Keycloak redireciona para login se não autenticado)
   { path: 'dashboard', component: DashboardPageComponent, canActivate: [AuthGuard] },
   { path: 'extract', component: StatementPageComponent, canActivate: [AuthGuard] },
   { path: 'pix', component: PixPageComponent, canActivate: [AuthGuard] },
@@ -67,8 +71,6 @@ const routes: Routes = [
   { path: 'investments', component: InvestmentsPageComponent, canActivate: [AuthGuard] },
   { path: 'inbox', component: InboxPageComponent, canActivate: [AuthGuard] },
   { path: 'success', component: PaymentSuccessComponent, canActivate: [AuthGuard] },
-
-  // Wildcard
   { path: '**', redirectTo: 'login' }
 ];
 
@@ -102,6 +104,7 @@ const routes: Routes = [
     HttpClientModule,
     BrowserAnimationsModule,
     RouterModule.forRoot(routes),
+    KeycloakAngularModule,
     MatCardModule,
     MatInputModule,
     MatButtonModule,
@@ -116,7 +119,14 @@ const routes: Routes = [
     MatProgressBarModule,
     MatBadgeModule
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeKeycloak,
+      multi: true,
+      deps: [KeycloakService]
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}
