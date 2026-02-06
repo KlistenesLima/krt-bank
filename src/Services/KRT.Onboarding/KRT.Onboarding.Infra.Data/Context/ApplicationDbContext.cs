@@ -3,7 +3,6 @@ using KRT.BuildingBlocks.Infrastructure.Outbox;
 using KRT.Onboarding.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 namespace KRT.Onboarding.Infra.Data.Context;
 
@@ -21,17 +20,26 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        // CORREÇÃO: Ignorar DomainEvent — ele NÃO é uma tabela
+        modelBuilder.Ignore<DomainEvent>();
+
+        // Configuração da entidade Account
+        modelBuilder.Entity<Account>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.CustomerName).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.Document).IsRequired().HasMaxLength(14);
+            entity.Property(a => a.Email).IsRequired().HasMaxLength(150);
+            entity.Property(a => a.Balance).HasPrecision(18, 2);
+            entity.Property(a => a.RowVersion).IsRowVersion();
+        });
+
         base.OnModelCreating(modelBuilder);
     }
 
-    // Implementação do IUnitOfWork
     public async Task<int> CommitAsync(CancellationToken ct = default)
     {
-        // 1. Dispatch Domain Events
         await DispatchDomainEventsAsync(ct);
-
-        // 2. Save Changes
         return await base.SaveChangesAsync(ct);
     }
 
