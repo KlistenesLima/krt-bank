@@ -1,6 +1,8 @@
 ﻿import { Component, OnInit } from '@angular/core';
-import { AccountService } from '../../../core/services/account.service';
 import { Router } from '@angular/router';
+import { AccountService } from '../../../core/services/account.service';
+import { PaymentService } from '../../../core/services/payment.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -60,12 +62,22 @@ import { Router } from '@angular/router';
                 <div class="section-header"><h3>Últimas transações</h3><button mat-button color="primary" (click)="goToStatement()">Ver tudo</button></div>
                 <mat-card class="statement-list">
                     <mat-list>
-                        <ng-container *ngFor="let item of statement.slice(0, 3)">
-                            <mat-list-item (click)="goToReceipt('123')">
-                                <mat-icon matListItemIcon class="tx-icon">payments</mat-icon>
-                                <div matListItemTitle class="tx-title">{{ item.type }}</div>
-                                <div matListItemLine class="tx-date">{{ item.createdAt | date:'dd/MM HH:mm' }}</div>
-                                <div class="tx-amount" [class.positive]="item.amount > 0" [class.blur-text]="!showBalance">{{ item.amount | currency:'BRL' }}</div>
+                        <ng-container *ngIf="transactions.length === 0">
+                            <div class="empty-tx">
+                                <mat-icon>receipt_long</mat-icon>
+                                <p>Nenhuma transação ainda.</p>
+                            </div>
+                        </ng-container>
+                        <ng-container *ngFor="let item of transactions.slice(0, 5)">
+                            <mat-list-item (click)="goToReceipt(item.id)">
+                                <mat-icon matListItemIcon class="tx-icon" [class.tx-out]="item.sourceAccountId === accountId">
+                                    {{ item.sourceAccountId === accountId ? 'arrow_upward' : 'arrow_downward' }}
+                                </mat-icon>
+                                <div matListItemTitle class="tx-title">Pix {{ item.sourceAccountId === accountId ? 'Enviado' : 'Recebido' }}</div>
+                                <div matListItemLine class="tx-date">{{ item.createdAt | date:'dd/MM HH:mm' }} · {{ item.status }}</div>
+                                <div class="tx-amount" [class.positive]="item.sourceAccountId !== accountId" [class.blur-text]="!showBalance">
+                                    {{ item.sourceAccountId === accountId ? '-' : '+' }}{{ item.amount | currency:'BRL' }}
+                                </div>
                             </mat-list-item>
                             <mat-divider></mat-divider>
                         </ng-container>
@@ -104,16 +116,16 @@ import { Router } from '@angular/router';
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .statement-list { padding: 0; overflow: hidden; }
     .tx-icon { color: var(--primary); background: rgba(0,71,187,0.05); border-radius: 50%; padding: 8px; }
+    .tx-icon.tx-out { color: #ff5252; background: rgba(255,82,82,0.05); }
     .tx-title { font-weight: 600; }
-    .tx-amount { font-weight: 700; margin-left: auto; font-size: 1rem; transition: filter 0.3s; }
+    .tx-amount { font-weight: 700; margin-left: auto; font-size: 1rem; }
     .tx-amount.positive { color: var(--accent); }
+    .empty-tx { text-align: center; padding: 30px; color: #999; }
+    .empty-tx mat-icon { font-size: 40px; width: 40px; height: 40px; opacity: 0.4; }
     mat-list-item { cursor: pointer; }
     mat-list-item:hover { background-color: #f9f9f9; }
-    
-    .fab-chat { position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 1000 !important; box-shadow: 0 6px 16px rgba(0,0,0,0.3) !important; }
-    .chat-overlay { position: fixed; bottom: 90px; right: 20px; z-index: 1001; animation: fadeInUp 0.3s ease-out; }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
+    .fab-chat { position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 1000 !important; }
+    .chat-overlay { position: fixed; bottom: 90px; right: 20px; z-index: 1001; }
     .sk-header { height: 120px; background: #e0e0e0; border-radius: 0 0 24px 24px; }
     .sk-main { margin-top: -60px; }
     .sk-grid { display: flex; justify-content: space-between; margin-bottom: 30px; }
@@ -121,50 +133,59 @@ import { Router } from '@angular/router';
 })
 export class DashboardPageComponent implements OnInit {
   account: any;
-  balance: number = 0;
-  statement: any[] = [];
+  balance = 0;
+  transactions: any[] = [];
   loading = true;
   showBalance = true;
   isChatOpen = false;
-  accountId = localStorage.getItem('krt_account_id');
+  accountId: string | null;
 
-  constructor(private accountService: AccountService, private router: Router) {}
+  constructor(
+    private accountService: AccountService,
+    private paymentService: PaymentService,
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.accountId = this.authService.accountId;
+  }
 
   ngOnInit() {
-    if(!this.accountId) { this.router.navigate(['/login']); return; }
-    const savedState = localStorage.getItem('krt_show_balance');
-    if (savedState !== null) this.showBalance = savedState === 'true';
-    setTimeout(() => { this.loadData(); }, 1200); 
+    if (!this.accountId) { this.router.navigate(['/login']); return; }
+    const saved = localStorage.getItem('krt_show_balance');
+    if (saved !== null) this.showBalance = saved === 'true';
+    this.loadData();
   }
 
   loadData() {
     this.accountService.getById(this.accountId!).subscribe({
-        next: (res) => {
-            if (typeof res === 'string') this.account = { customerName: 'Cliente KRT' };
-            else this.account = res;
-            this.accountService.getBalance(this.accountId!).subscribe((b: any) => this.balance = b.availableAmount || 0);
-            this.accountService.getStatement(this.accountId!).subscribe((s: any) => {
-                this.statement = s || [];
-                this.loading = false;
-            });
-        },
-        error: () => { this.router.navigate(['/login']); this.loading = false; }
+      next: (account) => {
+        this.account = account;
+        this.accountService.getBalance(this.accountId!).subscribe({
+          next: (b) => this.balance = b.availableAmount || 0,
+          error: () => this.balance = account.balance || 0
+        });
+        this.paymentService.getHistory(this.accountId!).subscribe({
+          next: (res: any) => {
+            // Backend retorna PagedResponse ou array direto
+            this.transactions = res?.data || res || [];
+            this.loading = false;
+          },
+          error: () => { this.transactions = []; this.loading = false; }
+        });
+      },
+      error: () => { this.authService.logout(); this.loading = false; }
     });
   }
   
   toggleEye() { this.showBalance = !this.showBalance; localStorage.setItem('krt_show_balance', String(this.showBalance)); }
-  
-  // AÇÃO DO BOTÃO: Alterna o booleano, não chama mais alert()
   toggleChat() { this.isChatOpen = !this.isChatOpen; }
-
   goToPix() { this.router.navigate(['/pix']); }
   goToBoleto() { this.router.navigate(['/boleto']); }
   goToInvestments() { this.router.navigate(['/investments']); }
   goToRecharge() { this.router.navigate(['/recharge']); }
   goToStatement() { this.router.navigate(['/extract']); }
   goToProfile() { this.router.navigate(['/profile']); }
-  goToCards() { this.router.navigate(['/cards']); }
   goToReceipt(id: string) { this.router.navigate(['/receipt', id]); }
   goToInbox() { this.router.navigate(['/inbox']); }
-  logout() { localStorage.removeItem('krt_account_id'); this.router.navigate(['/login']); }
+  logout() { this.authService.logout(); }
 }

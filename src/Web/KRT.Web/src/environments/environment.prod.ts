@@ -1,8 +1,8 @@
 ﻿export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:5000/api/v1',
+  production: true,
+  apiUrl: '/api/v1',
   keycloak: {
-    url: 'http://localhost:8080',
+    url: 'https://auth.krtbank.com',
     realm: 'krt-bank',
     clientId: 'krt-bank-app'
   }

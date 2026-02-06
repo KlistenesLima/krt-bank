@@ -1,15 +1,30 @@
 ﻿import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { PaymentResponse, PixRequest } from '../models/payment.model';
+import { environment } from '../../../environments/environment';
+import { PixTransferRequest, PixTransferResponse, TransactionHistory, TransactionDetail } from '../models/payment.model';
+import { ApiResponse } from '../models/account.model';
 
 @Injectable({ providedIn: 'root' })
 export class PaymentService {
-    private apiUrl = 'http://localhost:5001/api/v1/payments';
+  private baseUrl = `${environment.apiUrl}/pix`;
 
-    constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {}
 
-    sendPix(request: PixRequest): Observable<PaymentResponse> {
-        return this.http.post<PaymentResponse>(`${this.apiUrl}/pix`, request);
-    }
+  /** POST /api/v1/pix/transfer — Saga Orchestrator */
+  sendPix(request: PixTransferRequest): Observable<PixTransferResponse> {
+    return this.http.post<PixTransferResponse>(`${this.baseUrl}/transfer`, request);
+  }
+
+  /** GET /api/v1/pix/history/{accountId} — Histórico */
+  getHistory(accountId: string, page = 1, pageSize = 20): Observable<{ data: TransactionHistory[] }> {
+    return this.http.get<{ data: TransactionHistory[] }>(
+      `${this.baseUrl}/history/${accountId}?page=${page}&pageSize=${pageSize}`
+    );
+  }
+
+  /** GET /api/v1/pix/{id} — Detalhe de uma transação */
+  getById(id: string): Observable<ApiResponse<TransactionDetail>> {
+    return this.http.get<ApiResponse<TransactionDetail>>(`${this.baseUrl}/${id}`);
+  }
 }

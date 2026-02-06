@@ -1,23 +1,33 @@
-﻿export interface AccountResponse {
-    accountId: string;
-    customerName: string;
-    customerDocument: string;
-    balance: number;
-    accountNumber: string;
-    status: string;
+﻿// === API Envelope (padrão do backend) ===
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  errors: string[];
+  correlationId?: string;
 }
 
-export interface Transaction {
-    id: string;
-    amount: number;
-    type: 'DEBIT' | 'CREDIT';
-    description: string;
-    createdAt: Date;
+// === Account ===
+export interface AccountResponse {
+  id: string;
+  customerName: string;
+  document: string;
+  email: string;
+  balance: number;
+  status: string;
+  type: string;
+  currency: string;
+}
+
+export interface BalanceResponse {
+  accountId: string;
+  availableAmount: number;
+  currency: string;
+  updatedAt: string;
 }
 
 export interface CreateAccountRequest {
-    customerName: string;
-    customerDocument: string;
-    customerEmail: string;
-    branchCode: string; // <--- NOVO CAMPO OBRIGATÓRIO
+  customerName: string;
+  customerDocument: string;
+  customerEmail: string;
+  branchCode: string;
 }

@@ -1,12 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using KRT.Payments.Infra.Data.Context;
-using KRT.Payments.Infra.Data.Repositories;
 using KRT.Payments.Domain.Interfaces;
-using KRT.Payments.Application.Services;
+using KRT.Payments.Infra.Data.Repositories;
+using KRT.Payments.Infra.Data.Context;
 using KRT.Payments.Infra.Http;
+using KRT.Payments.Application.Interfaces;
 using KRT.BuildingBlocks.Domain;
+using KRT.BuildingBlocks.EventBus;
+using KRT.BuildingBlocks.EventBus.Kafka;
+using KRT.BuildingBlocks.Infrastructure.Outbox;
+using Microsoft.EntityFrameworkCore;
 
 namespace KRT.Payments.Infra.IoC;
 
@@ -14,19 +17,31 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPaymentsInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=localhost;Port=5433;Database=krt_payments;Username=postgres;Password=postgres";
+        // Database
+        services.AddDbContext<PaymentsDbContext>(options =>
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<PaymentsDbContext>());
 
-        services.AddDbContext<PaymentsDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<PaymentsDbContext>());
+        // Repositories
         services.AddScoped<IPixTransactionRepository, PixTransactionRepository>();
+        services.AddScoped<IOutboxWriter, OutboxWriter>();
 
-        services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>(client =>
-        {
-            var baseUrl = configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/";
-            client.BaseAddress = new Uri(baseUrl);
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        // HTTP Client (Payments -> Onboarding)
+        var onboardingUrl = configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/";
+        services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>()
+            .ConfigureHttpClient(client =>
+            {
+                client.BaseAddress = new Uri(onboardingUrl);
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
+
+        // Kafka EventBus
+        services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
+        services.AddSingleton<IEventBus, KafkaEventBus>();
+
+        // Outbox Processor
+        services.Configure<OutboxSettings>(configuration.GetSection("Outbox"));
+        services.AddHostedService<OutboxProcessor<PaymentsDbContext>>();
 
         return services;
     }

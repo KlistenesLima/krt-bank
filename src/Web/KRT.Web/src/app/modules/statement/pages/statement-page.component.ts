@@ -1,7 +1,8 @@
 ﻿import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
-import { AccountService } from '../../../core/services/account.service';
 import { Router } from '@angular/router';
+import { PaymentService } from '../../../core/services/payment.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-statement-page',
@@ -14,31 +15,30 @@ import { Router } from '@angular/router';
       </header>
 
       <div class="filters-container">
-        <mat-chip-listbox aria-label="Seleção de filtro">
+        <mat-chip-listbox aria-label="Filtro">
             <mat-chip-option selected (click)="filter('all')">Tudo</mat-chip-option>
-            <mat-chip-option (click)="filter('in')">Entradas</mat-chip-option>
-            <mat-chip-option (click)="filter('out')">Saídas</mat-chip-option>
-            <mat-chip-option (click)="filter('future')">Futuros</mat-chip-option>
+            <mat-chip-option (click)="filter('sent')">Enviados</mat-chip-option>
+            <mat-chip-option (click)="filter('received')">Recebidos</mat-chip-option>
         </mat-chip-listbox>
       </div>
 
       <main class="container fade-in">
-        <div *ngIf="filteredStatement.length === 0" class="empty-state">
+        <div *ngIf="filteredList.length === 0" class="empty-state">
             <mat-icon>search_off</mat-icon>
             <p>Nenhuma transação encontrada.</p>
         </div>
 
-        <mat-card class="statement-card">
+        <mat-card class="statement-card" *ngIf="filteredList.length > 0">
            <mat-list>
-              <ng-container *ngFor="let item of filteredStatement">
-                 <mat-list-item (click)="goToReceipt(item)">
-                    <mat-icon matListItemIcon [class.in]="item.amount > 0" [class.out]="item.amount < 0">
-                        {{ item.amount > 0 ? 'arrow_downward' : 'arrow_upward' }}
+              <ng-container *ngFor="let item of filteredList">
+                 <mat-list-item (click)="goToReceipt(item.id)">
+                    <mat-icon matListItemIcon [class.in]="item.sourceAccountId !== accountId" [class.out]="item.sourceAccountId === accountId">
+                        {{ item.sourceAccountId === accountId ? 'arrow_upward' : 'arrow_downward' }}
                     </mat-icon>
-                    <div matListItemTitle>{{ item.type }}</div>
-                    <div matListItemLine class="tx-meta">{{ item.createdAt | date:'dd/MM HH:mm' }}</div>
-                    <div class="tx-amount" [class.positive]="item.amount > 0">
-                       {{ item.amount | currency:'BRL' }}
+                    <div matListItemTitle>Pix {{ item.sourceAccountId === accountId ? 'Enviado' : 'Recebido' }}</div>
+                    <div matListItemLine class="tx-meta">{{ item.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ item.status }}</div>
+                    <div class="tx-amount" [class.positive]="item.sourceAccountId !== accountId">
+                       {{ item.sourceAccountId === accountId ? '-' : '+' }}{{ item.amount | currency:'BRL' }}
                     </div>
                  </mat-list-item>
                  <mat-divider></mat-divider>
@@ -49,7 +49,7 @@ import { Router } from '@angular/router';
     </div>
   `,
   styles: [`
-    .filters-container { padding: 10px 20px; background: white; overflow-x: auto; white-space: nowrap; }
+    .filters-container { padding: 10px 20px; background: white; overflow-x: auto; }
     .empty-state { text-align: center; padding: 40px; color: #999; }
     .empty-state mat-icon { font-size: 48px; height: 48px; width: 48px; margin-bottom: 10px; opacity: 0.5; }
     .statement-card { padding: 0; }
@@ -63,24 +63,36 @@ import { Router } from '@angular/router';
   `]
 })
 export class StatementPageComponent implements OnInit {
-  rawStatement: any[] = [];
-  filteredStatement: any[] = [];
-  constructor(private location: Location, private accService: AccountService, private router: Router) {}
+  allTransactions: any[] = [];
+  filteredList: any[] = [];
+  accountId: string | null;
+
+  constructor(
+    private location: Location,
+    private paymentService: PaymentService,
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.accountId = this.authService.accountId;
+  }
+
   ngOnInit() {
-    const id = localStorage.getItem('krt_account_id');
-    if(id) {
-        this.accService.getStatement(id).subscribe((res: any) => {
-            this.rawStatement = res || [];
-            this.filteredStatement = this.rawStatement;
-        });
-    }
+    if (!this.accountId) return;
+    this.paymentService.getHistory(this.accountId).subscribe({
+      next: (res: any) => {
+        this.allTransactions = res?.data || res || [];
+        this.filteredList = this.allTransactions;
+      },
+      error: () => { this.allTransactions = []; this.filteredList = []; }
+    });
   }
+
   filter(type: string) {
-      if (type === 'all') this.filteredStatement = this.rawStatement;
-      else if (type === 'in') this.filteredStatement = this.rawStatement.filter(x => x.amount > 0);
-      else if (type === 'out') this.filteredStatement = this.rawStatement.filter(x => x.amount < 0);
-      else this.filteredStatement = [];
+    if (type === 'all') this.filteredList = this.allTransactions;
+    else if (type === 'sent') this.filteredList = this.allTransactions.filter(x => x.sourceAccountId === this.accountId);
+    else if (type === 'received') this.filteredList = this.allTransactions.filter(x => x.sourceAccountId !== this.accountId);
   }
-  goToReceipt(item: any) { this.router.navigate(['/receipt', 'TX-' + Math.floor(Math.random() * 10000)]); }
+
+  goToReceipt(id: string) { this.router.navigate(['/receipt', id]); }
   goBack() { this.location.back(); }
 }

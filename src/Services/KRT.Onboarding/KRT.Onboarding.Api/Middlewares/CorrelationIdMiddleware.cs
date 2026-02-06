@@ -14,8 +14,12 @@ public class CorrelationIdMiddleware
 
     public async Task Invoke(HttpContext context)
     {
-        string correlationId = context.Request.Headers[CorrelationIdHeader].FirstOrDefault() ?? Guid.NewGuid().ToString();
-        
+        string correlationId = context.Request.Headers[CorrelationIdHeader].FirstOrDefault()
+                               ?? Guid.NewGuid().ToString();
+
+        // Armazena no HttpContext.Items para uso em handlers/services
+        context.Items["CorrelationId"] = correlationId;
+
         // Garante que o ID esteja no Header de resposta
         context.Response.OnStarting(() =>
         {

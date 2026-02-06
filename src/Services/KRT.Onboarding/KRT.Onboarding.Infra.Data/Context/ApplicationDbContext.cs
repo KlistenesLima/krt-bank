@@ -1,22 +1,16 @@
-﻿using KRT.BuildingBlocks.Domain;
+﻿using Microsoft.EntityFrameworkCore;
+using KRT.BuildingBlocks.Domain;
 using KRT.BuildingBlocks.Infrastructure.Outbox;
 using KRT.Onboarding.Domain.Entities;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace KRT.Onboarding.Infra.Data.Context;
 
 public class ApplicationDbContext : DbContext, IUnitOfWork
 {
-    private readonly IMediator _mediator;
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IMediator mediator)
-        : base(options)
-    {
-        _mediator = mediator;
-    }
-
-    public DbSet<Account> Accounts { get; set; }
+    public DbSet<Account> Accounts { get; set; } = null!;
+    public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,39 +18,27 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
 
         modelBuilder.Entity<Account>(entity =>
         {
-            entity.HasKey(a => a.Id);
-            entity.Property(a => a.CustomerName).IsRequired().HasMaxLength(100);
-            entity.Property(a => a.Document).IsRequired().HasMaxLength(14);
-            entity.Property(a => a.Email).IsRequired().HasMaxLength(150);
-            entity.Property(a => a.Balance).HasPrecision(18, 2);
-            
-            // CORREÇÃO: Token de concorrência genérico, não dependente de store generation
-            entity.Property(a => a.RowVersion).IsConcurrencyToken(); 
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CustomerName).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Document).HasMaxLength(14).IsRequired();
+            entity.Property(e => e.Email).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Balance).HasPrecision(18, 2);
+            entity.Property(e => e.Status).HasConversion<string>();
+            entity.Property(e => e.Type).HasConversion<string>();
+            entity.HasIndex(e => e.Document).IsUnique();
         });
 
-        base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<OutboxMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Type).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Content).IsRequired();
+            entity.HasIndex(e => new { e.ProcessedOn, e.RetryCount });
+        });
     }
 
-    public async Task<int> CommitAsync(CancellationToken ct = default)
+    public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
     {
-        await DispatchDomainEventsAsync(ct);
-        return await base.SaveChangesAsync(ct);
-    }
-
-    private async Task DispatchDomainEventsAsync(CancellationToken ct)
-    {
-        var domainEntities = ChangeTracker
-            .Entries<Entity>()
-            .Where(x => x.Entity.DomainEvents != null && x.Entity.DomainEvents.Any());
-
-        var domainEvents = domainEntities
-            .SelectMany(x => x.Entity.DomainEvents)
-            .ToList();
-
-        domainEntities.ToList()
-            .ForEach(entity => entity.Entity.ClearDomainEvents());
-
-        foreach (var domainEvent in domainEvents)
-            await _mediator.Publish(domainEvent, ct);
+        return await SaveChangesAsync(cancellationToken);
     }
 }
