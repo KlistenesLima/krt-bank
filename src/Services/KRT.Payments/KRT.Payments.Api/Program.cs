@@ -1,66 +1,73 @@
 ﻿using KRT.Payments.Infra.IoC;
-using KRT.Payments.Application.Services;
-using KRT.Payments.Api.Services;
-using KRT.BuildingBlocks.Infrastructure.Idempotency;
-using Serilog;
+using KRT.Payments.Application.Commands;
 using KRT.Payments.Infra.Data.Context;
-using Microsoft.EntityFrameworkCore;
+using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration));
+// 1. SERILOG
+builder.Host.UseSerilog((context, config) =>
+    config.ReadFrom.Configuration(context.Configuration));
 
-builder.Services.AddInfrastructure(builder.Configuration);
+// 2. API
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDistributedMemoryCache();
 
-builder.Services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("Services:OnboardingUrl") ?? "http://localhost:5001/");
-    client.Timeout = TimeSpan.FromSeconds(10);
-});
+// 3. INFRASTRUCTURE (DB + Repos + HttpClient para Saga)
+builder.Services.AddPaymentsInfrastructure(builder.Configuration);
 
-// SEGURANÇA (JWT)
+// 4. MEDIATR
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(ProcessPixCommand).Assembly));
+
+// 5. KEYCLOAK JWT
+var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Authority = keycloakAuthority;
+        options.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
         options.RequireHttpsMetadata = false;
-        options.Authority = builder.Configuration["Keycloak:Authority"];
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false,
             ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Keycloak:Authority"]
+            ValidIssuer = keycloakAuthority,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true
         };
     });
 
-builder.Services.AddCors(options => { options.AddPolicy("AllowAll", b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); });
+// 6. CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
 
 var app = builder.Build();
 
+// 7. AUTO-MIGRATION (DEV)
 using (var scope = app.Services.CreateScope())
 {
-    try 
-    {
-        var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
-        db.Database.EnsureCreated();
-        Log.Information("Banco de dados Payments verificado/criado com sucesso.");
-    }
-    catch (Exception ex) { Log.Fatal(ex, "Falha crítica ao criar banco de dados Payments."); }
+    var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
+    db.Database.EnsureCreated();
+}
+
+// 8. PIPELINE
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseSerilogRequestLogging();
-app.UseSwagger();
-app.UseSwaggerUI();
 app.UseCors("AllowAll");
-app.UseMiddleware<IdempotencyMiddleware>();
-
-app.UseAuthentication(); // <--- ATIVADO
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
+
 app.Run();

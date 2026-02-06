@@ -7,20 +7,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.OpenApi" Version="1.6.14" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\KRT.Payments.Application\KRT.Payments.Application.csproj" />
+    <ProjectReference Include="..\KRT.Payments.Domain\KRT.Payments.Domain.csproj" />
     <ProjectReference Include="..\KRT.Payments.Infra.IoC\KRT.Payments.Infra.IoC.csproj" />
+    <ProjectReference Include="..\KRT.Payments.Infra.Data\KRT.Payments.Infra.Data.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\KRT.BuildingBlocks.Infrastructure\KRT.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>
 

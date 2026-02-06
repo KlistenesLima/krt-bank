@@ -93,5 +93,6 @@ public class PixTransactionTests
     }
 
     private static PixTransaction MakeTx()
-        => new(Guid.NewGuid(), Guid.NewGuid(), "12345678901", 100m, "Teste", Guid.NewGuid());
+        => new(Guid.NewGuid(), Guid.NewGuid(), 100m, "12345678901", "Teste", Guid.NewGuid());
 }
+
