@@ -1,92 +1,93 @@
+
 # KRT Bank — Enterprise Distributed Banking Platform 🚀
 
-![.NET 8](https://img.shields.io/badge/.NET%208-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
-![Angular](https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white)
-![Kafka](https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+O **KRT Bank** é uma plataforma bancária digital distribuída, projetada como um **Architecture Showcase** para nível **Staff / Principal Engineer**.
 
-O **KRT Bank** é uma plataforma bancária digital distribuída, projetada como **Architecture Showcase** para nível **Staff / Principal Engineer**.  
-O foco é demonstrar **engenharia de sistemas financeiros reais**, com:
-- Alta disponibilidade
-- Consistência eventual
-- Escalabilidade horizontal
-- Observabilidade
-- Resiliência transacional
+O foco é demonstrar engenharia de sistemas financeiros reais, resolvendo problemas complexos como:
 
-Este projeto não é um CRUD. É um **core bancário modular**, orientado a eventos e preparado para produção.
+- Identidade Centralizada (OAuth2 / OpenID Connect)
+- Rastreabilidade Distribuída (Correlation IDs end-to-end)
+- Consistência Eventual (Outbox Pattern)
+- Alta Disponibilidade e Resiliência
+
+> Este projeto não é um CRUD. É um ecossistema bancário modular, seguro por design e observável por padrão.
 
 ---
 
 ## 🎯 Objetivos Estratégicos
 
-- Demonstrar **arquitetura enterprise realista**
-- Implementar **DDD + Clean Architecture + Event-Driven**
-- Simular desafios de bancos digitais modernos
-- Servir como **portfólio técnico de alto nível**
+- Demonstrar arquitetura enterprise realista (não apenas teórica)
+- Implementar **Identity-First Security** com Keycloak
+- Garantir **Observabilidade Total** com logs estruturados e tracing centralizado
+- Implementar padrões de Sistemas Distribuídos (Saga, CQRS, Event-Driven)
 
 ---
 
 ## 🏗️ Arquitetura (Visão Executiva)
 
+A arquitetura segue **Hexagonal / Clean Architecture**, isolando domínio de infraestrutura.
+
 ```text
-[ Angular Web ]
+[ Cliente / Web ] <---(JWT)---> [ Identity Provider (Keycloak) ]
        |
-[ API Gateway ]
+       v
+[ API Gateway / Ingress ]
        |
------------------------------
-|           |               |
-Onboarding  Payments     Notifications
-   |            |
- PostgreSQL   PostgreSQL
-   |            |
-   ---- Outbox Pattern ----
-               |
-             Kafka
-               |
-        Event Consumers
-               |
-        Redis / Projections
+       +-------------------------+
+       |                         |
+  [ Onboarding ]            [ Payments ] <---(Events)---> [ Kafka ]
+       |                         |
+  [ PostgreSQL ]            [ PostgreSQL ]
+       |                         |
+       +-----------+-------------+
+                   |
+           [ Observability (Seq) ]
+      (Logs centralizados + Correlation ID)
 ```
 
 ### Princípios Arquiteturais
 
-- **Clean Architecture**
-- **Domain-Driven Design (DDD)**
-- **CQRS**
-- **Event-Driven Architecture**
-- **Hexagonal Architecture**
-- **Transactional Outbox Pattern**
-- **Idempotência e Retentativas**
-- **Fail-Fast + Retry Policies**
-- **Observabilidade desde o primeiro commit**
+- **Security by Design** — Autenticação stateless via JWT (OIDC)
+- **Domain-Driven Design (DDD)** — Domínio rico e invariantes protegidas
+- **Event-Driven Architecture** — Desacoplamento via Kafka
+- **Transactional Outbox Pattern** — Entrega garantida (At-Least-Once)
+- **Distributed Tracing** — Correlação ponta a ponta via `X-Correlation-Id`
 
 ---
 
-## 🧩 Building Blocks (Shared Kernel)
+## 🔐 Segurança & Identidade (Keycloak)
 
-Camada reutilizável entre microsserviços.
+A segurança é centralizada em um Identity Provider corporativo.
 
-### `KRT.BuildingBlocks.Domain`
-- Aggregate Roots
-- Entidades base
-- Value Objects (CPF, Money, Email)
-- Domain Events
-- Guards de invariantes
+- **Identity Server:** Keycloak 24.0.1 (Docker)
+- **Protocolos:** OAuth2 + OpenID Connect (OIDC)
 
-### `KRT.BuildingBlocks.Infrastructure`
-- EF Core abstraído
-- UnitOfWork
-- Repositórios genéricos
-- Outbox Pattern
-- Retry Policies
-- Interceptadores de auditoria
+### Fluxo
 
-### `KRT.BuildingBlocks.EventBus`
-- Abstração de mensageria
-- Implementação Kafka
-- Serialização resiliente
-- Dead Letter Queue (DLQ)
+1. Usuário autentica no Keycloak → recebe JWT
+2. Requests para APIs exigem `Authorization: Bearer <token>`
+3. APIs validam assinatura (RS256), expiração e claims
+
+> Zero Trust: nenhuma API confia em nada sem validar token.
+
+---
+
+## 📈 Observabilidade (Seq)
+
+Observabilidade nativa por padrão.
+
+- **Correlation ID:** Gerado na entrada e propagado via HTTP + Kafka
+- **Centralização:** Todos os serviços enviam logs ao Seq (`http://localhost:5341`)
+
+### Benefício
+
+Permite rastrear uma transação completa:
+
+- Request HTTP
+- Commit no banco
+- Publicação Kafka
+- Consumo Kafka
+- Execução de regra de domínio
 
 ---
 
@@ -94,181 +95,125 @@ Camada reutilizável entre microsserviços.
 
 | Serviço | Responsabilidade | Stack |
 |--------|------------------|-------|
-| **KRT.Onboarding** | Criação de contas, autenticação, KYC, ciclo de vida do cliente | .NET 8, EF Core, Redis |
-| **KRT.Payments** | Pix, boletos, transferências internas, ledger | .NET 8, MediatR, PostgreSQL |
-| **KRT.Notifications** *(roadmap)* | Push, email, eventos outbound | Kafka Consumers |
-| **KRT.Fraud** *(roadmap)* | Análise antifraude e scoring | Kafka Streams / ML |
-
----
-
-## 🛠️ Stack Tecnológica
-
-### Backend
-- **.NET 8**
-- **EF Core + PostgreSQL**
-- **Redis**
-- **Apache Kafka**
-- **MediatR**
-- **FluentValidation**
-- **Serilog**
-- **OpenTelemetry**
-- **HealthChecks**
-
-### Frontend
-- **Angular 16+**
-- **Angular Material (Material 3)**
-- **JWT Interceptors**
-- **Guards**
-- **Lazy Loading**
-- **Skeleton Loading**
-- **PWA Ready**
-
-### Infraestrutura
-- **Docker / Docker Compose**
-- **Zookeeper + Kafka**
-- **PostgreSQL**
-- **Redis**
-- **Traefik / Nginx (roadmap)**
-
----
-
-## 🔄 Fluxos de Negócio
-
-### 🏦 Criação de Conta (Onboarding)
-
-1. Frontend envia `CreateAccountCommand`
-2. Handler valida invariantes de domínio
-3. Persistência transacional em PostgreSQL
-4. Evento `AccountCreatedEvent` gravado na Outbox
-5. Worker publica no Kafka
-6. Consumidores atualizam projeções e caches
-
-✔️ **Resultado:** consistência eventual sem perda de evento
-
----
-
-### 💸 Transferência Pix (Payments)
-
-1. Cliente inicia Pix
-2. Serviço valida saldo, chave e limites
-3. Ledger é atualizado atomicamente
-4. Evento `PaymentExecutedEvent` é publicado
-5. Serviços downstream reagem
-
-✔️ **Resultado:** sistema desacoplado, resiliente e auditável
-
----
-
-## 🔐 Segurança
-
-- JWT Authentication
-- Claims por domínio
-- Policy-based authorization
-- Criptografia de dados sensíveis
-- Secrets via variáveis de ambiente
-- Proteção contra replay attacks
-- Idempotência por request
-
----
-
-## 📈 Observabilidade
-
-- Structured Logging (Serilog)
-- CorrelationId em todas as requests
-- Tracing distribuído (OpenTelemetry)
-- HealthChecks por serviço
-- Métricas prontas para Prometheus
+| **KRT.Identity (Keycloak)** | Usuários, roles, tokens e SSO | Java/Quarkus |
+| **KRT.Onboarding** | Criação de contas, KYC, validação cadastral | .NET 8, EF Core, PostgreSQL |
+| **KRT.Payments** | Pix, transferências, ledger bancário | .NET 8, MediatR, PostgreSQL |
+| **KRT.Infra** | Mensageria e Observabilidade | Kafka, Zookeeper, Seq |
 
 ---
 
 ## 🚀 Como Rodar Localmente
 
+Ambiente 100% conteinerizado.
+
 ### Pré-requisitos
 
-- Docker
-- Docker Compose
+- Docker + Docker Compose
+- PowerShell
 - .NET 8 SDK
-- Node.js 18+
 
 ---
 
-### 1️⃣ Subir Infraestrutura
+### 1️⃣ Subir Infraestrutura Completa
 
-```bash
+```powershell
 docker-compose up -d
 ```
 
-Sobe automaticamente:
-- PostgreSQL
-- Redis
-- Kafka
-- Zookeeper
+Sobe: Postgres, Redis, Kafka, Zookeeper, Seq e Keycloak.
 
 ---
 
-### 2️⃣ Backend
+### 2️⃣ Configurar Identity Provider (Automático)
+
+```powershell
+./setup-keycloak.ps1
+```
+
+Resultado:
+
+- Realm: `krt-bank`
+- Client: `krt-api`
+- Usuário: `tester`
+
+---
+
+### 3️⃣ Executar Microsserviços
 
 ```bash
-# Onboarding
+# Terminal 1 - Onboarding
 cd src/Services/KRT.Onboarding/KRT.Onboarding.Api
 dotnet run
 
-# Payments
+# Terminal 2 - Payments
 cd src/Services/KRT.Payments/KRT.Payments.Api
 dotnet run
 ```
 
 ---
 
-### 3️⃣ Frontend
+### 4️⃣ Teste End-to-End (E2E)
 
-```bash
-cd src/Web/KRT.Web
-npm install
-npm start
+```powershell
+./test-e2e-flow.ps1
 ```
 
-Acesse: `http://localhost:4200`
+O script:
+
+1. Autentica no Keycloak
+2. Cria conta no Onboarding
+3. Executa Pix no Payments
+4. Exibe Correlation ID
+
+Visualize no Seq:
+👉 http://localhost:5341
 
 ---
 
-## 🧠 Destaques Técnicos Reais
+## 🛠️ Stack Tecnológica
 
-✔ Outbox Pattern com reprocessamento seguro  
-✔ Event-driven real, não fake  
-✔ CQRS segregado corretamente  
-✔ Value Objects ricos (CPF, Money, Email)  
-✔ Boundary clara entre domínio e infraestrutura  
-✔ Serviços prontos para escalar horizontalmente  
-✔ Código preparado para auditoria bancária  
-✔ Design para falhas, não para happy-path  
+### Backend & Infra
+
+- .NET 8 (C#)
+- Keycloak
+- Seq
+- Apache Kafka
+- PostgreSQL (Database per Service)
+- Redis
+- Docker Compose
+
+---
+
+## 🧩 Design Patterns
+
+- Clean Architecture
+- CQRS
+- Outbox Pattern
+- Notification Pattern (Validações)
+- Result Pattern (Tratamento de erros)
+
+---
+
+## 🧠 Destaques de Engenharia
+
+✔ **Identity Agnostic** — Serviços não conhecem usuários, apenas tokens válidos  
+✔ **Traceability First** — Logs estruturados e correlacionados  
+✔ **Infrastructure as Code** — Ambiente inteiro sobe com um comando  
+✔ **Fail-Fast Domain** — Validações antes de qualquer I/O
 
 ---
 
 ## 🛣️ Roadmap
 
-- [ ] API Gateway com rate-limit
-- [ ] Saga Orchestrator
-- [ ] Processamento assíncrono antifraude
-- [ ] Observabilidade com Grafana
-- [ ] Circuit Breaker distribuído
-- [ ] Feature flags
-- [ ] Canary deploy
+- [x] Arquitetura Base (DDD / Clean Architecture)
+- [x] Mensageria (Kafka + Outbox)
+- [x] Identity Server (Keycloak + OIDC)
+- [x] Observabilidade Centralizada (Seq)
+- [ ] Resiliência (Polly - Retry / Circuit Breaker)
+- [ ] API Gateway (YARP)
+- [ ] Frontend Angular Integrado
 
 ---
 
-## 👨‍💻 Autor
-
-Projeto desenvolvido como **laboratório de arquitetura bancária moderna**, com foco em:
-- Sistemas distribuídos críticos
-- Arquitetura corporativa
-- Engenharia de plataforma
-- Design resiliente
-
-LinkedIn: _(adicione aqui)_  
-GitHub: _(adicione aqui)_
-
----
-
-© 2026 — KRT Bank  
-**Engineered for scale. Designed for failure. Built for reality.**
+© 2026 — **KRT Bank**  
+Engineered for scale. Secured by design. Built for reality.

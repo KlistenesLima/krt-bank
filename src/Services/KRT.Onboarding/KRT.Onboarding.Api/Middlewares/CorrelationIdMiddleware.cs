@@ -4,38 +4,29 @@ namespace KRT.Onboarding.Api.Middlewares;
 
 public class CorrelationIdMiddleware
 {
-    private const string CorrelationIdHeader = "X-Correlation-ID";
     private readonly RequestDelegate _next;
+    private const string CorrelationIdHeader = "X-Correlation-Id";
 
     public CorrelationIdMiddleware(RequestDelegate next)
     {
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task Invoke(HttpContext context)
     {
-        var correlationId = GetOrCreateCorrelationId(context);
-
-        context.Items["CorrelationId"] = correlationId;
+        string correlationId = context.Request.Headers[CorrelationIdHeader].FirstOrDefault() ?? Guid.NewGuid().ToString();
         
-        if (!context.Response.Headers.ContainsKey(CorrelationIdHeader))
+        // Garante que o ID esteja no Header de resposta
+        context.Response.OnStarting(() =>
         {
-            context.Response.Headers.Add(CorrelationIdHeader, correlationId);
-        }
+            context.Response.Headers.TryAdd(CorrelationIdHeader, correlationId);
+            return Task.CompletedTask;
+        });
 
+        // Empurra para o Serilog LogContext
         using (LogContext.PushProperty("CorrelationId", correlationId))
         {
             await _next(context);
         }
-    }
-
-    private static string GetOrCreateCorrelationId(HttpContext context)
-    {
-        if (context.Request.Headers.TryGetValue(CorrelationIdHeader, out var correlationId))
-        {
-            return correlationId.ToString();
-        }
-
-        return Guid.NewGuid().ToString();
     }
 }

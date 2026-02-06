@@ -10,7 +10,7 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
 {
     private readonly IMediator _mediator;
 
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IMediator mediator) 
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IMediator mediator)
         : base(options)
     {
         _mediator = mediator;
@@ -20,10 +20,8 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // CORREÇÃO: Ignorar DomainEvent — ele NÃO é uma tabela
         modelBuilder.Ignore<DomainEvent>();
 
-        // Configuração da entidade Account
         modelBuilder.Entity<Account>(entity =>
         {
             entity.HasKey(a => a.Id);
@@ -31,7 +29,9 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
             entity.Property(a => a.Document).IsRequired().HasMaxLength(14);
             entity.Property(a => a.Email).IsRequired().HasMaxLength(150);
             entity.Property(a => a.Balance).HasPrecision(18, 2);
-            entity.Property(a => a.RowVersion).IsRowVersion();
+            
+            // CORREÇÃO: Token de concorrência genérico, não dependente de store generation
+            entity.Property(a => a.RowVersion).IsConcurrencyToken(); 
         });
 
         base.OnModelCreating(modelBuilder);

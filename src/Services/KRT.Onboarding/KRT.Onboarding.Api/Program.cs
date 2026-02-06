@@ -1,48 +1,59 @@
 ﻿using KRT.Onboarding.Infra.IoC;
 using KRT.Onboarding.Application.Commands;
 using KRT.Onboarding.Api.Middlewares;
+using Serilog;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Services
+builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration));
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Infrastructure (DB + Repos + UoW)
 builder.Services.AddOnboardingInfrastructure(builder.Configuration);
-
-// MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateAccountCommand).Assembly));
 
-// CORS
+// SEGURANÇA (JWT)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        // Em produção, usar HTTPS. Em dev local (Docker), desativamos para facilitar.
+        options.RequireHttpsMetadata = false;
+        options.Authority = builder.Configuration["Keycloak:Authority"];
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = false, // Simplificação para dev
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Keycloak:Authority"]
+        };
+    });
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("AllowAll", b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
 var app = builder.Build();
 
-// Ensure DB created
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider
-        .GetRequiredService<KRT.Onboarding.Infra.Data.Context.ApplicationDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<KRT.Onboarding.Infra.Data.Context.ApplicationDbContext>();
     db.Database.EnsureCreated();
 }
 
-// Pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSerilogRequestLogging();
+if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
 
 app.UseCors("AllowAll");
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseAuthorization();
-app.MapControllers();
 
+// ORDEM IMPORTA: AuthN antes de AuthZ
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 app.Run();

@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using KRT.Onboarding.Application.Commands;
-using KRT.Onboarding.Domain.Interfaces; // Para IAccountRepository
-using KRT.Onboarding.Application.Accounts.DTOs.Responses; // Se houver DTOs
+using KRT.Onboarding.Domain.Interfaces;
 using MediatR;
 
 namespace KRT.Onboarding.Api.Controllers;
@@ -24,27 +23,24 @@ public class AccountsController : ControllerBase
     {
         var result = await _mediator.Send(command);
         if (!result.IsValid) return BadRequest(new { errors = result.Errors });
-        
-        // Retorna 201 Created
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, new { id = result.Id });
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        // Query direta no Repositório (CQRS Simplificado para leitura)
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
-        
         if (account == null) return NotFound();
-        
-        return Ok(new 
-        { 
-            account.Id, 
-            account.CustomerName, 
-            account.Document, 
-            account.Email, 
-            account.Status,
-            AccountNumber = account.Id // Usando ID como número por enquanto
+
+        return Ok(new
+        {
+            account.Id,
+            account.CustomerName,
+            account.Document,
+            account.Email,
+            account.Balance,
+            Status = account.Status.ToString(),
+            Type = account.Type.ToString()
         });
     }
 
@@ -52,16 +48,63 @@ public class AccountsController : ControllerBase
     public async Task<IActionResult> GetBalance(Guid id)
     {
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
-        
         if (account == null) return NotFound();
-        
-        // Retorna apenas o saldo
         return Ok(new { AccountId = id, AvailableAmount = account.Balance });
     }
 
-    // NOTA ARQUITETURAL:
-    // "GetStatement" e "PerformPix" foram removidos.
-    // Essas funcionalidades devem ser chamadas na API de Payments:
-    // GET http://localhost:5002/api/v1/transactions/{accountId}
-    // POST http://localhost:5002/api/v1/transactions/pix
+    // === ENDPOINTS PARA A SAGA ===
+
+    public record DebitRequest(decimal Amount, string Reason);
+    public record CreditRequest(decimal Amount, string Reason);
+
+    /// <summary>
+    /// Debita valor da conta. Usado pela Saga do Pix.
+    /// </summary>
+    [HttpPost("{id}/debit")]
+    public async Task<IActionResult> Debit(Guid id, [FromBody] DebitRequest request)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null)
+            return NotFound(new { Success = false, Error = "Conta nao encontrada", NewBalance = 0m });
+
+        try
+        {
+            account.Debit(request.Amount);
+
+            // Commit via UnitOfWork (ApplicationDbContext)
+            var uow = _repository.UnitOfWork;
+            await uow.CommitAsync(CancellationToken.None);
+
+            return Ok(new { Success = true, Error = (string?)null, NewBalance = account.Balance });
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { Success = false, Error = ex.Message, NewBalance = account.Balance });
+        }
+    }
+
+    /// <summary>
+    /// Credita valor na conta. Usado pela Saga do Pix.
+    /// </summary>
+    [HttpPost("{id}/credit")]
+    public async Task<IActionResult> Credit(Guid id, [FromBody] CreditRequest request)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null)
+            return NotFound(new { Success = false, Error = "Conta nao encontrada", NewBalance = 0m });
+
+        try
+        {
+            account.Credit(request.Amount);
+
+            var uow = _repository.UnitOfWork;
+            await uow.CommitAsync(CancellationToken.None);
+
+            return Ok(new { Success = true, Error = (string?)null, NewBalance = account.Balance });
+        }
+        catch (Exception ex)
+        {
+            return UnprocessableEntity(new { Success = false, Error = ex.Message, NewBalance = account.Balance });
+        }
+    }
 }
