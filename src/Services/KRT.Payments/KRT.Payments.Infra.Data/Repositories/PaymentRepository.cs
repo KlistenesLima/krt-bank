@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using KRT.BuildingBlocks.Domain;
+﻿using KRT.BuildingBlocks.Domain;
 using KRT.Payments.Domain.Entities;
 using KRT.Payments.Domain.Interfaces;
 using KRT.Payments.Infra.Data.Context;
@@ -10,8 +9,7 @@ public class PaymentRepository : IPaymentRepository
 {
     private readonly PaymentsDbContext _context;
 
-    // Implementação explícita do UnitOfWork
-    public IUnitOfWork UnitOfWork => (IUnitOfWork)_context; // Cast seguro pois DbContext implementa IUnitOfWork? Não nativamente.
+    public IUnitOfWork UnitOfWork => _context;
 
     public PaymentRepository(PaymentsDbContext context)
     {
@@ -27,6 +25,4 @@ public class PaymentRepository : IPaymentRepository
     {
         return await _context.Payments.FindAsync(id);
     }
-    
-    public void Dispose() => _context.Dispose();
 }

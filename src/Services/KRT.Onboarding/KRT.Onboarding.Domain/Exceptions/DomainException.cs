@@ -1,6 +1,12 @@
+﻿using KRT.BuildingBlocks.Domain.Exceptions;
+
 namespace KRT.Onboarding.Domain.Exceptions;
 
-public class DomainException : Exception
+/// <summary>
+/// Exceção de domínio concreta para o contexto Onboarding.
+/// Herda de BuildingBlocks para ser capturada pelo ExceptionHandlingMiddleware.
+/// </summary>
+public class OnboardingDomainException : BusinessRuleException
 {
-    public DomainException(string message) : base(message) { }
+    public OnboardingDomainException(string message) : base(message, "OnboardingError") { }
 }

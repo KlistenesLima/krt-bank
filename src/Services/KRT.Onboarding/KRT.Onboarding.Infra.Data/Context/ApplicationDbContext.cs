@@ -1,27 +1,54 @@
-using KRT.BuildingBlocks.Domain;
+ï»¿using KRT.BuildingBlocks.Domain;
+using KRT.BuildingBlocks.Infrastructure.Outbox;
 using KRT.Onboarding.Domain.Entities;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 namespace KRT.Onboarding.Infra.Data.Context;
 
 public class ApplicationDbContext : DbContext, IUnitOfWork
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    private readonly IMediator _mediator;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IMediator mediator) 
+        : base(options)
+    {
+        _mediator = mediator;
+    }
 
     public DbSet<Account> Accounts { get; set; }
-    public DbSet<Transaction> Transactions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // CORREÇÃO CRÍTICA: Impede que o EF tente criar tabela para eventos de domínio
-        modelBuilder.Ignore<DomainEvent>();
-
-        modelBuilder.Entity<Account>().HasKey(a => a.Id);
-        modelBuilder.Entity<Transaction>().HasKey(t => t.Id);
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        base.OnModelCreating(modelBuilder);
     }
 
-    public async Task<int> CommitAsync(CancellationToken cancellationToken = default)
+    // ImplementaÃ§Ã£o do IUnitOfWork
+    public async Task<int> CommitAsync(CancellationToken ct = default)
     {
-        return await base.SaveChangesAsync(cancellationToken);
+        // 1. Dispatch Domain Events
+        await DispatchDomainEventsAsync(ct);
+
+        // 2. Save Changes
+        return await base.SaveChangesAsync(ct);
+    }
+
+    private async Task DispatchDomainEventsAsync(CancellationToken ct)
+    {
+        var domainEntities = ChangeTracker
+            .Entries<Entity>()
+            .Where(x => x.Entity.DomainEvents != null && x.Entity.DomainEvents.Any());
+
+        var domainEvents = domainEntities
+            .SelectMany(x => x.Entity.DomainEvents)
+            .ToList();
+
+        domainEntities.ToList()
+            .ForEach(entity => entity.Entity.ClearDomainEvents());
+
+        foreach (var domainEvent in domainEvents)
+            await _mediator.Publish(domainEvent, ct);
     }
 }
