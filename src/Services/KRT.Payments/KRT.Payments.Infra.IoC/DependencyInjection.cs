@@ -13,7 +13,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Database (Postgres)
+        // 1. Database
         services.AddDbContext<PaymentsDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("DefaultConnection"),
@@ -24,12 +24,13 @@ public static class DependencyInjection
 
         // 3. Repositories
         services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IPixTransactionRepository, PixTransactionRepository>();
 
         // 4. Use Cases
-        services.AddScoped<PixUseCase>();
+        services.AddScoped<PixTransferUseCase>();
 
-        // 5. MediatR (via tipo concreto — mais seguro que AppDomain.Load)
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PixUseCase>());
+        // 5. MediatR
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PixTransferUseCase>());
 
         return services;
     }
