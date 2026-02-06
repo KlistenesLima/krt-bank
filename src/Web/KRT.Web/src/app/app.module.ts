@@ -5,7 +5,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule, Routes } from '@angular/router';
 
-// Angular Material Imports
+// Angular Material
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,7 +20,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatBadgeModule } from '@angular/material/badge';
 
-// Components Imports
+// Components
 import { AppComponent } from './app.component';
 import { LoginComponent } from './modules/auth/pages/login/login.component';
 import { CreateAccountComponent } from './modules/onboarding/pages/create-account/create-account.component';
@@ -41,8 +41,9 @@ import { InvestmentsPageComponent } from './modules/investments/pages/investment
 import { RechargeComponent } from './modules/payments/pages/recharge/recharge.component';
 import { InboxPageComponent } from './modules/notifications/pages/inbox/inbox-page.component';
 import { ChatDialogComponent } from './shared/components/chat-dialog/chat-dialog.component';
+import { PixAreaComponent } from './modules/payments/components/pix-area.component';
 
-// GUARD IMPORT
+// Guard
 import { AuthGuard } from './core/guards/auth.guard';
 
 const routes: Routes = [
@@ -50,7 +51,7 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: CreateAccountComponent },
   
-  // ROTAS PROTEGIDAS
+  // Rotas protegidas
   { path: 'dashboard', component: DashboardPageComponent, canActivate: [AuthGuard] },
   { path: 'extract', component: StatementPageComponent, canActivate: [AuthGuard] },
   { path: 'pix', component: PixPageComponent, canActivate: [AuthGuard] },
@@ -65,7 +66,10 @@ const routes: Routes = [
   { path: 'receipt/:id', component: ReceiptComponent, canActivate: [AuthGuard] },
   { path: 'investments', component: InvestmentsPageComponent, canActivate: [AuthGuard] },
   { path: 'inbox', component: InboxPageComponent, canActivate: [AuthGuard] },
-  { path: 'success', component: PaymentSuccessComponent, canActivate: [AuthGuard] }
+  { path: 'success', component: PaymentSuccessComponent, canActivate: [AuthGuard] },
+
+  // Wildcard
+  { path: '**', redirectTo: 'login' }
 ];
 
 @NgModule({
@@ -89,7 +93,8 @@ const routes: Routes = [
     InvestmentsPageComponent,
     RechargeComponent,
     InboxPageComponent,
-    ChatDialogComponent
+    ChatDialogComponent,
+    PixAreaComponent
   ],
   imports: [
     BrowserModule,
@@ -114,4 +119,4 @@ const routes: Routes = [
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}
