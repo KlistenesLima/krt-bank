@@ -1,36 +1,33 @@
-﻿using KRT.BuildingBlocks.Domain;
-using KRT.Payments.Application.UseCases;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using KRT.Payments.Infra.Data.Context;
 using KRT.Payments.Infra.Data.Repositories;
 using KRT.Payments.Domain.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using KRT.Payments.Application.Services;
+using KRT.Payments.Infra.Http;
+using KRT.BuildingBlocks.Domain;
 
 namespace KRT.Payments.Infra.IoC;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddPaymentsInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Database
-        services.AddDbContext<PaymentsDbContext>(options =>
-            options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(PaymentsDbContext).Assembly.FullName)));
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? "Host=localhost;Port=5433;Database=krt_payments;Username=postgres;Password=postgres";
 
-        // 2. Unit of Work
-        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<PaymentsDbContext>());
-
-        // 3. Repositories
-        services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddDbContext<PaymentsDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<PaymentsDbContext>());
         services.AddScoped<IPixTransactionRepository, PixTransactionRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
 
-        // 4. Use Cases
-        services.AddScoped<PixTransferUseCase>();
-
-        // 5. MediatR
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<PixTransferUseCase>());
+        services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>(client =>
+        {
+            var baseUrl = configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         return services;
     }

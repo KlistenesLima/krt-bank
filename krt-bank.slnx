@@ -23,6 +23,7 @@
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Application/KRT.Payments.Application.csproj" />
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Domain/KRT.Payments.Domain.csproj" />
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.Data/KRT.Payments.Infra.Data.csproj" />
+    <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.Http/KRT.Payments.Infra.Http.csproj" />
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.IoC/KRT.Payments.Infra.IoC.csproj" />
   </Folder>
   <Folder Name="/tests/">

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using KRT.Payments.Application.UseCases;
-using KRT.Payments.Application.DTOs;
+using KRT.Payments.Application.Commands;
+using KRT.Payments.Domain.Interfaces;
+using MediatR;
 
 namespace KRT.Payments.Api.Controllers;
 
@@ -8,36 +9,87 @@ namespace KRT.Payments.Api.Controllers;
 [Route("api/v1/pix")]
 public class PixController : ControllerBase
 {
-    private readonly PixTransferUseCase _useCase;
+    private readonly IMediator _mediator;
+    private readonly IPixTransactionRepository _pixRepo;
 
-    public PixController(PixTransferUseCase useCase)
+    public PixController(IMediator mediator, IPixTransactionRepository pixRepo)
     {
-        _useCase = useCase;
+        _mediator = mediator;
+        _pixRepo = pixRepo;
     }
 
     /// <summary>
-    /// Executa uma transferencia Pix (Saga Orchestrator)
+    /// Executa transferência Pix via Saga Orchestrator.
+    /// POST /api/v1/pix/transfer
     /// </summary>
     [HttpPost("transfer")]
-    public async Task<IActionResult> Transfer([FromBody] PixTransferRequest request)
+    public async Task<IActionResult> Transfer([FromBody] ProcessPixCommand command)
     {
-        var result = await _useCase.ExecuteAsync(request);
+        var result = await _mediator.Send(command);
 
-        return result.Status switch
+        if (!result.IsValid)
         {
-            "Completed" => Ok(result),
-            "Failed" or "Compensated" => UnprocessableEntity(result),
-            _ => Accepted(result)
-        };
+            var statusCode = result.Errors.Any(e =>
+                e.Contains("insuficiente", StringComparison.OrdinalIgnoreCase) ||
+                e.Contains("Saldo", StringComparison.OrdinalIgnoreCase))
+                ? 422 : 400;
+
+            return StatusCode(statusCode, new { success = false, errors = result.Errors });
+        }
+
+        return Ok(new { success = true, transactionId = result.Id });
     }
 
     /// <summary>
-    /// Consulta historico de transacoes Pix de uma conta
+    /// Histórico de transações por conta.
+    /// GET /api/v1/pix/history/{accountId}
     /// </summary>
     [HttpGet("history/{accountId}")]
     public async Task<IActionResult> History(Guid accountId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var result = await _useCase.GetHistoryAsync(accountId, page, pageSize);
-        return Ok(result);
+        var transactions = await _pixRepo.GetByAccountIdAsync(accountId, page, pageSize);
+
+        var response = transactions.Select(t => new
+        {
+            t.Id,
+            t.SourceAccountId,
+            t.DestinationAccountId,
+            t.Amount,
+            t.PixKey,
+            Status = t.Status.ToString(),
+            t.Description,
+            t.CreatedAt,
+            t.CompletedAt
+        });
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Detalhe de uma transação.
+    /// GET /api/v1/pix/{id}
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var tx = await _pixRepo.GetByIdAsync(id);
+        if (tx == null) return NotFound();
+
+        return Ok(new
+        {
+            tx.Id,
+            tx.SourceAccountId,
+            tx.DestinationAccountId,
+            tx.Amount,
+            tx.Currency,
+            tx.PixKey,
+            Status = tx.Status.ToString(),
+            tx.Description,
+            tx.FailureReason,
+            tx.SourceDebited,
+            tx.DestinationCredited,
+            tx.CreatedAt,
+            tx.CompletedAt
+        });
     }
 }

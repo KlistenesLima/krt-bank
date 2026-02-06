@@ -1,11 +1,12 @@
 ﻿using KRT.BuildingBlocks.Domain;
 using KRT.Payments.Domain.Entities;
+using KRT.Payments.Domain.Models;
 
 namespace KRT.Payments.Domain.Interfaces;
 
-public interface IPaymentRepository : IRepository<Payment>
+public interface IPaymentRepository
 {
-    IUnitOfWork UnitOfWork { get; } // Adicionado contrato
-    Task AddAsync(Payment payment);
-    Task<Payment?> GetByIdAsync(Guid id);
+    IUnitOfWork UnitOfWork { get; }
+    Task<AccountView?> GetAccountViewAsync(Guid accountId);
+    Task AddTransactionAsync(PixTransaction transaction);
 }
