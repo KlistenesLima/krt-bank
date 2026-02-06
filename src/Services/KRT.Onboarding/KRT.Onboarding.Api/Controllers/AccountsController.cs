@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using KRT.BuildingBlocks.Domain.Responses;
 using KRT.Onboarding.Application.Commands;
 using KRT.Onboarding.Domain.Interfaces;
 using MediatR;
@@ -18,63 +20,142 @@ public class AccountsController : ControllerBase
         _repository = repository;
     }
 
+    // ============== ENDPOINTS PÚBLICOS (Cadastro) ==============
+
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreateAccountCommand command)
     {
         var result = await _mediator.Send(command);
-        if (!result.IsValid) return BadRequest(new { errors = result.Errors });
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, new { id = result.Id });
+        if (!result.IsValid) return BadRequest(ApiResponse.Fail(result.Errors));
+        return CreatedAtAction(nameof(GetById), new { id = result.Id },
+            ApiResponse<object>.Ok(new { id = result.Id }));
     }
 
+    // ============== ENDPOINTS AUTENTICADOS ==============
+
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
-        if (account == null) return NotFound();
+        if (account == null) return NotFound(ApiResponse.Fail("Conta não encontrada."));
 
-        return Ok(new
+        return Ok(ApiResponse<object>.Ok(new
         {
             account.Id,
             account.CustomerName,
-            account.Document,
+            Document = account.Document,
             account.Email,
             account.Balance,
             Status = account.Status.ToString(),
-            Type = account.Type.ToString()
-        });
+            Type = account.Type.ToString(),
+            Currency = "BRL"
+        }));
     }
 
     [HttpGet("{id}/balance")]
+    [Authorize]
     public async Task<IActionResult> GetBalance(Guid id)
     {
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
-        if (account == null) return NotFound();
-        return Ok(new { AccountId = id, AvailableAmount = account.Balance });
+        if (account == null) return NotFound(ApiResponse.Fail("Conta não encontrada."));
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            AccountId = id,
+            AvailableAmount = account.Balance,
+            Currency = "BRL",
+            UpdatedAt = account.UpdatedAt ?? account.CreatedAt
+        }));
     }
 
-    // === ENDPOINTS PARA A SAGA ===
+    [HttpGet("{id}/statement")]
+    [Authorize]
+    public async Task<IActionResult> GetStatement(Guid id)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null) return NotFound(ApiResponse.Fail("Conta não encontrada."));
+
+        // Statement vem do Payments service em produção.
+        // Retorna array vazio por enquanto — o frontend busca de /api/v1/pix/history/{id}
+        return Ok(ApiResponse<object>.Ok(Array.Empty<object>()));
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetAll()
+    {
+        var accounts = await _repository.GetAllAsync(CancellationToken.None);
+        return Ok(ApiResponse<object>.Ok(accounts.Select(a => new
+        {
+            a.Id, a.CustomerName, a.Document, a.Email,
+            a.Balance, Status = a.Status.ToString(), Type = a.Type.ToString()
+        }).ToList()));
+    }
+
+    [HttpPost("{id}/activate")]
+    [Authorize]
+    public async Task<IActionResult> Activate(Guid id)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null) return NotFound(ApiResponse.Fail("Conta não encontrada."));
+        try
+        {
+            account.Activate();
+            await _repository.UnitOfWork.CommitAsync(CancellationToken.None);
+            return Ok(ApiResponse.Ok());
+        }
+        catch (Exception ex) { return UnprocessableEntity(ApiResponse.Fail(ex.Message)); }
+    }
+
+    [HttpPost("{id}/block")]
+    [Authorize]
+    public async Task<IActionResult> Block(Guid id, [FromBody] BlockRequest request)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null) return NotFound(ApiResponse.Fail("Conta não encontrada."));
+        try
+        {
+            account.Block(request.Reason);
+            await _repository.UnitOfWork.CommitAsync(CancellationToken.None);
+            return Ok(ApiResponse.Ok());
+        }
+        catch (Exception ex) { return UnprocessableEntity(ApiResponse.Fail(ex.Message)); }
+    }
+
+    [HttpPost("{id}/close")]
+    [Authorize]
+    public async Task<IActionResult> Close(Guid id, [FromBody] CloseRequest request)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null) return NotFound(ApiResponse.Fail("Conta não encontrada."));
+        try
+        {
+            account.Close(request.Reason);
+            await _repository.UnitOfWork.CommitAsync(CancellationToken.None);
+            return Ok(ApiResponse.Ok());
+        }
+        catch (Exception ex) { return UnprocessableEntity(ApiResponse.Fail(ex.Message)); }
+    }
+
+    // ============== SAGA ENDPOINTS (Service-to-Service) ==============
 
     public record DebitRequest(decimal Amount, string Reason);
     public record CreditRequest(decimal Amount, string Reason);
+    public record BlockRequest(string Reason);
+    public record CloseRequest(string Reason);
 
-    /// <summary>
-    /// Debita valor da conta. Usado pela Saga do Pix.
-    /// </summary>
     [HttpPost("{id}/debit")]
+    [AllowAnonymous] // Service-to-service (proteger com API Key em prod)
     public async Task<IActionResult> Debit(Guid id, [FromBody] DebitRequest request)
     {
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
         if (account == null)
-            return NotFound(new { Success = false, Error = "Conta nao encontrada", NewBalance = 0m });
-
+            return NotFound(new { Success = false, Error = "Conta não encontrada", NewBalance = 0m });
         try
         {
             account.Debit(request.Amount);
-
-            // Commit via UnitOfWork (ApplicationDbContext)
-            var uow = _repository.UnitOfWork;
-            await uow.CommitAsync(CancellationToken.None);
-
+            await _repository.UnitOfWork.CommitAsync(CancellationToken.None);
             return Ok(new { Success = true, Error = (string?)null, NewBalance = account.Balance });
         }
         catch (Exception ex)
@@ -83,23 +164,17 @@ public class AccountsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Credita valor na conta. Usado pela Saga do Pix.
-    /// </summary>
     [HttpPost("{id}/credit")]
+    [AllowAnonymous]
     public async Task<IActionResult> Credit(Guid id, [FromBody] CreditRequest request)
     {
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
         if (account == null)
-            return NotFound(new { Success = false, Error = "Conta nao encontrada", NewBalance = 0m });
-
+            return NotFound(new { Success = false, Error = "Conta não encontrada", NewBalance = 0m });
         try
         {
             account.Credit(request.Amount);
-
-            var uow = _repository.UnitOfWork;
-            await uow.CommitAsync(CancellationToken.None);
-
+            await _repository.UnitOfWork.CommitAsync(CancellationToken.None);
             return Ok(new { Success = true, Error = (string?)null, NewBalance = account.Balance });
         }
         catch (Exception ex)

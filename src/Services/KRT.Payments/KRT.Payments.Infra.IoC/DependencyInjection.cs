@@ -20,7 +20,6 @@ public static class DependencyInjection
         services.AddDbContext<PaymentsDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<PaymentsDbContext>());
         services.AddScoped<IPixTransactionRepository, PixTransactionRepository>();
-        services.AddScoped<IPaymentRepository, PaymentRepository>();
 
         services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>(client =>
         {
