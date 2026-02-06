@@ -12,9 +12,12 @@ builder.Services.AddCors(options =>
          .AllowCredentials());
 });
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 app.UseCors("AllowAngular");
 app.MapReverseProxy();
+app.MapHealthChecks("/health");
 
 app.Run();

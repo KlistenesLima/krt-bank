@@ -1,73 +1,94 @@
 ﻿using KRT.Payments.Infra.IoC;
 using KRT.Payments.Application.Commands;
+using KRT.Payments.Application.Validators;
+using KRT.Payments.Api.Middlewares;
 using KRT.Payments.Infra.Data.Context;
+using KRT.BuildingBlocks.Infrastructure.Behaviors;
+using FluentValidation;
+using MediatR;
 using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. SERILOG
-builder.Host.UseSerilog((context, config) =>
-    config.ReadFrom.Configuration(context.Configuration));
+// === SERILOG ===
+builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration));
 
-// 2. API
+// === API ===
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 3. INFRASTRUCTURE (DB + Repos + HttpClient para Saga)
+// === INFRASTRUCTURE ===
 builder.Services.AddPaymentsInfrastructure(builder.Configuration);
 
-// 4. MEDIATR
+// === MEDIATR + VALIDATION PIPELINE ===
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(ProcessPixCommand).Assembly));
+builder.Services.AddValidatorsFromAssembly(typeof(ProcessPixCommandValidator).Assembly);
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
-// 5. KEYCLOAK JWT
-var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
+// === KEYCLOAK JWT ===
+var authority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddJwtBearer(opt =>
     {
-        options.Authority = keycloakAuthority;
-        options.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
-        options.RequireHttpsMetadata = false;
-        options.TokenValidationParameters = new TokenValidationParameters
+        opt.Authority = authority;
+        opt.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
+        opt.RequireHttpsMetadata = false;
+        opt.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidIssuer = keycloakAuthority,
-            ValidateAudience = true,
-            ValidateLifetime = true,
+            ValidateIssuer = true, ValidIssuer = authority,
+            ValidateAudience = true, ValidateLifetime = true,
             ValidateIssuerSigningKey = true
         };
     });
 
-// 6. CORS
-builder.Services.AddCors(options =>
+// === RATE LIMITING ===
+builder.Services.AddRateLimiter(options =>
 {
-    options.AddPolicy("AllowAll",
-        b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 10
+            }));
+    options.RejectionStatusCode = 429;
 });
+
+// === HEALTH CHECKS ===
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<PaymentsDbContext>("payments-db");
+
+// === CORS ===
+builder.Services.AddCors(o =>
+    o.AddPolicy("AllowAll", b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 var app = builder.Build();
 
-// 7. AUTO-MIGRATION (DEV)
+// === AUTO-MIGRATION (DEV) ===
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
     db.Database.EnsureCreated();
 }
 
-// 8. PIPELINE
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// === PIPELINE ===
+if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseCors("AllowAll");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
