@@ -17,22 +17,29 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPaymentsInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // Database
         services.AddDbContext<PaymentsDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<PaymentsDbContext>());
 
+        // Repositories
         services.AddScoped<IPixTransactionRepository, PixTransactionRepository>();
         services.AddScoped<IOutboxWriter, OutboxWriter>();
 
-        services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>(client =>
-        {
-            client.BaseAddress = new Uri(configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/");
-            client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        // HTTP Client (Payments -> Onboarding)
+        var onboardingUrl = configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/";
+        services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>()
+            .ConfigureHttpClient(client =>
+            {
+                client.BaseAddress = new Uri(onboardingUrl);
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
 
+        // Kafka EventBus
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
         services.AddSingleton<IEventBus, KafkaEventBus>();
 
+        // Outbox Processor
         services.Configure<OutboxSettings>(configuration.GetSection("Outbox"));
         services.AddHostedService<OutboxProcessor<PaymentsDbContext>>();
 
