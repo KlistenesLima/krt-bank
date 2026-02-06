@@ -1,14 +1,10 @@
 ﻿using System.Net.Http.Json;
-using System.Text.Json;
 using KRT.Payments.Application.DTOs;
 using KRT.Payments.Application.Services;
+using Microsoft.Extensions.Logging;
 
-namespace KRT.Payments.Api.Services;
+namespace KRT.Payments.Infra.Http;
 
-/// <summary>
-/// Client HTTP para o servico Onboarding.
-/// Implementa chamadas de debito/credito para a Saga.
-/// </summary>
 public class OnboardingServiceClient : IOnboardingServiceClient
 {
     private readonly HttpClient _httpClient;
@@ -24,9 +20,8 @@ public class OnboardingServiceClient : IOnboardingServiceClient
     {
         try
         {
-            var payload = new { Amount = amount, Reason = reason };
             var response = await _httpClient.PostAsJsonAsync(
-                string.Format("api/v1/accounts/{0}/debit", accountId), payload);
+                $"api/v1/accounts/{accountId}/debit", new { Amount = amount, Reason = reason });
 
             if (response.IsSuccessStatusCode)
             {
@@ -35,12 +30,12 @@ public class OnboardingServiceClient : IOnboardingServiceClient
             }
 
             var error = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Debito falhou para conta {AccountId}: {Error}", accountId, error);
+            _logger.LogWarning("Débito falhou {AccountId}: {StatusCode}", accountId, response.StatusCode);
             return new AccountOperationResponse(false, error, 0);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao debitar conta {AccountId}", accountId);
+            _logger.LogError(ex, "Erro HTTP ao debitar {AccountId}", accountId);
             return new AccountOperationResponse(false, ex.Message, 0);
         }
     }
@@ -49,9 +44,8 @@ public class OnboardingServiceClient : IOnboardingServiceClient
     {
         try
         {
-            var payload = new { Amount = amount, Reason = reason };
             var response = await _httpClient.PostAsJsonAsync(
-                string.Format("api/v1/accounts/{0}/credit", accountId), payload);
+                $"api/v1/accounts/{accountId}/credit", new { Amount = amount, Reason = reason });
 
             if (response.IsSuccessStatusCode)
             {
@@ -60,12 +54,12 @@ public class OnboardingServiceClient : IOnboardingServiceClient
             }
 
             var error = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Credito falhou para conta {AccountId}: {Error}", accountId, error);
+            _logger.LogWarning("Crédito falhou {AccountId}: {StatusCode}", accountId, response.StatusCode);
             return new AccountOperationResponse(false, error, 0);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao creditar conta {AccountId}", accountId);
+            _logger.LogError(ex, "Erro HTTP ao creditar {AccountId}", accountId);
             return new AccountOperationResponse(false, ex.Message, 0);
         }
     }

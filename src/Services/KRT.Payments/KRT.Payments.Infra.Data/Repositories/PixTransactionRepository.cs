@@ -12,39 +12,25 @@ public class PixTransactionRepository : IPixTransactionRepository
 
     public IUnitOfWork UnitOfWork => _context;
 
-    public PixTransactionRepository(PaymentsDbContext context)
-    {
-        _context = context;
-    }
+    public PixTransactionRepository(PaymentsDbContext context) => _context = context;
 
     public async Task AddAsync(PixTransaction transaction)
-    {
-        await _context.PixTransactions.AddAsync(transaction);
-    }
+        => await _context.PixTransactions.AddAsync(transaction);
 
     public async Task<PixTransaction?> GetByIdAsync(Guid id)
-    {
-        return await _context.PixTransactions.FindAsync(id);
-    }
+        => await _context.PixTransactions.FindAsync(id);
 
     public async Task<PixTransaction?> GetByIdempotencyKeyAsync(Guid idempotencyKey)
-    {
-        return await _context.PixTransactions
-            .FirstOrDefaultAsync(t => t.IdempotencyKey == idempotencyKey);
-    }
+        => await _context.PixTransactions.FirstOrDefaultAsync(t => t.IdempotencyKey == idempotencyKey);
 
     public async Task<List<PixTransaction>> GetByAccountIdAsync(Guid accountId, int page = 1, int pageSize = 20)
-    {
-        return await _context.PixTransactions
+        => await _context.PixTransactions
             .Where(t => t.SourceAccountId == accountId || t.DestinationAccountId == accountId)
             .OrderByDescending(t => t.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
-    }
 
     public void Update(PixTransaction transaction)
-    {
-        _context.PixTransactions.Update(transaction);
-    }
+        => _context.PixTransactions.Update(transaction);
 }

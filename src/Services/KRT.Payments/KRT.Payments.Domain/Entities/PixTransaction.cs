@@ -4,22 +4,22 @@ using KRT.Payments.Domain.Enums;
 namespace KRT.Payments.Domain.Entities;
 
 /// <summary>
-/// Aggregate Root representando uma transacao Pix completa.
-/// Implementa State Machine para controle da Saga.
+/// Aggregate Root para transação Pix com State Machine da Saga.
+/// Estados: Pending → SourceDebited → Completed | Failed | Compensated
 /// </summary>
-public class PixTransaction : Entity, IAggregateRoot
+public class PixTransaction : AggregateRoot
 {
     public Guid SourceAccountId { get; private set; }
     public Guid DestinationAccountId { get; private set; }
-    public string PixKey { get; private set; } = null!;
+    public string PixKey { get; private set; } = string.Empty;
     public decimal Amount { get; private set; }
     public string Currency { get; private set; } = "BRL";
-    public PixTransactionStatus Status { get; private set; }
     public string? Description { get; private set; }
+    public PixTransactionStatus Status { get; private set; }
     public string? FailureReason { get; private set; }
     public Guid IdempotencyKey { get; private set; }
 
-    // Saga tracking
+    // Saga Flags
     public bool SourceDebited { get; private set; }
     public bool DestinationCredited { get; private set; }
     public DateTime? CompletedAt { get; private set; }
@@ -29,21 +29,22 @@ public class PixTransaction : Entity, IAggregateRoot
     public PixTransaction(
         Guid sourceAccountId,
         Guid destinationAccountId,
-        string pixKey,
         decimal amount,
-        string? description,
-        Guid idempotencyKey)
+        string pixKey,
+        string? description = null,
+        Guid? idempotencyKey = null)
     {
         Id = Guid.NewGuid();
         SourceAccountId = sourceAccountId;
         DestinationAccountId = destinationAccountId;
-        PixKey = pixKey;
         Amount = amount;
-        Description = description;
-        IdempotencyKey = idempotencyKey;
+        PixKey = pixKey;
+        Description = description ?? string.Empty;
         Status = PixTransactionStatus.Pending;
+        IdempotencyKey = idempotencyKey ?? Guid.NewGuid();
         SourceDebited = false;
         DestinationCredited = false;
+        CreatedAt = DateTime.UtcNow;
     }
 
     // === STATE MACHINE ===
@@ -51,33 +52,29 @@ public class PixTransaction : Entity, IAggregateRoot
     public void MarkSourceDebited()
     {
         if (Status != PixTransactionStatus.Pending)
-            throw new InvalidOperationException("Apenas transacoes Pending podem ser debitadas");
-        SourceDebited = true;
+            throw new InvalidOperationException($"Cannot debit source from status {Status}");
         Status = PixTransactionStatus.SourceDebited;
-        UpdatedAt = DateTime.UtcNow;
+        SourceDebited = true;
     }
 
     public void MarkDestinationCredited()
     {
         if (Status != PixTransactionStatus.SourceDebited)
-            throw new InvalidOperationException("Source deve ser debitado antes do credito");
-        DestinationCredited = true;
+            throw new InvalidOperationException($"Cannot credit destination from status {Status}");
         Status = PixTransactionStatus.Completed;
+        DestinationCredited = true;
         CompletedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void MarkFailed(string reason)
     {
-        FailureReason = reason;
         Status = PixTransactionStatus.Failed;
-        UpdatedAt = DateTime.UtcNow;
+        FailureReason = reason;
     }
 
     public void MarkCompensated()
     {
         Status = PixTransactionStatus.Compensated;
         SourceDebited = false;
-        UpdatedAt = DateTime.UtcNow;
     }
 }
