@@ -1,17 +1,34 @@
 ﻿import { Injectable } from '@angular/core';
-import { CanActivate, Router, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { KeycloakAuthGuard, KeycloakService } from 'keycloak-angular';
 
 @Injectable({ providedIn: 'root' })
-export class AuthGuard implements CanActivate {
-  constructor(private router: Router) {}
+export class AuthGuard extends KeycloakAuthGuard {
+  constructor(
+    protected override readonly router: Router,
+    protected readonly keycloak: KeycloakService
+  ) {
+    super(router, keycloak);
+  }
 
-  canActivate(): boolean | UrlTree {
-    const token = localStorage.getItem('krt_account_id');
-    if (token) {
+  async isAccessAllowed(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Promise<boolean | UrlTree> {
+    if (!this.authenticated) {
+      // Redireciona para o Keycloak login
+      await this.keycloak.login({
+        redirectUri: window.location.origin + state.url
+      });
+      return false;
+    }
+
+    // Verificar roles se a rota exigir
+    const requiredRoles = route.data['roles'];
+    if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
-    // Se não tiver login, manda pro login
-    return this.router.createUrlTree(['/login']);
+
+    return requiredRoles.every((role: string) => this.roles.includes(role));
   }
 }

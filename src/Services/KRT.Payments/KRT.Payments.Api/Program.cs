@@ -1,94 +1,106 @@
 ﻿using KRT.Payments.Infra.IoC;
 using KRT.Payments.Application.Commands;
-using KRT.Payments.Application.Validators;
 using KRT.Payments.Api.Middlewares;
-using KRT.Payments.Infra.Data.Context;
-using KRT.BuildingBlocks.Infrastructure.Behaviors;
-using FluentValidation;
-using MediatR;
 using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// === SERILOG ===
-builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration));
+// 1. SERILOG (Lê do appsettings.json — inclui Seq sink)
+builder.Host.UseSerilog((context, config) =>
+    config.ReadFrom.Configuration(context.Configuration));
 
-// === API ===
+// 2. API & SWAGGER
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// === INFRASTRUCTURE ===
+// 3. HTTP CONTEXT ACCESSOR (necessário para CorrelationId propagation)
+builder.Services.AddHttpContextAccessor();
+
+// 4. INFRASTRUCTURE (DB, Repos, UoW, Kafka, Outbox, HttpClient)
 builder.Services.AddPaymentsInfrastructure(builder.Configuration);
 
-// === MEDIATR + VALIDATION PIPELINE ===
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(ProcessPixCommand).Assembly));
-builder.Services.AddValidatorsFromAssembly(typeof(ProcessPixCommandValidator).Assembly);
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+// 4.1 CorrelationId propagation em TODAS as chamadas HttpClient (service-to-service)
+builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
+builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
+    httpClientBuilder.AddHttpMessageHandler<CorrelationIdDelegatingHandler>());
 
-// === KEYCLOAK JWT ===
-var authority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
+// 5. MEDIATR
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssemblies(typeof(ProcessPixCommand).Assembly));
+
+// 6. SECURITY (JWT / KEYCLOAK)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(opt =>
+    .AddJwtBearer(options =>
     {
-        opt.Authority = authority;
-        opt.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
-        opt.RequireHttpsMetadata = false;
-        opt.TokenValidationParameters = new TokenValidationParameters
+        options.Authority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
+        options.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
+        options.RequireHttpsMetadata = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true, ValidIssuer = authority,
-            ValidateAudience = true, ValidateLifetime = true,
+            ValidateIssuer = true,
+            ValidIssuer = "http://localhost:8080/realms/krt-bank",
+            ValidateAudience = true,
+            ValidateLifetime = true,
             ValidateIssuerSigningKey = true
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Log.Error("Payments Auth Failed: {Message}", context.Exception.Message);
+                return Task.CompletedTask;
+            }
         };
     });
 
-// === RATE LIMITING ===
-builder.Services.AddRateLimiter(options =>
+// 7. CORS
+builder.Services.AddCors(options =>
 {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 100,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 10
-            }));
-    options.RejectionStatusCode = 429;
+    options.AddPolicy("AllowAll",
+        b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
-
-// === HEALTH CHECKS ===
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<PaymentsDbContext>("payments-db");
-
-// === CORS ===
-builder.Services.AddCors(o =>
-    o.AddPolicy("AllowAll", b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 var app = builder.Build();
 
-// === AUTO-MIGRATION (DEV) ===
+// 8. AUTO-MIGRATION (Apenas DEV)
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<KRT.Payments.Infra.Data.Context.PaymentsDbContext>();
     db.Database.EnsureCreated();
 }
 
-// === PIPELINE ===
-if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
+// 9. PIPELINE (A ORDEM IMPORTA)
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseSerilogRequestLogging();
+app.UseMiddleware<ExceptionHandlingMiddleware>(); // 1º: Captura erros globais
+app.UseMiddleware<CorrelationIdMiddleware>();     // 2º: Injeta CorrelationId no LogContext + Items
+
+app.UseSerilogRequestLogging(options =>
+{
+    // Enriquece o log da request com CorrelationId
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("CorrelationId",
+            httpContext.Items["CorrelationId"]?.ToString() ?? "N/A");
+    };
+});
+
 app.UseCors("AllowAll");
-app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
-app.MapHealthChecks("/health");
 
+app.MapControllers();
+
+Log.Information("KRT.Payments starting on {Environment}", app.Environment.EnvironmentName);
 app.Run();
+

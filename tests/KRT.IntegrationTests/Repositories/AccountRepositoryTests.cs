@@ -19,7 +19,7 @@ public class AccountRepositoryTests : IDisposable
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
-        _context = new ApplicationDbContext(options, Mock.Of<IMediator>());
+        _context = new ApplicationDbContext(options);
         _repository = new AccountRepository(_context);
     }
 
