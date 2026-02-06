@@ -15,7 +15,7 @@ public class Account : AggregateRoot
     public AccountType Type { get; private set; }
 
     [Timestamp]
-    public byte[] RowVersion { get; private set; } = null!;
+    public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
     protected Account() { } // EF Core
 
