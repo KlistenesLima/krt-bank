@@ -2,23 +2,17 @@
 
 public record AccountResponse(
     Guid AccountId,
-    string Number,
-    string BranchCode,
-    string CustomerId,
     string CustomerName,
     string CustomerDocument,
     string CustomerEmail,
     string Status,
     string Type,
-    string Currency,
-    decimal Balance,
-    decimal AvailableBalance
+    decimal Balance
 );
 
 public record BalanceResponse(
     Guid AccountId,
     decimal AvailableAmount,
-    decimal BlockedAmount,
     string Currency,
     DateTime UpdatedAt
 );

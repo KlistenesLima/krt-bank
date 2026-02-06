@@ -6,6 +6,9 @@
     <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.Infrastructure/KRT.BuildingBlocks.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/KRT.Gateway/">
+    <Project Path="src/Services/KRT.Gateway/KRT.Gateway/KRT.Gateway.csproj" />
+  </Folder>
   <Folder Name="/src/Services/KRT.Onboarding/">
     <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Api/KRT.Onboarding.Api.csproj" />
     <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Application/KRT.Onboarding.Application.csproj" />

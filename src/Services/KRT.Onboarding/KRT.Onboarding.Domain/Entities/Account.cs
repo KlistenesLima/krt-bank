@@ -1,46 +1,71 @@
-using KRT.BuildingBlocks.Domain;
-using KRT.Onboarding.Domain.Exceptions;
+ï»¿using KRT.BuildingBlocks.Domain;
+using KRT.BuildingBlocks.Domain.Exceptions;
+using KRT.Onboarding.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace KRT.Onboarding.Domain.Entities;
 
-public class Account : Entity, IAggregateRoot
+public class Account : AggregateRoot
 {
-    public string CustomerName { get; private set; }
-    public string Cpf { get; private set; }
-    public string Email { get; private set; }
-    public string AccountNumber { get; private set; } // Propriedade Restaurada
+    public string CustomerName { get; private set; } = null!;
+    public string Document { get; private set; } = null!;
+    public string Email { get; private set; } = null!;
     public decimal Balance { get; private set; }
+    public AccountStatus Status { get; private set; }
+    public AccountType Type { get; private set; }
 
-    // Propriedades Computadas para compatibilidade
-    public string CustomerDocument => Cpf;
-    public string CustomerEmail => Email;
+    [Timestamp]
+    public byte[] RowVersion { get; private set; } = null!;
 
-    protected Account() { }
+    protected Account() { } // EF Core
 
-    public Account(string name, string cpf, string email)
+    public Account(string name, string doc, string email, AccountType type)
     {
         Id = Guid.NewGuid();
-        CustomerName = name;
-        Cpf = cpf;
-        Email = email;
-        
-        // Gera um número de conta aleatório (Simulação de Agência/Conta)
-        AccountNumber = new Random().Next(10000, 99999).ToString() + "-9";
-        
+        CustomerName = name ?? throw new BusinessRuleException("Nome Ã© obrigatÃ³rio");
+        Document = doc ?? throw new BusinessRuleException("Documento Ã© obrigatÃ³rio");
+        Email = email ?? throw new BusinessRuleException("Email Ã© obrigatÃ³rio");
+        Type = type;
+        Status = AccountStatus.Active;
         Balance = 0;
-        CreatedAt = DateTime.UtcNow;
-    }
-
-    public void Debit(decimal amount)
-    {
-        if (amount <= 0) throw new DomainException("Valor deve ser maior que zero");
-        if (Balance < amount) throw new DomainException("Saldo insuficiente");
-        Balance -= amount;
     }
 
     public void Credit(decimal amount)
     {
-        if (amount <= 0) throw new DomainException("Valor deve ser maior que zero");
+        if (amount <= 0) throw new BusinessRuleException("Valor deve ser positivo");
         Balance += amount;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Debit(decimal amount)
+    {
+        if (amount <= 0) throw new BusinessRuleException("Valor deve ser positivo");
+        if (Balance < amount) throw new BusinessRuleException("Saldo insuficiente");
+        Balance -= amount;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Block(string reason)
+    {
+        if (Status != AccountStatus.Active)
+            throw new BusinessRuleException("Apenas contas ativas podem ser bloqueadas");
+        Status = AccountStatus.Blocked;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Activate()
+    {
+        if (Status == AccountStatus.Closed)
+            throw new BusinessRuleException("Contas encerradas nÃ£o podem ser reativadas");
+        Status = AccountStatus.Active;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Close(string reason)
+    {
+        if (Balance != 0)
+            throw new BusinessRuleException("Conta deve ter saldo zero para ser encerrada");
+        Status = AccountStatus.Closed;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

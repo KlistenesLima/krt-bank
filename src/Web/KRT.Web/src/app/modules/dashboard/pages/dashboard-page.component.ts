@@ -110,8 +110,9 @@ import { Router } from '@angular/router';
     mat-list-item { cursor: pointer; }
     mat-list-item:hover { background-color: #f9f9f9; }
     
-    .fab-chat { position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 1000 !important; }
-    .chat-overlay { position: fixed; bottom: 90px; right: 20px; z-index: 1001; }
+    .fab-chat { position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 1000 !important; box-shadow: 0 6px 16px rgba(0,0,0,0.3) !important; }
+    .chat-overlay { position: fixed; bottom: 90px; right: 20px; z-index: 1001; animation: fadeInUp 0.3s ease-out; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
     .sk-header { height: 120px; background: #e0e0e0; border-radius: 0 0 24px 24px; }
     .sk-main { margin-top: -60px; }
@@ -153,7 +154,7 @@ export class DashboardPageComponent implements OnInit {
   
   toggleEye() { this.showBalance = !this.showBalance; localStorage.setItem('krt_show_balance', String(this.showBalance)); }
   
-  // A LÓGICA DO CHAT AGORA ESTÁ AQUI
+  // AÇÃO DO BOTÃO: Alterna o booleano, não chama mais alert()
   toggleChat() { this.isChatOpen = !this.isChatOpen; }
 
   goToPix() { this.router.navigate(['/pix']); }

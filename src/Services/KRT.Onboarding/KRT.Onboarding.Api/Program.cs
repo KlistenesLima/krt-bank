@@ -1,18 +1,21 @@
-using KRT.Onboarding.Infra.IoC;
-using KRT.Onboarding.Application.Commands; // Para registrar o MediatR
+﻿using KRT.Onboarding.Infra.IoC;
+using KRT.Onboarding.Application.Commands;
+using KRT.Onboarding.Api.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Injection (Camada de Infra + Application via MediatR)
+// Infrastructure (DB + Repos + UoW)
 builder.Services.AddOnboardingInfrastructure(builder.Configuration);
+
+// MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateAccountCommand).Assembly));
 
-// CORS (Permitir Angular)
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -21,17 +24,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Ensure DB created
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider
+        .GetRequiredService<KRT.Onboarding.Infra.Data.Context.ApplicationDbContext>();
+    db.Database.EnsureCreated();
+}
+
+// Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll"); // Aplica CORS
-using (var scope = app.Services.CreateScope()) { var db = scope.ServiceProvider.GetRequiredService<KRT.Onboarding.Infra.Data.Context.ApplicationDbContext>(); db.Database.EnsureDeleted(); db.Database.EnsureCreated(); } 
- app.UseAuthorization();
+app.UseCors("AllowAll");
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-

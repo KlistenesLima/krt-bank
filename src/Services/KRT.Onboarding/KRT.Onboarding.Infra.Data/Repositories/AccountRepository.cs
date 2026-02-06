@@ -9,7 +9,10 @@ namespace KRT.Onboarding.Infra.Data.Repositories;
 public class AccountRepository : IAccountRepository
 {
     private readonly ApplicationDbContext _context;
-    
+
+    // O ApplicationDbContext deve implementar IUnitOfWork para isso funcionar diretamente.
+    // Caso contrário, injetamos IUnitOfWork separadamente.
+    // Neste modelo pragmático, assumimos que o Contexto é a UoW.
     public IUnitOfWork UnitOfWork => _context; 
 
     public AccountRepository(ApplicationDbContext context)
@@ -19,24 +22,21 @@ public class AccountRepository : IAccountRepository
 
     public async Task AddAsync(Account account, CancellationToken cancellationToken)
     {
+        // Apenas adiciona à memória do EF Core.
+        // O Commit acontece no CommandHandler via UnitOfWork.CommitAsync()
         await _context.Accounts.AddAsync(account, cancellationToken);
-        // CORRECAO CRITICA: Forcar persistencia agora
-        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<Account?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _context.Accounts
-            .AsNoTracking() // Otimizacao de leitura
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
     public async Task<Account?> GetByCpfAsync(string cpf, CancellationToken cancellationToken)
     {
         return await _context.Accounts
-            .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Cpf == cpf, cancellationToken);
+            // CORREÇÃO: A propriedade na Entidade é Document, não Cpf
+            .FirstOrDefaultAsync(a => a.Document == cpf, cancellationToken);
     }
-
-    public void Dispose() => _context.Dispose();
 }
