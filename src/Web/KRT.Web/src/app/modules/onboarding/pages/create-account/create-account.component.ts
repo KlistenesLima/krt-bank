@@ -1,76 +1,82 @@
 ﻿import { Component } from '@angular/core';
-import { AccountService } from '../../../../core/services/account.service';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-create-account',
   template: `
     <div class="full-screen-center">
-      <mat-card class="auth-card fade-in">
-        <div class="header-left">
+      <div class="auth-card fade-in">
+        <header class="header-simple">
             <button mat-icon-button (click)="back()"><mat-icon>arrow_back</mat-icon></button>
-            <h2>Criar Conta</h2>
-        </div>
+            <h1>Criar Conta</h1>
+            <div style="width: 40px"></div>
+        </header>
 
-        <mat-card-content>
-          <form (ngSubmit)="onSubmit()">
-            <mat-form-field appearance="outline">
+        <div class="form-content">
+            <mat-form-field appearance="outline" class="full">
               <mat-label>Nome Completo</mat-label>
-              <input matInput [(ngModel)]="model.customerName" name="name" required>
+              <input matInput [(ngModel)]="model.customerName" name="name">
               <mat-icon matSuffix>person</mat-icon>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="full">
               <mat-label>CPF</mat-label>
-              <input matInput [(ngModel)]="model.customerDocument" name="doc" required>
+              <input matInput [(ngModel)]="model.customerDocument" name="doc" placeholder="000.000.000-00">
               <mat-icon matSuffix>badge</mat-icon>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="full">
               <mat-label>Email</mat-label>
-              <input matInput [(ngModel)]="model.customerEmail" name="email" required type="email">
+              <input matInput [(ngModel)]="model.customerEmail" name="email" placeholder="seu@email.com">
               <mat-icon matSuffix>email</mat-icon>
             </mat-form-field>
+            
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Senha</mat-label>
+              <input matInput type="password" [(ngModel)]="model.password" name="pass">
+              <mat-icon matSuffix>lock</mat-icon>
+            </mat-form-field>
 
-            <button mat-raised-button color="primary" class="full-width-btn" type="submit">
-              CONFIRMAR CADASTRO
+            <button mat-raised-button color="primary" class="submit-btn" (click)="submit()">
+               CONFIRMAR CADASTRO
             </button>
-          </form>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
-    .auth-card { width: 100%; max-width: 400px; padding: 30px; }
-    .header-left { display: flex; align-items: center; margin-bottom: 25px; gap: 10px; }
-    .header-left h2 { margin: 0; color: var(--primary-dark); }
-    .full-width-btn { width: 100%; margin-top: 15px; }
+    .full-screen-center {
+        min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #0047BB 0%, #002a70 100%); /* Fundo Azul KRT */
+        padding: 20px;
+    }
+    .auth-card { 
+      background: white; width: 100%; max-width: 450px; 
+      padding: 20px; border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .header-simple { 
+        display: flex; justify-content: space-between; align-items: center; 
+        margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;
+    }
+    .header-simple h1 { margin: 0; font-size: 1.2rem; color: #333; }
+    
+    .full { width: 100%; margin-bottom: 5px; }
+    .submit-btn { width: 100%; padding: 25px !important; font-size: 1rem; margin-top: 10px; }
   `]
 })
 export class CreateAccountComponent {
-  model = { customerName: '', customerDocument: '', customerEmail: '' };
-  constructor(private accountService: AccountService, private router: Router) {}
+  model: any = {};
+  constructor(private location: Location, private router: Router) {}
 
-  onSubmit() {
-    const request = { ...this.model, branchCode: '0001' };
-    this.accountService.create(request).subscribe({
-      next: (res: any) => {
-        // Correção de parsing manual do ID
-        let id = '';
-        if (typeof res === 'string') id = res;
-        else if (res && res.id) id = res.id;
-        else if (res && res.accountId) id = res.accountId;
-
-        if (id) {
-            localStorage.setItem('krt_account_id', id); 
-            this.router.navigate(['/dashboard']);
-        } else {
-            alert('Conta criada, mas houve erro ao logar. Tente entrar novamente.');
-            this.router.navigate(['/login']);
-        }
-      },
-      error: (err) => alert('Erro: ' + JSON.stringify(err))
-    });
+  submit() {
+      // Simulação de cadastro
+      setTimeout(() => {
+          localStorage.setItem('krt_account_id', 'new-user');
+          this.router.navigate(['/dashboard']);
+      }, 1000);
   }
-  back() { this.router.navigate(['/login']); }
+
+  back() { this.location.back(); }
 }

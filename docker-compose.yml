@@ -1,8 +1,9 @@
-name: krt-bank
+﻿name: krt-bank
 
 services:
   postgres:
     image: postgres:15
+    container_name: krt-bank-postgres-1
     environment:
       POSTGRES_DB: krt_bank
       POSTGRES_USER: postgres
@@ -16,6 +17,7 @@ services:
 
   redis:
     image: redis:alpine
+    container_name: krt-bank-redis-1
     ports:
       - "6380:6379"
     networks:
@@ -23,6 +25,7 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
+    container_name: krt-bank-zookeeper-1
     ports:
       - "32181:2181"
     networks:
@@ -30,6 +33,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    container_name: krt-bank-kafka-1
     depends_on:
       - zookeeper
     ports:
@@ -40,6 +44,19 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - bank-net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: krt-bank-rabbitmq-1
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15680:15672"
     networks:
       - bank-net
 
