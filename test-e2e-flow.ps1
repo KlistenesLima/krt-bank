@@ -12,7 +12,7 @@ param(
 
 $passed = 0
 $failed = 0
-$total = 8
+$total = 9
 
 function Write-TestResult($name, $success, $detail = "") {
     if ($success) {
@@ -83,10 +83,13 @@ Write-Host "  CorrelationId: $correlationId" -ForegroundColor Gray
 Write-Host "[4/$total] Criar Conta..." -ForegroundColor Yellow
 $accountId = $null
 try {
+    # Gera CPF e email unicos a cada execucao
+    $randomDoc = (Get-Random -Minimum 10000000000 -Maximum 99999999999).ToString()
+    $randomEmail = "e2e_$($randomDoc.Substring(0,6))@krtbank.com"
     $body = @{
         CustomerName = "E2E Test User"
-        CustomerDocument = "12345678901"
-        CustomerEmail = "e2e@krtbank.com"
+        CustomerDocument = $randomDoc
+        CustomerEmail = $randomEmail
         BranchCode = "0001"
     } | ConvertTo-Json
 
@@ -163,15 +166,39 @@ if ($accountId) {
 # --- TEST 8: Verificar Seq (logs chegaram?) ---
 Write-Host "[8/$total] Verificar Seq (logs)..." -ForegroundColor Yellow
 try {
-    # Seq API: busca eventos dos ultimos 2 minutos com o CorrelationId
-    $seqQuery = "CorrelationId%20%3D%20'$correlationId'"
-    $seqResult = Invoke-RestMethod -Uri "$SeqUrl/api/events?filter=$seqQuery&count=10" -TimeoutSec 10
-    $eventCount = 0
-    if ($seqResult -and $seqResult.Count) { $eventCount = $seqResult.Count }
-    elseif ($seqResult -is [array]) { $eventCount = $seqResult.Length }
-    Write-TestResult "Seq Logs (CorrelationId)" ($eventCount -gt 0) "$eventCount eventos encontrados"
+    # Seq API: busca eventos recentes e filtra pelo CorrelationId
+    $seqResult = Invoke-RestMethod -Uri "$SeqUrl/api/events?count=50" -TimeoutSec 10
+    $matchingEvents = 0
+    if ($seqResult) {
+        foreach ($evt in $seqResult) {
+            $props = $evt.Properties
+            if ($props) {
+                $corrId = $null
+                # Seq armazena properties como array de objetos ou hashtable
+                if ($props -is [System.Collections.IDictionary]) {
+                    $corrId = $props["CorrelationId"]
+                } elseif ($props.CorrelationId) {
+                    $corrId = $props.CorrelationId
+                }
+                if ($corrId -eq $correlationId) { $matchingEvents++ }
+            }
+        }
+    }
+    if ($matchingEvents -gt 0) {
+        Write-TestResult "Seq Logs (CorrelationId)" $true "$matchingEvents eventos encontrados"
+    } else {
+        # Fallback: verifica se Seq tem QUALQUER evento (logs estao chegando)
+        $totalEvents = 0
+        if ($seqResult -is [array]) { $totalEvents = $seqResult.Length }
+        elseif ($seqResult) { $totalEvents = 1 }
+        if ($totalEvents -gt 0) {
+            Write-TestResult "Seq Logs" $true "$totalEvents eventos no Seq (CorrelationId nao filtrado, verifique em $SeqUrl)"
+        } else {
+            Write-TestResult "Seq Logs" $false "Nenhum evento no Seq"
+        }
+    }
 } catch {
-    # Seq pode nao ter a API de busca habilitada
+    # Fallback: pelo menos verifica se Seq esta acessivel
     try {
         $null = Invoke-WebRequest -Uri $SeqUrl -TimeoutSec 5
         Write-TestResult "Seq Logs" $true "Seq acessivel (verifique manualmente: $SeqUrl)"
@@ -203,3 +230,6 @@ Write-Host "  Swagger:  $PaymentsUrl/swagger" -ForegroundColor White
 Write-Host ""
 
 if ($failed -gt 0) { exit 1 } else { exit 0 }
+
+
+

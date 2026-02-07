@@ -65,6 +65,8 @@ builder.Services.AddCors(options =>
         b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // 8. AUTO-MIGRATION (Apenas DEV)
@@ -105,5 +107,6 @@ app.MapControllers();
 
 Log.Information("KRT.Payments starting on {Environment}", app.Environment.EnvironmentName);
 app.Run();
+
 
 
