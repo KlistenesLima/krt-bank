@@ -34,3 +34,36 @@ public record PixTransferInitiatedEvent(
     string PixKey,
     DateTime InitiatedAt
 ) : IntegrationEvent;
+
+[Topic("krt.fraud.analysis-approved")]
+public record FraudAnalysisApprovedEvent(
+    Guid TransactionId,
+    Guid SourceAccountId,
+    Guid DestinationAccountId,
+    decimal Amount,
+    int FraudScore,
+    string Details,
+    DateTime AnalyzedAt
+) : IntegrationEvent;
+
+[Topic("krt.fraud.analysis-rejected")]
+public record FraudAnalysisRejectedEvent(
+    Guid TransactionId,
+    Guid SourceAccountId,
+    Guid DestinationAccountId,
+    decimal Amount,
+    int FraudScore,
+    string Details,
+    DateTime AnalyzedAt
+) : IntegrationEvent;
+
+[Topic("krt.fraud.analysis-review")]
+public record FraudAnalysisUnderReviewEvent(
+    Guid TransactionId,
+    Guid SourceAccountId,
+    Guid DestinationAccountId,
+    decimal Amount,
+    int FraudScore,
+    string Details,
+    DateTime AnalyzedAt
+) : IntegrationEvent;

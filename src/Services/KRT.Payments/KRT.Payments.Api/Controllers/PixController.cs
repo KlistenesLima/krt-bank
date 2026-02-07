@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using KRT.BuildingBlocks.Domain.Responses;
 using KRT.Payments.Application.Commands;
 using KRT.Payments.Domain.Interfaces;
 using MediatR;
@@ -13,65 +12,105 @@ namespace KRT.Payments.Api.Controllers;
 public class PixController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IPixTransactionRepository _pixRepo;
+    private readonly IPixTransactionRepository _repository;
 
-    public PixController(IMediator mediator, IPixTransactionRepository pixRepo)
+    public PixController(IMediator mediator, IPixTransactionRepository repository)
     {
         _mediator = mediator;
-        _pixRepo = pixRepo;
+        _repository = repository;
     }
 
-    /// <summary>POST /api/v1/pix/transfer — Saga Orchestrator</summary>
-    [HttpPost("transfer")]
-    public async Task<IActionResult> Transfer([FromBody] ProcessPixCommand command)
+    /// <summary>
+    /// Inicia uma transferência Pix. A transação é criada e entra na fila
+    /// de análise anti-fraude assíncrona.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> ProcessPix([FromBody] PixTransferRequest request)
     {
+        var command = new ProcessPixCommand
+        {
+            SourceAccountId = request.SourceAccountId,
+            DestinationAccountId = request.DestinationAccountId,
+            Amount = request.Amount,
+            PixKey = request.PixKey,
+            Description = request.Description ?? "",
+            IdempotencyKey = request.IdempotencyKey
+        };
+
         var result = await _mediator.Send(command);
 
         if (!result.IsValid)
+            return BadRequest(new { success = false, error = result.Errors.FirstOrDefault() });
+
+        // Retorna 202 Accepted (processamento assíncrono)
+        return Accepted(new
         {
-            var code = result.Errors.Any(e =>
-                e.Contains("insuficiente", StringComparison.OrdinalIgnoreCase)) ? 422 : 400;
-
-            return StatusCode(code, ApiResponse.Fail(result.Errors));
-        }
-
-        return Ok(ApiResponse<object>.Ok(new { transactionId = result.Id }));
-    }
-
-    /// <summary>GET /api/v1/pix/history/{accountId}</summary>
-    [HttpGet("history/{accountId}")]
-    public async Task<IActionResult> History(Guid accountId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        var transactions = await _pixRepo.GetByAccountIdAsync(accountId, page, pageSize);
-
-        return Ok(new PagedResponse<object>
-        {
-            Data = transactions.Select(t => new
-            {
-                t.Id, t.SourceAccountId, t.DestinationAccountId,
-                t.Amount, t.PixKey, Status = t.Status.ToString(),
-                t.Description, t.CreatedAt, t.CompletedAt
-            }).Cast<object>().ToList(),
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = transactions.Count
+            success = true,
+            transactionId = result.Id,
+            status = "PendingAnalysis",
+            message = "Transação recebida. Análise anti-fraude em andamento. Consulte GET /api/v1/pix/{id} para acompanhar."
         });
     }
 
-    /// <summary>GET /api/v1/pix/{id}</summary>
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
+    /// <summary>
+    /// Consulta o status de uma transação Pix (inclui resultado da análise de fraude).
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetStatus(Guid id)
     {
-        var tx = await _pixRepo.GetByIdAsync(id);
-        if (tx == null) return NotFound(ApiResponse.Fail("Transação não encontrada."));
+        var tx = await _repository.GetByIdAsync(id);
+        if (tx == null) return NotFound(new { error = "Transação não encontrada" });
 
-        return Ok(ApiResponse<object>.Ok(new
+        return Ok(new
         {
-            tx.Id, tx.SourceAccountId, tx.DestinationAccountId,
-            tx.Amount, tx.Currency, tx.PixKey,
-            Status = tx.Status.ToString(), tx.Description,
-            tx.FailureReason, tx.SourceDebited, tx.DestinationCredited,
-            tx.CreatedAt, tx.CompletedAt
+            transactionId = tx.Id,
+            sourceAccountId = tx.SourceAccountId,
+            destinationAccountId = tx.DestinationAccountId,
+            amount = tx.Amount,
+            currency = tx.Currency,
+            pixKey = tx.PixKey,
+            status = tx.Status.ToString(),
+            description = tx.Description,
+            failureReason = tx.FailureReason,
+            createdAt = tx.CreatedAt,
+            completedAt = tx.CompletedAt,
+            fraud = new
+            {
+                score = tx.FraudScore,
+                details = tx.FraudDetails,
+                analyzedAt = tx.FraudAnalyzedAt
+            }
+        });
+    }
+
+    /// <summary>
+    /// Lista transações de uma conta (extrato Pix).
+    /// </summary>
+    [HttpGet("account/{accountId:guid}")]
+    public async Task<IActionResult> GetByAccount(Guid accountId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var txs = await _repository.GetByAccountIdAsync(accountId, page, pageSize);
+        return Ok(txs.Select(tx => new
+        {
+            transactionId = tx.Id,
+            sourceAccountId = tx.SourceAccountId,
+            destinationAccountId = tx.DestinationAccountId,
+            amount = tx.Amount,
+            status = tx.Status.ToString(),
+            fraudScore = tx.FraudScore,
+            description = tx.Description,
+            createdAt = tx.CreatedAt,
+            completedAt = tx.CompletedAt
         }));
     }
 }
+
+public record PixTransferRequest(
+    Guid SourceAccountId,
+    Guid DestinationAccountId,
+    string PixKey,
+    decimal Amount,
+    string? Description,
+    Guid IdempotencyKey
+);
+

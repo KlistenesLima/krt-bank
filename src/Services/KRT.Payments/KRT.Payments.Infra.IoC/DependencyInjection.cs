@@ -1,10 +1,13 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using KRT.Payments.Application.Interfaces;
+using KRT.Payments.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using KRT.Payments.Domain.Interfaces;
+using KRT.Payments.Domain.Services;
 using KRT.Payments.Infra.Data.Repositories;
 using KRT.Payments.Infra.Data.Context;
 using KRT.Payments.Infra.Http;
-using KRT.Payments.Application.Interfaces;
+
 using KRT.BuildingBlocks.Domain;
 using KRT.BuildingBlocks.EventBus;
 using KRT.BuildingBlocks.EventBus.Kafka;
@@ -29,6 +32,12 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped<IPixTransactionRepository, PixTransactionRepository>();
         services.AddScoped<IOutboxWriter, OutboxWriter>();
+
+        // Fraud Analysis Engine
+        services.AddScoped<IFraudAnalysisEngine, FraudAnalysisEngine>();
+
+        // Fraud Analysis Worker (async background processing)
+        services.AddHostedService<FraudAnalysisWorker>();
 
         // HTTP Client (Payments -> Onboarding) com Polly
         var onboardingUrl = configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/";
@@ -67,7 +76,7 @@ public static class DependencyInjection
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
         services.AddSingleton<IEventBus, KafkaEventBus>();
 
-        // RabbitMQ (notificações) — só publisher, consumer roda no Onboarding
+        // RabbitMQ (notificações)
         services.AddRabbitMqPublisher(configuration);
 
         // Outbox Processor
@@ -77,3 +86,6 @@ public static class DependencyInjection
         return services;
     }
 }
+
+
+
