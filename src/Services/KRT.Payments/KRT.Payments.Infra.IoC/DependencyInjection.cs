@@ -10,6 +10,9 @@ using KRT.BuildingBlocks.EventBus;
 using KRT.BuildingBlocks.EventBus.Kafka;
 using KRT.BuildingBlocks.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Extensions.Http;
 
 namespace KRT.Payments.Infra.IoC;
 
@@ -26,14 +29,41 @@ public static class DependencyInjection
         services.AddScoped<IPixTransactionRepository, PixTransactionRepository>();
         services.AddScoped<IOutboxWriter, OutboxWriter>();
 
-        // HTTP Client (Payments -> Onboarding)
+        // HTTP Client (Payments -> Onboarding) com Polly
         var onboardingUrl = configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/";
+
+        // Polly: Circuit Breaker deve ser SINGLETON (estado compartilhado entre requests)
+        var circuitBreakerPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .CircuitBreakerAsync(
+                handledEventsAllowedBeforeBreaking: 5,
+                durationOfBreak: TimeSpan.FromSeconds(30));
+
         services.AddHttpClient<IOnboardingServiceClient, OnboardingServiceClient>()
             .ConfigureHttpClient(client =>
             {
                 client.BaseAddress = new Uri(onboardingUrl);
-                client.Timeout = TimeSpan.FromSeconds(10);
-            });
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            // RETRY: 3 tentativas com backoff exponencial (1s, 2s, 4s)
+            .AddPolicyHandler((sp, request) =>
+            {
+                var logger = sp.GetService<ILoggerFactory>()?.CreateLogger("Polly.Retry");
+                return HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    .WaitAndRetryAsync(3,
+                        retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt - 1)),
+                        onRetry: (outcome, timespan, retryCount, ctx) =>
+                        {
+                            logger?.LogWarning(
+                                "Retry {RetryCount} for {Url} after {Delay}s. Status: {Status}",
+                                retryCount, request.RequestUri, timespan.TotalSeconds,
+                                outcome.Result?.StatusCode.ToString() ?? outcome.Exception?.Message);
+                        });
+            })
+            // CIRCUIT BREAKER: Abre após 5 falhas consecutivas, fica aberto 30s
+            .AddPolicyHandler(circuitBreakerPolicy);
 
         // Kafka EventBus
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));

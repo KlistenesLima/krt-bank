@@ -99,8 +99,11 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health");
+
 app.MapControllers();
 
 Log.Information("KRT.Payments starting on {Environment}", app.Environment.EnvironmentName);
 app.Run();
+
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using KRT.Onboarding.Domain.Interfaces;
 using KRT.Onboarding.Infra.Data.Repositories;
 using KRT.Onboarding.Infra.Data.Context;
+using KRT.Onboarding.Infra.Cache.Redis;
 using KRT.BuildingBlocks.Domain;
 using KRT.BuildingBlocks.EventBus;
 using KRT.BuildingBlocks.EventBus.Kafka;
@@ -22,6 +23,10 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IAccountRepository, AccountRepository>();
+
+        // Redis Cache
+        services.Configure<RedisSettings>(configuration.GetSection("Redis"));
+        services.AddSingleton<ICacheService, RedisCacheService>();
 
         // Kafka EventBus
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
