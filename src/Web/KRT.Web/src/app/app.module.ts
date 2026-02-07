@@ -1,4 +1,6 @@
-﻿import { APP_INITIALIZER, NgModule } from '@angular/core';
+﻿import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
@@ -120,6 +122,7 @@ const routes: Routes = [
     MatBadgeModule
   ],
   providers: [
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     {
       provide: APP_INITIALIZER,
       useFactory: initializeKeycloak,
@@ -130,3 +133,4 @@ const routes: Routes = [
   bootstrap: [AppComponent]
 })
 export class AppModule {}
+

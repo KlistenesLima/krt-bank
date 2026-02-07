@@ -10,6 +10,7 @@ public class Account : AggregateRoot
     public string CustomerName { get; private set; } = null!;
     public string Document { get; private set; } = null!;
     public string Email { get; private set; } = null!;
+    public string Phone { get; private set; } = null!;
     public decimal Balance { get; private set; }
     public AccountStatus Status { get; private set; }
     public AccountType Type { get; private set; }
@@ -19,12 +20,13 @@ public class Account : AggregateRoot
 
     protected Account() { } // EF Core
 
-    public Account(string name, string doc, string email, AccountType type)
+    public Account(string name, string doc, string email, string phone, AccountType type)
     {
         Id = Guid.NewGuid();
         CustomerName = name ?? throw new BusinessRuleException("Nome é obrigatório");
         Document = doc ?? throw new BusinessRuleException("Documento é obrigatório");
         Email = email ?? throw new BusinessRuleException("Email é obrigatório");
+        Phone = phone ?? "";
         Type = type;
         Status = AccountStatus.Active;
         Balance = 0;
@@ -84,3 +86,4 @@ public class Account : AggregateRoot
         RowVersion = Guid.NewGuid().ToByteArray();
     }
 }
+
