@@ -54,6 +54,20 @@ services:
     networks:
       - bank-net
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: krt-bank-rabbitmq-1
+    environment:
+      RABBITMQ_DEFAULT_USER: krt
+      RABBITMQ_DEFAULT_PASS: REDACTED_RABBITMQ_PASSWORD
+    ports:
+      - "5672:5672"
+      - "15680:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - bank-net
+
   seq:
     image: datalust/seq:2024.2
     container_name: krt-bank-seq-1
@@ -93,7 +107,9 @@ volumes:
   bank_pgdata:
   seq_data:
   redis_data:
+  rabbitmq_data:
 
 networks:
   bank-net:
     driver: bridge
+

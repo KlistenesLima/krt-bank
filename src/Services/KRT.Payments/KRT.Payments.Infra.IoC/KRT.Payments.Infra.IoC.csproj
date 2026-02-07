@@ -20,5 +20,6 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\KRT.BuildingBlocks.Domain\KRT.BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\KRT.BuildingBlocks.EventBus\KRT.BuildingBlocks.EventBus.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\KRT.BuildingBlocks.Infrastructure\KRT.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\KRT.BuildingBlocks.MessageBus\KRT.BuildingBlocks.MessageBus.csproj" />
   </ItemGroup>
 </Project>
