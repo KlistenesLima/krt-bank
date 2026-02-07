@@ -14,6 +14,13 @@ public class PaymentsDbContext : DbContext, IUnitOfWork
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Fraud Analysis columns
+        modelBuilder.Entity<KRT.Payments.Domain.Entities.PixTransaction>(entity =>
+        {
+            entity.Property(e => e.FraudScore).IsRequired(false);
+            entity.Property(e => e.FraudDetails).HasMaxLength(1000).IsRequired(false);
+            entity.Property(e => e.FraudAnalyzedAt).IsRequired(false);
+        });
         modelBuilder.Ignore<DomainEvent>();
 
         modelBuilder.Entity<PixTransaction>(entity =>
@@ -40,3 +47,4 @@ public class PaymentsDbContext : DbContext, IUnitOfWork
         return await SaveChangesAsync(ct);
     }
 }
+

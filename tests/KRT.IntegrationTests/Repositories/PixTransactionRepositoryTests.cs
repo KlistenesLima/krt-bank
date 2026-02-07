@@ -63,7 +63,7 @@ public class PixTransactionRepositoryTests : IDisposable
         await _repository.AddAsync(tx);
         await _context.SaveChangesAsync();
 
-        tx.MarkSourceDebited();
+        tx.Approve(5, "OK"); tx.StartSaga(); tx.MarkSourceDebited();
         _repository.Update(tx);
         await _context.SaveChangesAsync();
 
@@ -73,4 +73,5 @@ public class PixTransactionRepositoryTests : IDisposable
 
     public void Dispose() => _context.Dispose();
 }
+
 
