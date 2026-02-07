@@ -1,98 +1,134 @@
 ﻿import { Component, OnInit } from '@angular/core';
-import { Location } from '@angular/common';
 import { Router } from '@angular/router';
-import { PaymentService } from '../../../core/services/payment.service';
-import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-statement-page',
   template: `
-    <div class="app-layout">
-      <header class="header-simple">
-        <button mat-icon-button (click)="goBack()"><mat-icon>arrow_back</mat-icon></button>
+    <div class="statement-container page-with-nav">
+      <header class="page-header">
+        <button mat-icon-button (click)="router.navigate(['/dashboard'])">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
         <h1>Extrato</h1>
-        <button mat-icon-button><mat-icon>filter_list</mat-icon></button>
+        <div style="width:40px"></div>
       </header>
 
-      <div class="filters-container">
-        <mat-chip-listbox aria-label="Filtro">
-            <mat-chip-option selected (click)="filter('all')">Tudo</mat-chip-option>
-            <mat-chip-option (click)="filter('sent')">Enviados</mat-chip-option>
-            <mat-chip-option (click)="filter('received')">Recebidos</mat-chip-option>
-        </mat-chip-listbox>
+      <!-- Balance summary -->
+      <div class="balance-summary">
+        <div class="summary-item">
+          <span class="summary-label">Saldo atual</span>
+          <span class="summary-value">{{ balance | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
+        </div>
       </div>
 
-      <main class="container fade-in">
-        <div *ngIf="filteredList.length === 0" class="empty-state">
-            <mat-icon>search_off</mat-icon>
-            <p>Nenhuma transação encontrada.</p>
+      <!-- Filters -->
+      <div class="filters">
+        <button class="filter-chip" [class.active]="filter === 'all'" (click)="filter = 'all'">Todos</button>
+        <button class="filter-chip" [class.active]="filter === 'CREDIT'" (click)="filter = 'CREDIT'">Entradas</button>
+        <button class="filter-chip" [class.active]="filter === 'DEBIT'" (click)="filter = 'DEBIT'">Saídas</button>
+      </div>
+
+      <!-- Transactions -->
+      <div class="tx-list">
+        <div *ngIf="filteredTransactions().length === 0" class="empty-state">
+          <mat-icon>receipt_long</mat-icon>
+          <p>Nenhuma movimentação</p>
         </div>
 
-        <mat-card class="statement-card" *ngIf="filteredList.length > 0">
-           <mat-list>
-              <ng-container *ngFor="let item of filteredList">
-                 <mat-list-item (click)="goToReceipt(item.id)">
-                    <mat-icon matListItemIcon [class.in]="item.sourceAccountId !== accountId" [class.out]="item.sourceAccountId === accountId">
-                        {{ item.sourceAccountId === accountId ? 'arrow_upward' : 'arrow_downward' }}
-                    </mat-icon>
-                    <div matListItemTitle>Pix {{ item.sourceAccountId === accountId ? 'Enviado' : 'Recebido' }}</div>
-                    <div matListItemLine class="tx-meta">{{ item.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ item.status }}</div>
-                    <div class="tx-amount" [class.positive]="item.sourceAccountId !== accountId">
-                       {{ item.sourceAccountId === accountId ? '-' : '+' }}{{ item.amount | currency:'BRL' }}
-                    </div>
-                 </mat-list-item>
-                 <mat-divider></mat-divider>
-              </ng-container>
-           </mat-list>
-        </mat-card>
-      </main>
+        <div class="tx-item" *ngFor="let t of filteredTransactions()">
+          <div class="tx-icon" [class.credit]="t.type === 'CREDIT'">
+            <mat-icon>{{ t.type === 'CREDIT' ? 'south_west' : 'north_east' }}</mat-icon>
+          </div>
+          <div class="tx-details">
+            <span class="tx-desc">{{ t.description }}</span>
+            <span class="tx-date">{{ formatDate(t.createdAt) }}</span>
+          </div>
+          <span class="tx-amount" [class.credit]="t.type === 'CREDIT'">
+            {{ t.type === 'CREDIT' ? '+' : '-' }}{{ t.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+          </span>
+        </div>
+      </div>
     </div>
+
+    <app-bottom-nav></app-bottom-nav>
   `,
   styles: [`
-    .filters-container { padding: 10px 20px; background: white; overflow-x: auto; }
-    .empty-state { text-align: center; padding: 40px; color: #999; }
-    .empty-state mat-icon { font-size: 48px; height: 48px; width: 48px; margin-bottom: 10px; opacity: 0.5; }
-    .statement-card { padding: 0; }
-    .in { color: var(--accent); background: rgba(0,208,158,0.1); border-radius: 50%; padding: 8px; }
-    .out { color: #ff5252; background: rgba(255,82,82,0.1); border-radius: 50%; padding: 8px; }
-    .tx-amount { font-weight: 700; margin-left: auto; }
-    .tx-amount.positive { color: var(--accent); }
-    .tx-meta { font-size: 0.8rem; color: #888; }
-    mat-list-item { cursor: pointer; }
-    mat-list-item:hover { background-color: #f5f5f5; }
+    .statement-container { min-height: 100vh; background: var(--krt-bg); }
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; background: white; border-bottom: 1px solid var(--krt-divider);
+    }
+    .page-header h1 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+    .balance-summary {
+      background: white; padding: 20px; margin: 16px 20px;
+      border-radius: var(--krt-radius); box-shadow: var(--krt-shadow-sm);
+    }
+    .summary-label { font-size: 0.82rem; color: var(--krt-text-muted); display: block; }
+    .summary-value { font-size: 1.5rem; font-weight: 800; color: var(--krt-text); }
+
+    .filters {
+      display: flex; gap: 8px; padding: 0 20px 16px; overflow-x: auto;
+    }
+    .filter-chip {
+      background: white; border: 1.5px solid var(--krt-border); border-radius: 20px;
+      padding: 8px 18px; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: all 0.2s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .filter-chip.active {
+      background: var(--krt-primary); color: white; border-color: var(--krt-primary);
+    }
+
+    .tx-list {
+      padding: 0 20px 20px; max-width: 500px; margin: 0 auto;
+    }
+    .empty-state {
+      text-align: center; padding: 40px;
+      background: white; border-radius: var(--krt-radius);
+    }
+    .empty-state mat-icon { font-size: 40px; width: 40px; height: 40px; color: var(--krt-text-muted); }
+    .empty-state p { color: var(--krt-text-muted); margin-top: 8px; }
+
+    .tx-item {
+      display: flex; align-items: center; gap: 12px;
+      background: white; padding: 16px; margin-bottom: 8px;
+      border-radius: var(--krt-radius-sm); box-shadow: var(--krt-shadow-sm);
+    }
+    .tx-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: #FFF0F0; color: var(--krt-danger);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .tx-icon.credit { background: #E8F5E9; color: var(--krt-success); }
+    .tx-details { flex: 1; }
+    .tx-desc { display: block; font-size: 0.88rem; font-weight: 500; }
+    .tx-date { font-size: 0.75rem; color: var(--krt-text-muted); }
+    .tx-amount { font-weight: 700; font-size: 0.9rem; color: var(--krt-danger); white-space: nowrap; }
+    .tx-amount.credit { color: var(--krt-success); }
   `]
 })
 export class StatementPageComponent implements OnInit {
-  allTransactions: any[] = [];
-  filteredList: any[] = [];
-  accountId: string | null;
+  transactions: any[] = [];
+  balance = 0;
+  filter = 'all';
 
-  constructor(
-    private location: Location,
-    private paymentService: PaymentService,
-    private authService: AuthService,
-    private router: Router
-  ) {
-    this.accountId = this.authService.accountId;
-  }
+  constructor(public router: Router) {}
 
   ngOnInit() {
-    if (!this.accountId) return;
-    this.paymentService.getHistory(this.accountId).subscribe({
-      next: (res: any) => {
-        this.allTransactions = res?.data || res || [];
-        this.filteredList = this.allTransactions;
-      },
-      error: () => { this.allTransactions = []; this.filteredList = []; }
-    });
+    this.balance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
+    this.transactions = JSON.parse(localStorage.getItem('krt_transactions') || '[]');
   }
 
-  filter(type: string) {
-    if (type === 'all') this.filteredList = this.allTransactions;
-    else if (type === 'sent') this.filteredList = this.allTransactions.filter(x => x.sourceAccountId === this.accountId);
-    else if (type === 'received') this.filteredList = this.allTransactions.filter(x => x.sourceAccountId !== this.accountId);
+  filteredTransactions() {
+    if (this.filter === 'all') return this.transactions;
+    return this.transactions.filter((t: any) => t.type === this.filter);
   }
 
-  goToReceipt(id: string) { this.router.navigate(['/receipt', id]); }
-  goBack() { this.location.back(); }
+  formatDate(d: string): string {
+    if (!d) return '';
+    const date = new Date(d);
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' · '
+         + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
 }
