@@ -1,98 +1,68 @@
 ﻿import { Injectable } from '@angular/core';
-import { KeycloakService } from 'keycloak-angular';
-import { KeycloakProfile } from 'keycloak-js';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-
-export interface UserSession {
-  accountId: string;
-  customerName: string;
-  document: string;
-  email: string;
-  keycloakId?: string;
-}
+import { Observable, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly STORAGE_KEY = 'krt_session';
-  private profile: KeycloakProfile | null = null;
+  private apiUrl = 'http://localhost:5000/api/v1/auth';
 
-  constructor(
-    private keycloak: KeycloakService,
-    private router: Router
-  ) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
-  /** Verifica se está logado no Keycloak */
-  get isLoggedIn(): boolean {
-    try {
-      return this.keycloak.isLoggedIn();
-    } catch {
-      return !!this.currentSession;
-    }
+  register(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register`, data);
   }
 
-  /** Dados da sessão (armazenados após vincular conta) */
-  get currentSession(): UserSession | null {
-    try {
-      const raw = localStorage.getItem(this.STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+  login(cpf: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/login`, { cpf, password }).pipe(
+      tap((res: any) => {
+        if (res.success) {
+          localStorage.setItem('krt_token', res.accessToken);
+          localStorage.setItem('krt_refresh_token', res.refreshToken || '');
+          localStorage.setItem('krt_account_id', res.account.id);
+          localStorage.setItem('krt_account_name', res.account.name);
+          localStorage.setItem('krt_account_doc', res.account.document);
+          localStorage.setItem('krt_account_email', res.account.email);
+        }
+      })
+    );
+  }
+
+  logout(): void {
+    localStorage.removeItem('krt_token');
+    localStorage.removeItem('krt_refresh_token');
+    localStorage.removeItem('krt_account_id');
+    localStorage.removeItem('krt_account_name');
+    localStorage.removeItem('krt_account_doc');
+    localStorage.removeItem('krt_account_email');
+    this.router.navigate(['/login']);
+  }
+
+  isLoggedIn(): boolean {
+    return !!localStorage.getItem('krt_token');
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('krt_token');
+  }
+
+  getAccountId(): string | null {
+    return localStorage.getItem('krt_account_id');
+  }
+
+  getAccountName(): string | null {
+    return localStorage.getItem('krt_account_name');
   }
 
   get accountId(): string | null {
-    return this.currentSession?.accountId ?? null;
+    return this.getAccountId();
   }
 
-  /** Pega o token JWT do Keycloak para API calls */
-  async getToken(): Promise<string> {
-    try {
-      return await this.keycloak.getToken();
-    } catch { return ''; }
-  }
-
-  /** Pega o perfil do Keycloak */
-  async loadProfile(): Promise<KeycloakProfile | null> {
-    try {
-      if (!this.keycloak.isLoggedIn()) return null;
-      this.profile = await this.keycloak.loadUserProfile();
-      return this.profile;
-    } catch { return null; }
-  }
-
-  /** Redireciona para tela de login do Keycloak */
-  login(): void {
-    this.keycloak.login({
-      redirectUri: window.location.origin + '/dashboard'
-    });
-  }
-
-  /** Vincula conta bancária à sessão (após criar ou buscar conta) */
-  saveSession(session: UserSession): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(session));
-    localStorage.setItem('krt_account_id', session.accountId);
-  }
-
-  /** Logout: limpa Keycloak + sessão local */
-  logout(): void {
-    localStorage.removeItem(this.STORAGE_KEY);
-    localStorage.removeItem('krt_account_id');
-    try {
-      this.keycloak.logout(window.location.origin + '/login');
-    } catch {
-      this.router.navigate(['/login']);
-    }
-  }
-
-  /** Registrar novo usuário no Keycloak */
-  register(): void {
-    this.keycloak.register({
-      redirectUri: window.location.origin + '/register'
-    });
-  }
-
-  /** Roles do Keycloak */
-  hasRole(role: string): boolean {
-    try {
-      return this.keycloak.isUserInRole(role);
-    } catch { return false; }
+  get currentSession(): any {
+    return {
+      name: localStorage.getItem('krt_account_name') || 'Usuario',
+      document: localStorage.getItem('krt_account_doc') || '',
+      email: localStorage.getItem('krt_account_email') || ''
+    };
   }
 }

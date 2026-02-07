@@ -1,4 +1,6 @@
-﻿using FluentAssertions;
+﻿using KRT.Onboarding.Application.Interfaces;
+using Microsoft.Extensions.Logging;
+using FluentAssertions;
 using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Application.Commands;
 using KRT.Onboarding.Domain.Entities;
@@ -12,12 +14,14 @@ public class CreateAccountCommandHandlerTests
 {
     private readonly Mock<IAccountRepository> _repoMock = new();
     private readonly Mock<IUnitOfWork> _uowMock = new();
+    private readonly Mock<IKeycloakAdminService> _keycloakMock = new();
+    private readonly Mock<ILogger<CreateAccountCommandHandler>> _loggerMock = new();
     private readonly CreateAccountCommandHandler _handler;
 
     public CreateAccountCommandHandlerTests()
     {
         _uowMock.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-        _handler = new CreateAccountCommandHandler(_repoMock.Object, _uowMock.Object);
+        _handler = new CreateAccountCommandHandler(_repoMock.Object, _uowMock.Object, _keycloakMock.Object, _loggerMock.Object);
     }
 
     [Fact]
@@ -57,3 +61,4 @@ public class CreateAccountCommandHandlerTests
         captured.Balance.Should().Be(0);
     }
 }
+

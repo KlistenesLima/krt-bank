@@ -26,7 +26,7 @@ public class AccountRepositoryTests : IDisposable
     [Fact]
     public async Task Add_ShouldPersist()
     {
-        var account = new Account("Ana", "11122233344", "ana@e.com", AccountType.Checking);
+        var account = new Account("Ana", "11122233344", "ana@e.com", "", AccountType.Checking);
         await _repository.AddAsync(account, CancellationToken.None);
         await _context.SaveChangesAsync();
 
@@ -38,7 +38,7 @@ public class AccountRepositoryTests : IDisposable
     [Fact]
     public async Task GetByCpf_ShouldFind()
     {
-        var account = new Account("Pedro", "99988877766", "p@e.com", AccountType.Savings);
+        var account = new Account("Pedro", "99988877766", "p@e.com", "", AccountType.Savings);
         await _repository.AddAsync(account, CancellationToken.None);
         await _context.SaveChangesAsync();
 
@@ -56,7 +56,7 @@ public class AccountRepositoryTests : IDisposable
     [Fact]
     public async Task Debit_ShouldPersistBalance()
     {
-        var a = new Account("User", "11111111111", "u@e.com", AccountType.Checking);
+        var a = new Account("User", "11111111111", "u@e.com", "", AccountType.Checking);
         await _repository.AddAsync(a, CancellationToken.None);
         await _context.SaveChangesAsync();
 
@@ -70,3 +70,4 @@ public class AccountRepositoryTests : IDisposable
 
     public void Dispose() => _context.Dispose();
 }
+

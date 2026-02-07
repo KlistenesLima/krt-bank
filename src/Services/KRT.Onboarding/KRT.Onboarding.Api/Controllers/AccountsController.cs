@@ -7,6 +7,7 @@ namespace KRT.Onboarding.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/accounts")]
+[Microsoft.AspNetCore.Authorization.Authorize]
 public class AccountsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -147,3 +148,4 @@ public record AccountDto(
     string Status,
     string Type
 );
+

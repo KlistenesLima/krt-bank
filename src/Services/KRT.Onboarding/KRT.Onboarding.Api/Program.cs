@@ -1,4 +1,6 @@
 ﻿using KRT.Onboarding.Infra.IoC;
+using KRT.Onboarding.Application.Interfaces;
+using KRT.Onboarding.Api.Services;
 using KRT.Onboarding.Application.Commands;
 using KRT.Onboarding.Api.Middlewares;
 using Serilog;
@@ -20,6 +22,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
 // 4. INFRASTRUCTURE (DB, Repos, UoW, Kafka, Outbox)
+builder.Services.AddHttpClient<KRT.Onboarding.Application.Interfaces.IKeycloakAdminService, KRT.Onboarding.Api.Services.KeycloakAdminService>();
+
 builder.Services.AddOnboardingInfrastructure(builder.Configuration);
 
 // 5. MEDIATR
@@ -101,5 +105,7 @@ app.MapControllers();
 
 Log.Information("KRT.Onboarding starting on {Environment}", app.Environment.EnvironmentName);
 app.Run();
+
+
 
 
