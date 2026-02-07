@@ -42,3 +42,4 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
         return await SaveChangesAsync(cancellationToken);
     }
 }
+

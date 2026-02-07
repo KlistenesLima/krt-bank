@@ -157,24 +157,20 @@ export class DashboardPageComponent implements OnInit {
   }
 
   loadData() {
-    this.accountService.getById(this.accountId!).subscribe({
-      next: (account) => {
-        this.account = account;
-        this.accountService.getBalance(this.accountId!).subscribe({
-          next: (b) => this.balance = b.availableAmount || 0,
-          error: () => this.balance = account.balance || 0
-        });
-        this.paymentService.getHistory(this.accountId!).subscribe({
-          next: (res: any) => {
-            // Backend retorna PagedResponse ou array direto
-            this.transactions = res?.data || res || [];
-            this.loading = false;
-          },
-          error: () => { this.transactions = []; this.loading = false; }
-        });
-      },
-      error: () => { this.authService.logout(); this.loading = false; }
-    });
+    // Usa dados do localStorage (salvos no login)
+    this.account = {
+      id: this.accountId,
+      customerName: localStorage.getItem('krt_account_name') || 'Usuário',
+      document: localStorage.getItem('krt_account_doc') || '',
+      email: localStorage.getItem('krt_account_email') || '',
+      balance: parseFloat(localStorage.getItem('krt_account_balance') || '0'),
+      status: 'Active',
+      type: 'Checking',
+      currency: 'BRL'
+    } as any;
+    this.balance = this.account.balance || 0;
+    this.transactions = [];
+    this.loading = false;
   }
   
   toggleEye() { this.showBalance = !this.showBalance; localStorage.setItem('krt_show_balance', String(this.showBalance)); }
@@ -189,3 +185,9 @@ export class DashboardPageComponent implements OnInit {
   goToInbox() { this.router.navigate(['/inbox']); }
   logout() { this.authService.logout(); }
 }
+
+
+
+
+
+

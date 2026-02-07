@@ -26,7 +26,7 @@ public class AccountService : IAccountService
         var existing = await _accountRepository.GetByCpfAsync(request.CustomerDocument, ct);
         if (existing != null) return Result.Fail<Guid>("CPF já cadastrado.");
 
-        var account = new Account(request.CustomerName, request.CustomerDocument, request.CustomerEmail, AccountType.Checking);
+        var account = new Account(request.CustomerName, request.CustomerDocument, request.CustomerEmail, "", AccountType.Checking);
         await _accountRepository.AddAsync(account, ct);
         await _unitOfWork.CommitAsync(ct);
 
@@ -102,3 +102,4 @@ public class AccountService : IAccountService
     public Task<Result<TransactionResponse>> TransferAsync(TransferRequest request, CancellationToken ct)
         => Task.FromResult(Result.Fail<TransactionResponse>("Use Pix service"));
 }
+

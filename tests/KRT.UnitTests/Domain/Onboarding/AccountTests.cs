@@ -11,7 +11,7 @@ public class AccountTests
     [Fact]
     public void Create_WithValidData_ShouldCreateActiveAccount()
     {
-        var account = new Account("Joao Silva", "12345678901", "joao@email.com", AccountType.Checking);
+        var account = new Account("Joao Silva", "12345678901", "joao@email.com", "", AccountType.Checking);
 
         account.Id.Should().NotBeEmpty();
         account.CustomerName.Should().Be("Joao Silva");
@@ -23,21 +23,21 @@ public class AccountTests
     [Fact]
     public void Create_WithNullName_ShouldThrow()
     {
-        var act = () => new Account(null!, "12345678901", "e@e.com", AccountType.Checking);
+        var act = () => new Account(null!, "12345678901", "e@e.com", "", AccountType.Checking);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithNullDocument_ShouldThrow()
     {
-        var act = () => new Account("Joao", null!, "e@e.com", AccountType.Checking);
+        var act = () => new Account("Joao", null!, "e@e.com", "", AccountType.Checking);
         act.Should().Throw<BusinessRuleException>();
     }
 
     [Fact]
     public void Create_WithNullEmail_ShouldThrow()
     {
-        var act = () => new Account("Joao", "12345678901", null!, AccountType.Checking);
+        var act = () => new Account("Joao", "12345678901", null!, "", AccountType.Checking);
         act.Should().Throw<BusinessRuleException>();
     }
 
@@ -152,5 +152,7 @@ public class AccountTests
     }
 
     private static Account MakeAccount()
-        => new("Maria", "98765432100", "maria@email.com", AccountType.Checking);
+        => new("Maria", "98765432100", "maria@email.com", "", AccountType.Checking);
 }
+
+
