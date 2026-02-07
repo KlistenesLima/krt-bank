@@ -9,6 +9,7 @@ using KRT.BuildingBlocks.Domain;
 using KRT.BuildingBlocks.EventBus;
 using KRT.BuildingBlocks.EventBus.Kafka;
 using KRT.BuildingBlocks.Infrastructure.Outbox;
+using KRT.BuildingBlocks.MessageBus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -32,7 +33,6 @@ public static class DependencyInjection
         // HTTP Client (Payments -> Onboarding) com Polly
         var onboardingUrl = configuration["Services:OnboardingUrl"] ?? "http://localhost:5001/";
 
-        // Polly: Circuit Breaker deve ser SINGLETON (estado compartilhado entre requests)
         var circuitBreakerPolicy = HttpPolicyExtensions
             .HandleTransientHttpError()
             .CircuitBreakerAsync(
@@ -45,7 +45,6 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri(onboardingUrl);
                 client.Timeout = TimeSpan.FromSeconds(30);
             })
-            // RETRY: 3 tentativas com backoff exponencial (1s, 2s, 4s)
             .AddPolicyHandler((sp, request) =>
             {
                 var logger = sp.GetService<ILoggerFactory>()?.CreateLogger("Polly.Retry");
@@ -62,12 +61,14 @@ public static class DependencyInjection
                                 outcome.Result?.StatusCode.ToString() ?? outcome.Exception?.Message);
                         });
             })
-            // CIRCUIT BREAKER: Abre após 5 falhas consecutivas, fica aberto 30s
             .AddPolicyHandler(circuitBreakerPolicy);
 
-        // Kafka EventBus
+        // Kafka EventBus (eventos)
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
         services.AddSingleton<IEventBus, KafkaEventBus>();
+
+        // RabbitMQ (notificações) — só publisher, consumer roda no Onboarding
+        services.AddRabbitMqPublisher(configuration);
 
         // Outbox Processor
         services.Configure<OutboxSettings>(configuration.GetSection("Outbox"));
