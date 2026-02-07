@@ -121,8 +121,7 @@ const routes: Routes = [
     MatProgressBarModule,
     MatBadgeModule
   ],
-  providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+  providers: [{ provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     {
       provide: APP_INITIALIZER,
       useFactory: initializeKeycloak,
@@ -133,4 +132,8 @@ const routes: Routes = [
   bootstrap: [AppComponent]
 })
 export class AppModule {}
+
+
+
+
 
