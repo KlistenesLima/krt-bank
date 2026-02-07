@@ -1,43 +1,101 @@
 ﻿# ============================================================
-# KRT Bank - Keycloak Setup
-# Pré-req: docker-compose up -d (Keycloak rodando em localhost:8080)
+# KRT Bank — Setup Keycloak via Admin API
+# Usar quando o auto-import do docker-compose nao funcionar
 # ============================================================
+param(
+    [string]$KeycloakUrl = "http://localhost:8080",
+    [string]$AdminUser = "admin",
+    [string]$AdminPass = "admin"
+)
 
-Write-Host "Configurando Keycloak para KRT Bank..." -ForegroundColor Cyan
 Write-Host ""
-Write-Host "1. Acesse: http://localhost:8080/admin" -ForegroundColor White
-Write-Host "   Login: admin / admin" -ForegroundColor Gray
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "  KRT Bank — Keycloak Setup" -ForegroundColor White
+Write-Host "  $KeycloakUrl" -ForegroundColor Gray
+Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "2. Crie um Realm chamado: krt-bank" -ForegroundColor White
-Write-Host "   - No menu esquerdo, clique no dropdown 'master'" -ForegroundColor Gray
-Write-Host "   - Clique 'Create realm'" -ForegroundColor Gray
-Write-Host "   - Nome: krt-bank" -ForegroundColor Gray
+
+# 1. Espera o Keycloak subir
+Write-Host "[1/5] Aguardando Keycloak..." -ForegroundColor Yellow
+$maxRetries = 30
+$retry = 0
+while ($retry -lt $maxRetries) {
+    try {
+        $null = Invoke-RestMethod -Uri "$KeycloakUrl/health/ready" -TimeoutSec 3 -ErrorAction Stop
+        Write-Host "  Keycloak pronto!" -ForegroundColor Green
+        break
+    } catch {
+        $retry++
+        if ($retry -ge $maxRetries) {
+            Write-Host "  ERRO: Keycloak nao respondeu em $($maxRetries * 3)s" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  Tentativa $retry/$maxRetries..." -ForegroundColor Gray
+        Start-Sleep -Seconds 3
+    }
+}
+
+# 2. Obtém admin token
+Write-Host "[2/5] Obtendo admin token..." -ForegroundColor Yellow
+try {
+    $tokenResponse = Invoke-RestMethod -Uri "$KeycloakUrl/realms/master/protocol/openid-connect/token" `
+        -Method POST `
+        -ContentType "application/x-www-form-urlencoded" `
+        -Body "grant_type=password&client_id=admin-cli&username=$AdminUser&password=$AdminPass"
+    $adminToken = $tokenResponse.access_token
+    Write-Host "  OK (token obtido)" -ForegroundColor Green
+} catch {
+    Write-Host "  ERRO: Falha ao obter token admin: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
+$headers = @{
+    "Authorization" = "Bearer $adminToken"
+    "Content-Type" = "application/json"
+}
+
+# 3. Verifica se realm ja existe
+Write-Host "[3/5] Verificando realm krt-bank..." -ForegroundColor Yellow
+try {
+    $null = Invoke-RestMethod -Uri "$KeycloakUrl/admin/realms/krt-bank" -Headers $headers -ErrorAction Stop
+    Write-Host "  Realm ja existe! Pulando criacao." -ForegroundColor Green
+} catch {
+    # 4. Importa realm via API
+    Write-Host "[4/5] Importando realm..." -ForegroundColor Yellow
+    $realmFile = Join-Path $PSScriptRoot "infra\keycloak\krt-bank-realm.json"
+    if (-not (Test-Path $realmFile)) {
+        Write-Host "  ERRO: $realmFile nao encontrado" -ForegroundColor Red
+        exit 1
+    }
+    $realmJson = Get-Content $realmFile -Raw
+    try {
+        Invoke-RestMethod -Uri "$KeycloakUrl/admin/realms" `
+            -Method POST -Headers $headers -Body $realmJson -ErrorAction Stop
+        Write-Host "  Realm krt-bank criado!" -ForegroundColor Green
+    } catch {
+        Write-Host "  ERRO ao criar realm: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+}
+
+# 5. Validacao
+Write-Host "[5/5] Validando..." -ForegroundColor Yellow
+try {
+    $testToken = Invoke-RestMethod -Uri "$KeycloakUrl/realms/krt-bank/protocol/openid-connect/token" `
+        -Method POST `
+        -ContentType "application/x-www-form-urlencoded" `
+        -Body "grant_type=password&client_id=krt-bank-app&username=demo&password=demo123"
+    Write-Host "  Token do usuario demo obtido com sucesso!" -ForegroundColor Green
+    Write-Host "  Access token: $($testToken.access_token.Substring(0, 50))..." -ForegroundColor Gray
+} catch {
+    Write-Host "  AVISO: Nao foi possivel obter token do demo. Verifique as credenciais." -ForegroundColor Yellow
+    Write-Host "  Erro: $($_.Exception.Message)" -ForegroundColor DarkYellow
+}
+
 Write-Host ""
-Write-Host "3. Crie um Client:" -ForegroundColor White
-Write-Host "   - Clients > Create client" -ForegroundColor Gray
-Write-Host "   - Client ID: krt-web" -ForegroundColor Gray
-Write-Host "   - Client authentication: OFF (public client)" -ForegroundColor Gray
-Write-Host "   - Standard flow: ON" -ForegroundColor Gray
-Write-Host "   - Direct access grants: ON" -ForegroundColor Gray
-Write-Host "   - Valid redirect URIs: http://localhost:4200/*" -ForegroundColor Gray
-Write-Host "   - Web origins: http://localhost:4200" -ForegroundColor Gray
-Write-Host ""
-Write-Host "4. Crie um usuário de teste:" -ForegroundColor White
-Write-Host "   - Users > Add user" -ForegroundColor Gray
-Write-Host "   - Username: joao" -ForegroundColor Gray
-Write-Host "   - Email: joao@krt.com" -ForegroundColor Gray
-Write-Host "   - First name: Joao" -ForegroundColor Gray
-Write-Host "   - Last name: Silva" -ForegroundColor Gray
-Write-Host "   - Email verified: ON" -ForegroundColor Gray
-Write-Host "   - Save > Credentials > Set password: 123456 (Temporary: OFF)" -ForegroundColor Gray
-Write-Host ""
-Write-Host "5. Teste o token:" -ForegroundColor White
-Write-Host '   curl -X POST http://localhost:8080/realms/krt-bank/protocol/openid-connect/token \' -ForegroundColor Yellow
-Write-Host '     -d "client_id=krt-web" \' -ForegroundColor Yellow
-Write-Host '     -d "username=joao" \' -ForegroundColor Yellow
-Write-Host '     -d "password=123456" \' -ForegroundColor Yellow
-Write-Host '     -d "grant_type=password"' -ForegroundColor Yellow
-Write-Host ""
-Write-Host "6. Use o access_token no header:" -ForegroundColor White
-Write-Host '   Authorization: Bearer <token>' -ForegroundColor Yellow
+Write-Host "Setup concluido!" -ForegroundColor Green
+Write-Host "  Admin Console: $KeycloakUrl/admin" -ForegroundColor Cyan
+Write-Host "  Credenciais:   admin / admin" -ForegroundColor Cyan
+Write-Host "  Realm:         krt-bank" -ForegroundColor Cyan
+Write-Host "  Usuario demo:  demo / demo123" -ForegroundColor Cyan
 Write-Host ""
