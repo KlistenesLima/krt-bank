@@ -4,6 +4,7 @@
     <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.Domain/KRT.BuildingBlocks.Domain.csproj" />
     <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.EventBus/KRT.BuildingBlocks.EventBus.csproj" />
     <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.Infrastructure/KRT.BuildingBlocks.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.MessageBus/KRT.BuildingBlocks.MessageBus.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/KRT.Gateway/">

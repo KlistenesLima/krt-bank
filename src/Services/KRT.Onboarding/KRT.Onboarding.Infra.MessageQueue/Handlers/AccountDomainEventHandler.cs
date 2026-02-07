@@ -1,86 +1,97 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using KRT.Onboarding.Domain.Events;
-using KRT.Onboarding.Infra.Data.Context;
-using KRT.Onboarding.Infra.MessageQueue.Events;
-using KRT.BuildingBlocks.Infrastructure.Outbox;
+using KRT.BuildingBlocks.MessageBus;
+using KRT.BuildingBlocks.MessageBus.Notifications;
 
 namespace KRT.Onboarding.Infra.MessageQueue.Handlers;
 
 public class AccountDomainEventHandler :
     INotificationHandler<AccountCreatedEvent>,
-    INotificationHandler<AccountActivatedEvent>,
     INotificationHandler<AccountBlockedEvent>,
-    INotificationHandler<AccountClosedEvent>,
-    INotificationHandler<AccountDebitedEvent>,
-    INotificationHandler<AccountCreditedEvent>
+    INotificationHandler<AccountCreditedEvent>,
+    INotificationHandler<AccountDebitedEvent>
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IMessageBus _messageBus;
     private readonly ILogger<AccountDomainEventHandler> _logger;
 
-    public AccountDomainEventHandler(ApplicationDbContext dbContext, ILogger<AccountDomainEventHandler> logger)
+    public AccountDomainEventHandler(IMessageBus messageBus, ILogger<AccountDomainEventHandler> logger)
     {
-        _dbContext = dbContext;
+        _messageBus = messageBus;
         _logger = logger;
     }
 
-    public async Task Handle(AccountCreatedEvent e, CancellationToken ct)
+    public Task Handle(AccountCreatedEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[Event] Account created: {AccountId}", e.AccountId);
-        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
-            new AccountCreatedIntegrationEvent(
-                e.AccountId, e.AccountNumber, e.AccountId, e.CustomerName,
-                e.Cpf, Domain.Enums.AccountType.Checking, DateTime.UtcNow),
-            e.EventId.ToString()));
-        await _dbContext.SaveChangesAsync(ct);
+        _logger.LogInformation("[Event] Conta criada: {AccountId}", notification.AccountId);
+
+        // Email de boas-vindas
+        _messageBus.Publish(new EmailNotification
+        {
+            To = notification.Email,
+            Subject = "Bem-vindo ao KRT Bank!",
+            Body = $"Olá {notification.CustomerName}! Sua conta foi criada com sucesso. " +
+                   $"Número da conta: {notification.AccountId}.",
+            Template = "welcome",
+            Priority = 5
+        }, "krt.notifications.email", priority: 5);
+
+        // Push notification
+        _messageBus.Publish(new PushNotification
+        {
+            UserId = notification.AccountId,
+            Title = "Conta Criada!",
+            Body = "Sua conta KRT Bank está ativa. Comece a usar agora!"
+        }, "krt.notifications.push");
+
+        return Task.CompletedTask;
     }
 
-    public async Task Handle(AccountActivatedEvent e, CancellationToken ct)
+    public Task Handle(AccountBlockedEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[Event] Account activated: {AccountId}", e.AccountId);
-        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
-            new AccountActivatedIntegrationEvent(e.AccountId, e.AccountNumber, DateTime.UtcNow),
-            e.EventId.ToString()));
-        await _dbContext.SaveChangesAsync(ct);
+        _logger.LogInformation("[Event] Conta bloqueada: {AccountNumber}", notification.AccountNumber);
+
+        // Email urgente (prioridade alta)
+        _messageBus.Publish(new EmailNotification
+        {
+            To = $"account-{notification.AccountId}@krtbank.com",
+            Subject = "⚠️ Sua conta foi bloqueada",
+            Body = $"Sua conta {notification.AccountNumber} foi bloqueada. Motivo: {notification.Reason}. " +
+                   "Entre em contato com o suporte.",
+            Priority = 9
+        }, "krt.notifications.email", priority: 9);
+
+        return Task.CompletedTask;
     }
 
-    public async Task Handle(AccountBlockedEvent e, CancellationToken ct)
+    public Task Handle(AccountCreditedEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[Event] Account blocked: {AccountId} - {Reason}", e.AccountId, e.Reason);
-        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
-            new AccountBlockedIntegrationEvent(e.AccountId, e.AccountNumber, e.Reason, DateTime.UtcNow),
-            e.EventId.ToString()));
-        await _dbContext.SaveChangesAsync(ct);
+        _logger.LogInformation("[Event] Conta creditada: {AccountNumber} +{Amount}",
+            notification.AccountNumber, notification.Amount);
+
+        // SMS de confirmação
+        _messageBus.Publish(new SmsNotification
+        {
+            PhoneNumber = "+5500000000000",
+            Message = $"KRT Bank: Voce recebeu R$ {notification.Amount:N2} na conta {notification.AccountNumber}."
+        }, "krt.notifications.sms");
+
+        return Task.CompletedTask;
     }
 
-    public async Task Handle(AccountClosedEvent e, CancellationToken ct)
+    public Task Handle(AccountDebitedEvent notification, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[Event] Account closed: {AccountId}", e.AccountId);
-        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
-            new AccountClosedIntegrationEvent(e.AccountId, e.AccountNumber, e.Reason, DateTime.UtcNow),
-            e.EventId.ToString()));
-        await _dbContext.SaveChangesAsync(ct);
-    }
+        _logger.LogInformation("[Event] Conta debitada: {AccountNumber} -{Amount}",
+            notification.AccountNumber, notification.Amount);
 
-    public async Task Handle(AccountDebitedEvent e, CancellationToken ct)
-    {
-        _logger.LogInformation("[Event] Account debited: {AccountId} Amount: {Amount}", e.AccountId, e.Amount);
-        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
-            new AccountDebitedIntegrationEvent(
-                e.AccountId, e.AccountNumber, e.TransactionId, e.Amount,
-                "BRL", 0m, "Pix Debit", null, DateTime.UtcNow),
-            e.EventId.ToString()));
-        await _dbContext.SaveChangesAsync(ct);
-    }
+        // Push notification
+        _messageBus.Publish(new PushNotification
+        {
+            UserId = notification.AccountId,
+            Title = "Débito realizado",
+            Body = $"R$ {notification.Amount:N2} debitados da sua conta."
+        }, "krt.notifications.push");
 
-    public async Task Handle(AccountCreditedEvent e, CancellationToken ct)
-    {
-        _logger.LogInformation("[Event] Account credited: {AccountId} Amount: {Amount}", e.AccountId, e.Amount);
-        _dbContext.OutboxMessages.Add(OutboxMessage.Create(
-            new AccountCreditedIntegrationEvent(
-                e.AccountId, e.AccountNumber, e.TransactionId, e.Amount,
-                "BRL", 0m, "Pix Credit", null, DateTime.UtcNow),
-            e.EventId.ToString()));
-        await _dbContext.SaveChangesAsync(ct);
+        return Task.CompletedTask;
     }
 }

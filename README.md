@@ -1,219 +1,190 @@
+﻿# KRT Bank — Plataforma Bancária Distribuída
 
-# KRT Bank — Enterprise Distributed Banking Platform 🚀
+Sistema bancário completo desenvolvido com **Clean Architecture**, **DDD**, **CQRS**, e microsserviços em **.NET 8**.
 
-O **KRT Bank** é uma plataforma bancária digital distribuída, projetada como um **Architecture Showcase** para nível **Staff / Principal Engineer**.
+## Arquitetura
 
-O foco é demonstrar engenharia de sistemas financeiros reais, resolvendo problemas complexos como:
-
-- Identidade Centralizada (OAuth2 / OpenID Connect)
-- Rastreabilidade Distribuída (Correlation IDs end-to-end)
-- Consistência Eventual (Outbox Pattern)
-- Alta Disponibilidade e Resiliência
-
-> Este projeto não é um CRUD. É um ecossistema bancário modular, seguro por design e observável por padrão.
-
----
-
-## 🎯 Objetivos Estratégicos
-
-- Demonstrar arquitetura enterprise realista (não apenas teórica)
-- Implementar **Identity-First Security** com Keycloak
-- Garantir **Observabilidade Total** com logs estruturados e tracing centralizado
-- Implementar padrões de Sistemas Distribuídos (Saga, CQRS, Event-Driven)
-
----
-
-## 🏗️ Arquitetura (Visão Executiva)
-
-A arquitetura segue **Hexagonal / Clean Architecture**, isolando domínio de infraestrutura.
-
-```text
-[ Cliente / Web ] <---(JWT)---> [ Identity Provider (Keycloak) ]
-       |
-       v
-[ API Gateway / Ingress ]
-       |
-       +-------------------------+
-       |                         |
-  [ Onboarding ]            [ Payments ] <---(Events)---> [ Kafka ]
-       |                         |
-  [ PostgreSQL ]            [ PostgreSQL ]
-       |                         |
-       +-----------+-------------+
-                   |
-           [ Observability (Seq) ]
-      (Logs centralizados + Correlation ID)
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   Angular    │────▶│   YARP Gateway   │────▶│   Onboarding     │
+│   Frontend   │     │   :5000           │     │   Service :5001  │
+│   :4200      │     │  • Rate Limiting  │     │  • Accounts      │
+└─────────────┘     │  • CorrelationId  │     │  • Redis Cache   │
+                    │  • Health Checks  │     │  • Kafka Outbox  │
+                    └──────────────────┘     └──────────────────┘
+                              │
+                              └─────────────▶┌──────────────────┐
+                                             │   Payments       │
+                                             │   Service :5002  │
+                                             │  • Pix Saga      │
+                                             │  • Polly Retry   │
+                                             │  • Circuit Break │
+                                             │  • Kafka Outbox  │
+                                             └──────────────────┘
 ```
 
-### Princípios Arquiteturais
+## Stack Tecnológica
 
-- **Security by Design** — Autenticação stateless via JWT (OIDC)
-- **Domain-Driven Design (DDD)** — Domínio rico e invariantes protegidas
-- **Event-Driven Architecture** — Desacoplamento via Kafka
-- **Transactional Outbox Pattern** — Entrega garantida (At-Least-Once)
-- **Distributed Tracing** — Correlação ponta a ponta via `X-Correlation-Id`
+| Camada           | Tecnologia                                      |
+|------------------|------------------------------------------------|
+| Frontend         | Angular 17 + Angular Material                  |
+| API Gateway      | YARP Reverse Proxy + Rate Limiting              |
+| Backend          | .NET 8 (Clean Architecture + DDD)               |
+| CQRS             | MediatR + FluentValidation Pipeline             |
+| Autenticação     | Keycloak (JWT Bearer)                           |
+| Banco de Dados   | PostgreSQL 15 (database per service)            |
+| Cache            | Redis (StackExchange.Redis)                     |
+| Mensageria       | Apache Kafka (Outbox Pattern)                   |
+| Resiliência      | Polly (Retry + Circuit Breaker)                 |
+| Observabilidade  | Serilog → Seq + CorrelationId E2E              |
+| Containers       | Docker Compose                                  |
 
----
+## Estrutura de Projetos
 
-## 🔐 Segurança & Identidade (Keycloak)
+```
+src/
+├── BuildingBlocks/
+│   ├── KRT.BuildingBlocks.Domain          # Entity, AggregateRoot, ValueObject, DomainEvent
+│   ├── KRT.BuildingBlocks.EventBus        # IEventBus, KafkaEventBus, IntegrationEvent
+│   └── KRT.BuildingBlocks.Infrastructure  # Repository<T>, OutboxProcessor, UoW
+│
+├── Services/
+│   ├── KRT.Gateway/                       # YARP + Rate Limiting + Health Checks
+│   ├── KRT.Onboarding/                    # Contexto de Contas
+│   │   ├── Api                            # Controllers, Middlewares
+│   │   ├── Application                    # Commands, Handlers, Validators
+│   │   ├── Domain                         # Account, Enums, Interfaces
+│   │   ├── Infra.Data                     # EF Core, Repositories
+│   │   ├── Infra.Cache                    # Redis (ICacheService)
+│   │   ├── Infra.MessageQueue             # Integration Events
+│   │   └── Infra.IoC                      # DI Registration
+│   └── KRT.Payments/                      # Contexto de Pagamentos
+│       ├── Api                            # Controllers, Middlewares
+│       ├── Application                    # ProcessPixCommand, Saga Handler
+│       ├── Domain                         # PixTransaction, Payment
+│       ├── Infra.Data                     # EF Core, Repositories
+│       ├── Infra.Http                     # OnboardingServiceClient (Polly)
+│       └── Infra.IoC                      # DI Registration
+│
+└── Web/
+    └── KRT.Web/                           # Angular SPA
+```
 
-A segurança é centralizada em um Identity Provider corporativo.
+## Pré-requisitos
 
-- **Identity Server:** Keycloak 24.0.1 (Docker)
-- **Protocolos:** OAuth2 + OpenID Connect (OIDC)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js 18+](https://nodejs.org/) (para o Angular)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-### Fluxo
+## Quick Start
 
-1. Usuário autentica no Keycloak → recebe JWT
-2. Requests para APIs exigem `Authorization: Bearer <token>`
-3. APIs validam assinatura (RS256), expiração e claims
-
-> Zero Trust: nenhuma API confia em nada sem validar token.
-
----
-
-## 📈 Observabilidade (Seq)
-
-Observabilidade nativa por padrão.
-
-- **Correlation ID:** Gerado na entrada e propagado via HTTP + Kafka
-- **Centralização:** Todos os serviços enviam logs ao Seq (`http://localhost:5341`)
-
-### Benefício
-
-Permite rastrear uma transação completa:
-
-- Request HTTP
-- Commit no banco
-- Publicação Kafka
-- Consumo Kafka
-- Execução de regra de domínio
-
----
-
-## 🔌 Microsserviços
-
-| Serviço | Responsabilidade | Stack |
-|--------|------------------|-------|
-| **KRT.Identity (Keycloak)** | Usuários, roles, tokens e SSO | Java/Quarkus |
-| **KRT.Onboarding** | Criação de contas, KYC, validação cadastral | .NET 8, EF Core, PostgreSQL |
-| **KRT.Payments** | Pix, transferências, ledger bancário | .NET 8, MediatR, PostgreSQL |
-| **KRT.Infra** | Mensageria e Observabilidade | Kafka, Zookeeper, Seq |
-
----
-
-## 🚀 Como Rodar Localmente
-
-Ambiente 100% conteinerizado.
-
-### Pré-requisitos
-
-- Docker + Docker Compose
-- PowerShell
-- .NET 8 SDK
-
----
-
-### 1️⃣ Subir Infraestrutura Completa
+### 1. Subir a Infraestrutura
 
 ```powershell
-docker-compose up -d
+docker compose up -d
 ```
 
-Sobe: Postgres, Redis, Kafka, Zookeeper, Seq e Keycloak.
+Containers: PostgreSQL, Redis, Kafka, Zookeeper, Seq, Keycloak.
 
----
+### 2. Configurar Keycloak (se necessário)
 
-### 2️⃣ Configurar Identity Provider (Automático)
+O realm `krt-bank` é importado automaticamente via `--import-realm`.
+Se precisar reconfigurar manualmente:
 
 ```powershell
-./setup-keycloak.ps1
+.\setup-keycloak.ps1
 ```
 
-Resultado:
+Credenciais de teste:
+- **Admin Console:** http://localhost:8080/admin → `admin / admin`
+- **Usuário demo:** `demo / demo123`
 
-- Realm: `krt-bank`
-- Client: `krt-api`
-- Usuário: `tester`
+### 3. Iniciar os Backends
 
----
-
-### 3️⃣ Executar Microsserviços
-
-```bash
-# Terminal 1 - Onboarding
-cd src/Services/KRT.Onboarding/KRT.Onboarding.Api
+```powershell
+# Terminal 1 — Gateway
+cd src\Services\KRT.Gateway\KRT.Gateway
 dotnet run
 
-# Terminal 2 - Payments
-cd src/Services/KRT.Payments/KRT.Payments.Api
-dotnet run
+# Terminal 2 — Onboarding
+cd src\Services\KRT.Onboarding\KRT.Onboarding.Api
+dotnet run --urls http://localhost:5001
+
+# Terminal 3 — Payments
+cd src\Services\KRT.Payments\KRT.Payments.Api
+dotnet run --urls http://localhost:5002
 ```
 
----
-
-### 4️⃣ Teste End-to-End (E2E)
+### 4. Iniciar o Frontend
 
 ```powershell
-./test-e2e-flow.ps1
+cd src\Web\KRT.Web
+npm install
+ng serve
 ```
 
-O script:
+Acesse: http://localhost:4200
 
-1. Autentica no Keycloak
-2. Cria conta no Onboarding
-3. Executa Pix no Payments
-4. Exibe Correlation ID
+### 5. Testar E2E
 
-Visualize no Seq:
-👉 http://localhost:5341
+```powershell
+.\test-e2e-flow.ps1
+```
 
----
+## Portas
 
-## 🛠️ Stack Tecnológica
+| Serviço       | Porta  | URL                              |
+|---------------|--------|----------------------------------|
+| Angular       | 4200   | http://localhost:4200             |
+| Gateway       | 5000   | http://localhost:5000             |
+| Onboarding    | 5001   | http://localhost:5001/swagger     |
+| Payments      | 5002   | http://localhost:5002/swagger     |
+| Keycloak      | 8080   | http://localhost:8080/admin       |
+| PostgreSQL    | 5433   | localhost:5433                   |
+| Redis         | 6380   | localhost:6380                   |
+| Kafka         | 29092  | localhost:29092                  |
+| Seq           | 5341   | http://localhost:5341             |
 
-### Backend & Infra
+## Patterns Implementados
 
-- .NET 8 (C#)
-- Keycloak
-- Seq
-- Apache Kafka
-- PostgreSQL (Database per Service)
-- Redis
-- Docker Compose
+### Clean Architecture + DDD
+- **Domain Layer**: Entidades ricas (Account com Debit/Credit/Block), Value Objects, Domain Events
+- **Application Layer**: CQRS via MediatR, FluentValidation Pipeline Behavior
+- **Infrastructure Layer**: EF Core, Redis, Kafka, HTTP Clients
 
----
+### Saga Pattern (Pix)
+```
+ProcessPixCommand → Debit Source → Credit Destination → Publish Event
+                       ↓ (falha)
+                  Compensação: Credit Source (rollback)
+```
 
-## 🧩 Design Patterns
+### Outbox Pattern
+```
+Command Handler → OutboxMessage (same DB transaction)
+OutboxProcessor → Poll → KafkaEventBus → Topics
+```
 
-- Clean Architecture
-- CQRS
-- Outbox Pattern
-- Notification Pattern (Validações)
-- Result Pattern (Tratamento de erros)
+### Polly Resilience (Payments → Onboarding)
+- **Retry**: 3 tentativas, backoff exponencial (1s, 2s, 4s)
+- **Circuit Breaker**: Abre após 5 falhas, 30s aberto
 
----
+### Redis Cache (Onboarding)
+- `GET /accounts/{id}` → Cache Redis (5 min TTL)
+- Invalidação automática em Debit/Credit
 
-## 🧠 Destaques de Engenharia
+### Observabilidade
+- **Serilog → Seq** em todos os serviços
+- **CorrelationId** propagado: Gateway → Backend → HttpClient → Kafka headers
+- Console template: `[HH:mm:ss LVL] [{CorrelationId}] Message`
 
-✔ **Identity Agnostic** — Serviços não conhecem usuários, apenas tokens válidos  
-✔ **Traceability First** — Logs estruturados e correlacionados  
-✔ **Infrastructure as Code** — Ambiente inteiro sobe com um comando  
-✔ **Fail-Fast Domain** — Validações antes de qualquer I/O
+## Segurança
 
----
+- **Keycloak** como Identity Provider (OIDC)
+- **JWT Bearer** em todos os backends
+- **Rate Limiting** no Gateway (100 req/min por IP)
+- **CORS** configurado para o Angular
 
-## 🛣️ Roadmap
+## Licença
 
-- [x] Arquitetura Base (DDD / Clean Architecture)
-- [x] Mensageria (Kafka + Outbox)
-- [x] Identity Server (Keycloak + OIDC)
-- [x] Observabilidade Centralizada (Seq)
-- [ ] Resiliência (Polly - Retry / Circuit Breaker)
-- [ ] API Gateway (YARP)
-- [ ] Frontend Angular Integrado
-
----
-
-© 2026 — **KRT Bank**  
-Engineered for scale. Secured by design. Built for reality.
+Projeto acadêmico — KRT Bank 2026.
