@@ -38,7 +38,7 @@ import { AccountService } from '../../../core/services/account.service';
             </button>
           </div>
           <div class="balance-amount" [class.hidden-balance]="!showBalance">
-            {{ showBalance ? (balance | currency:'BRL':'symbol':'1.2-2':'pt-BR') : '••••••' }}
+            {{ showBalance ? (balance | currency:'BRL') : '••••••' }}
           </div>
           <div class="balance-bottom" *ngIf="showBalance">
             <span class="account-info">Ag 0001 · Conta {{ accountId?.substring(0, 8) }}</span>
@@ -114,7 +114,7 @@ import { AccountService } from '../../../core/services/account.service';
               <span class="tx-date">{{ t.createdAt | date:'dd/MM · HH:mm' }}</span>
             </div>
             <span class="tx-amount" [class.credit]="t.type === 'CREDIT'">
-              {{ t.type === 'CREDIT' ? '+' : '-' }}{{ t.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+              {{ t.type === 'CREDIT' ? '+' : '-' }}{{ t.amount | currency:'BRL':'symbol':'1.2-2' }}
             </span>
           </div>
         </div>
@@ -174,9 +174,9 @@ import { AccountService } from '../../../core/services/account.service';
       color: var(--krt-text-muted); padding: 4px;
     }
     .balance-amount {
-      font-size: 2rem; font-weight: 800; color: var(--krt-text);
-      margin: 8px 0 4px; letter-spacing: -0.5px;
-    }
+        font-size: 1.5rem; font-weight: 700; color: var(--krt-text);
+        margin: 8px 0 4px; letter-spacing: -0.3px;
+      }
     .hidden-balance { color: var(--krt-text-muted); letter-spacing: 4px; }
     .balance-bottom { margin-top: 4px; }
     .account-info { font-size: 0.78rem; color: var(--krt-text-muted); }
@@ -332,6 +332,10 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 }
+
+
+
+
 
 
 

@@ -1,4 +1,6 @@
-﻿/* ============================================
+﻿@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+/* ============================================
    KRT BANK — Design System
    Inspired by Nubank, Inter, C6 Bank
    ============================================ */
@@ -100,3 +102,4 @@ html, body {
 
 /* Bottom nav space */
 .page-with-nav { padding-bottom: 80px; }
+

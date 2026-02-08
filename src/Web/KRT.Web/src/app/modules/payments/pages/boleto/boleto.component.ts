@@ -212,3 +212,4 @@ export class BoletoComponent {
     }, 2000);
   }
 }
+
