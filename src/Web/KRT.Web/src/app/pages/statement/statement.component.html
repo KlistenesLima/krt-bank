@@ -1,0 +1,101 @@
+<div class="statement-page">
+  <div class="header-row">
+    <h2>Extrato Completo</h2>
+    <div class="export-buttons">
+      <button class="btn-export csv" (click)="exportCsv()">📊 CSV</button>
+      <button class="btn-export pdf" (click)="exportPdf()">📄 PDF</button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-panel">
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label>Buscar</label>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Nome, descricao..." (keyup.enter)="applyFilters()">
+      </div>
+      <div class="filter-group">
+        <label>Data Inicio</label>
+        <input type="date" [(ngModel)]="startDate">
+      </div>
+      <div class="filter-group">
+        <label>Data Fim</label>
+        <input type="date" [(ngModel)]="endDate">
+      </div>
+      <div class="filter-group">
+        <label>Tipo</label>
+        <select [(ngModel)]="typeFilter">
+          <option value="">Todos</option>
+          <option *ngFor="let t of types" [value]="t">{{ getTypeLabel(t) }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Categoria</label>
+        <select [(ngModel)]="categoryFilter">
+          <option value="">Todas</option>
+          <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Valor min</label>
+        <input type="number" [(ngModel)]="minAmount" placeholder="0.00">
+      </div>
+      <div class="filter-group">
+        <label>Valor max</label>
+        <input type="number" [(ngModel)]="maxAmount" placeholder="99999">
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn-filter" (click)="applyFilters()">🔍 Filtrar</button>
+      <button class="btn-clear" (click)="clearFilters()">✕ Limpar</button>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="summary-bar" *ngIf="summary">
+    <span class="income">Entradas: R$ {{ summary.totalIncome | number:'1.2-2' }}</span>
+    <span class="expenses">Saidas: R$ {{ summary.totalExpenses | number:'1.2-2' }}</span>
+    <span class="net" [class.positive]="summary.net >= 0" [class.negative]="summary.net < 0">
+      Saldo: R$ {{ summary.net | number:'1.2-2' }}
+    </span>
+    <span class="count">{{ totalItems }} transacoes</span>
+  </div>
+
+  <!-- Tabela -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th (click)="sort('date')" class="sortable">Data {{ sortBy === 'date' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+          <th (click)="sort('type')" class="sortable">Tipo {{ sortBy === 'type' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+          <th>Favorecido</th>
+          <th>Descricao</th>
+          <th>Categoria</th>
+          <th (click)="sort('amount')" class="sortable amount-col">Valor {{ sortBy === 'amount' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let tx of transactions" [class.credit]="tx.isCredit" [class.debit]="!tx.isCredit">
+          <td class="date-col">{{ tx.date | date:'dd/MM/yy HH:mm' }}</td>
+          <td class="type-col"><span class="type-badge">{{ getTypeIcon(tx.type) }} {{ getTypeLabel(tx.type) }}</span></td>
+          <td>{{ tx.counterpartyName }}</td>
+          <td>{{ tx.description }}</td>
+          <td><span class="category-tag">{{ tx.category }}</span></td>
+          <td class="amount-col" [class.positive]="tx.isCredit" [class.negative]="!tx.isCredit">
+            {{ tx.isCredit ? '+' : '' }}R$ {{ tx.amount | number:'1.2-2' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="loading" class="loading">Carregando...</div>
+    <div *ngIf="!loading && transactions.length === 0" class="empty">Nenhuma transacao encontrada.</div>
+  </div>
+
+  <!-- Paginacao -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button (click)="goToPage(page - 1)" [disabled]="page <= 1">‹</button>
+    <button *ngFor="let p of getPages()" (click)="goToPage(p)" [class.active]="p === page">{{ p }}</button>
+    <button (click)="goToPage(page + 1)" [disabled]="page >= totalPages">›</button>
+    <span class="page-info">Pagina {{ page }} de {{ totalPages }}</span>
+  </div>
+</div>
