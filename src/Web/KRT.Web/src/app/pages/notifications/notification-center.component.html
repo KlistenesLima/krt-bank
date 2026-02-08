@@ -1,0 +1,57 @@
+<div class="notif-page">
+  <div class="header-row">
+    <h2>Central de Notificacoes</h2>
+    <div class="header-actions">
+      <span class="unread-badge" *ngIf="unreadCount > 0">{{ unreadCount }} nao lidas</span>
+      <button class="btn-read-all" (click)="markAllAsRead()" *ngIf="unreadCount > 0">
+        Marcar todas como lidas
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filter-bar">
+    <button [class.active]="!showUnreadOnly" (click)="showUnreadOnly = false; toggleFilter()">Todas</button>
+    <button [class.active]="showUnreadOnly" (click)="showUnreadOnly = true; toggleFilter()">Nao lidas</button>
+    <span class="separator">|</span>
+    <button [class.active]="categoryFilter === ''" (click)="categoryFilter = ''; toggleFilter()">Todas categorias</button>
+    <button *ngFor="let cat of categories" [class.active]="categoryFilter === cat"
+      (click)="categoryFilter = cat; toggleFilter()">{{ cat }}</button>
+  </div>
+
+  <!-- Lista -->
+  <div class="notif-list">
+    <div class="notif-item" *ngFor="let n of notifications"
+      [class.unread]="!n.isRead" [ngClass]="getPriorityClass(n.priority)"
+      (click)="!n.isRead && markAsRead(n.id)">
+
+      <div class="notif-icon">{{ n.icon }}</div>
+
+      <div class="notif-content">
+        <div class="notif-header">
+          <span class="notif-title">{{ n.title }}</span>
+          <span class="notif-time">{{ getTimeAgo(n.createdAt) }}</span>
+        </div>
+        <p class="notif-message">{{ n.message }}</p>
+        <div class="notif-meta">
+          <span class="category-tag">{{ n.category }}</span>
+          <span class="priority-tag" *ngIf="n.priority === 'high'">urgente</span>
+        </div>
+      </div>
+
+      <button class="btn-delete" (click)="$event.stopPropagation(); deleteNotification(n.id)" title="Remover">✕</button>
+    </div>
+
+    <div *ngIf="!loading && notifications.length === 0" class="empty">
+      Nenhuma notificacao encontrada
+    </div>
+    <div *ngIf="loading" class="loading">Carregando...</div>
+  </div>
+
+  <!-- Paginacao -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button (click)="goToPage(page - 1)" [disabled]="page <= 1">‹ Anterior</button>
+    <span>{{ page }} / {{ totalPages }}</span>
+    <button (click)="goToPage(page + 1)" [disabled]="page >= totalPages">Proxima ›</button>
+  </div>
+</div>
