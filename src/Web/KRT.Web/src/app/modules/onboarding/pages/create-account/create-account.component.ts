@@ -107,7 +107,13 @@ import { AuthService } from '../../../../core/services/auth.service';
     }
     .header-simple h1 { margin: 0; font-size: 1.2rem; color: #333; }
     .full { width: 100%; margin-bottom: 5px; }
-    .submit-btn { width: 100%; padding: 25px !important; font-size: 1rem; margin-top: 10px; display: flex; justify-content: center; align-items: center; }
+    .submit-btn {
+      width: 100%; padding: 16px !important; font-size: 1rem; font-weight: 600;
+      margin-top: 10px; display: flex; justify-content: center; align-items: center;
+      background: linear-gradient(135deg, #0052D4 0%, #0047BB 100%) !important;
+      color: white !important; border: none; border-radius: 12px; cursor: pointer;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
     .error-box { background: #FFEBEE; color: #C62828; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; }
     .success-box { background: #E8F5E9; color: #2E7D32; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; }
     .login-link { text-align: center; margin-top: 16px; color: #666; }
@@ -233,4 +239,5 @@ export class CreateAccountComponent {
   goToLogin() { this.router.navigate(['/login']); }
   back() { this.location.back(); }
 }
+
 
