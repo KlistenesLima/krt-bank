@@ -1,6 +1,7 @@
-﻿import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { AccountService } from '../../../core/services/account.service';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -311,6 +312,23 @@ export class DashboardPageComponent implements OnInit {
 
   logout() {
     this.authService.logout();
+  }
+
+  /** Busca saldo real da API */
+  refreshBalanceFromApi(): void {
+    const accountId = this.auth.getAccountId();
+    if (accountId) {
+      this.accountService.getBalance(accountId).subscribe({
+        next: (res) => {
+          this.balance = res.availableAmount;
+          this.auth.updateBalance(res.availableAmount);
+        },
+        error: (err) => {
+          console.warn('Falha ao buscar saldo da API, usando cache local', err);
+          this.balance = this.auth.getBalance();
+        }
+      });
+    }
   }
 }
 

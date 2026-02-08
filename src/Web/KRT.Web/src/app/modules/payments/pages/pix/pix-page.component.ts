@@ -1,4 +1,7 @@
-﻿import { Component } from '@angular/core';
+import { AuthService } from '../../../../core/services/auth.service';
+import { AccountService } from '../../../../core/services/account.service';
+import { PaymentService } from '../../../../core/services/payment.service';
+import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';

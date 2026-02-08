@@ -1,38 +1,51 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, AccountResponse, BalanceResponse, CreateAccountRequest } from '../models/account.model';
+
+export interface AccountDto {
+  id: string;
+  customerName: string;
+  document: string;
+  email: string;
+  balance: number;
+  status: string;
+  type: string;
+}
+
+export interface BalanceDto {
+  accountId: string;
+  availableAmount: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AccountService {
   private baseUrl = `${environment.apiUrl}/accounts`;
+
   constructor(private http: HttpClient) {}
 
-  create(data: CreateAccountRequest): Observable<ApiResponse<{ id: string }>> {
-    return this.http.post<ApiResponse<{ id: string }>>(this.baseUrl, data);
+  /** GET /api/v1/accounts/{id} */
+  getById(id: string): Observable<AccountDto> {
+    return this.http.get<AccountDto>(`${this.baseUrl}/${id}`);
   }
 
-  getById(id: string): Observable<AccountResponse> {
-    return this.http.get<ApiResponse<AccountResponse>>(`${this.baseUrl}/${id}`)
-      .pipe(map(res => res.data));
+  /** GET /api/v1/accounts/by-document/{doc} */
+  getByDocument(document: string): Observable<AccountDto> {
+    return this.http.get<AccountDto>(`${this.baseUrl}/by-document/${document}`);
   }
 
-  getBalance(id: string): Observable<BalanceResponse> {
-    return this.http.get<ApiResponse<BalanceResponse>>(`${this.baseUrl}/${id}/balance`)
-      .pipe(map(res => res.data));
+  /** GET /api/v1/accounts/{id}/balance */
+  getBalance(id: string): Observable<BalanceDto> {
+    return this.http.get<BalanceDto>(`${this.baseUrl}/${id}/balance`);
   }
 
-  getAll(): Observable<AccountResponse[]> {
-    return this.http.get<ApiResponse<AccountResponse[]>>(this.baseUrl)
-      .pipe(map(res => res.data));
+  /** POST /api/v1/accounts/{id}/credit */
+  credit(id: string, amount: number, reason: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/${id}/credit`, { amount, reason });
   }
 
-  activate(id: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/${id}/activate`, {});
-  }
-
-  block(id: string, reason: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/${id}/block`, { reason });
+  /** POST /api/v1/accounts/{id}/debit */
+  debit(id: string, amount: number, reason: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/${id}/debit`, { amount, reason });
   }
 }

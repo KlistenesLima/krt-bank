@@ -1,4 +1,7 @@
-﻿// === Pix Transfer (ProcessPixCommand no backend) ===
+// payment.model.ts - DEPRECATED na Parte 11
+// Interfaces movidas para payment.service.ts para manter tudo junto
+// Este arquivo eh mantido vazio para nao quebrar imports existentes
+
 export interface PixTransferRequest {
   sourceAccountId: string;
   destinationAccountId: string;

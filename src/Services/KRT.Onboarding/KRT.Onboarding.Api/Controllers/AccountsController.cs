@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using KRT.Onboarding.Application.Commands;
 using KRT.Onboarding.Domain.Interfaces;
 using MediatR;
@@ -47,7 +48,7 @@ public class AccountsController : ControllerBase
             return Ok(cached);
         }
 
-        // 2. Cache miss — busca no banco
+        // 2. Cache miss - busca no banco
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
         if (account == null) return NotFound();
 
@@ -68,12 +69,45 @@ public class AccountsController : ControllerBase
         return Ok(dto);
     }
 
+    /// <summary>
+    /// Busca conta pelo CPF (documento). Usado pelo dashboard.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("by-document/{document}")]
+    public async Task<IActionResult> GetByDocument(string document)
+    {
+        var cleanDoc = document.Replace(".", "").Replace("-", "").Trim();
+        var cacheKey = $"account:doc:{cleanDoc}";
+        var cached = await _cache.GetAsync<AccountDto>(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache HIT for document {Document}", cleanDoc);
+            return Ok(cached);
+        }
+
+        var account = await _repository.GetByCpfAsync(cleanDoc, CancellationToken.None);
+        if (account == null) return NotFound();
+
+        var dto = new AccountDto(
+            account.Id,
+            account.CustomerName,
+            account.Document,
+            account.Email,
+            account.Balance,
+            account.Status.ToString(),
+            account.Type.ToString()
+        );
+
+        await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(5));
+        return Ok(dto);
+    }
+
     [HttpGet("{id}/balance")]
     public async Task<IActionResult> GetBalance(Guid id)
     {
         var account = await _repository.GetByIdAsync(id, CancellationToken.None);
         if (account == null) return NotFound();
-        return Ok(new { AccountId = id, AvailableAmount = account.Balance });
+        return Ok(new { accountId = id, availableAmount = account.Balance });
     }
 
     // === ENDPOINTS PARA A SAGA ===
@@ -84,6 +118,7 @@ public class AccountsController : ControllerBase
     /// <summary>
     /// Debita valor da conta. Usado pela Saga do Pix.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("{id}/debit")]
     public async Task<IActionResult> Debit(Guid id, [FromBody] DebitRequest request)
     {
@@ -98,8 +133,9 @@ public class AccountsController : ControllerBase
             var uow = _repository.UnitOfWork;
             await uow.CommitAsync(CancellationToken.None);
 
-            // Invalida cache após alteração de saldo
+            // Invalida cache apos alteracao de saldo
             await _cache.RemoveAsync($"account:{id}");
+            await _cache.RemoveAsync($"account:doc:{account.Document}");
 
             return Ok(new { Success = true, Error = (string?)null, NewBalance = account.Balance });
         }
@@ -112,6 +148,7 @@ public class AccountsController : ControllerBase
     /// <summary>
     /// Credita valor na conta. Usado pela Saga do Pix.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("{id}/credit")]
     public async Task<IActionResult> Credit(Guid id, [FromBody] CreditRequest request)
     {
@@ -126,8 +163,9 @@ public class AccountsController : ControllerBase
             var uow = _repository.UnitOfWork;
             await uow.CommitAsync(CancellationToken.None);
 
-            // Invalida cache após alteração de saldo
+            // Invalida cache apos alteracao de saldo
             await _cache.RemoveAsync($"account:{id}");
+            await _cache.RemoveAsync($"account:doc:{account.Document}");
 
             return Ok(new { Success = true, Error = (string?)null, NewBalance = account.Balance });
         }
@@ -138,7 +176,7 @@ public class AccountsController : ControllerBase
     }
 }
 
-// DTO interno para serialização do cache (records são serializáveis)
+// DTO interno para serializacao do cache (records sao serializaveis)
 public record AccountDto(
     Guid Id,
     string CustomerName,
@@ -148,4 +186,3 @@ public record AccountDto(
     string Status,
     string Type
 );
-

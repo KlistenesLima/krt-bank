@@ -1,134 +1,179 @@
-﻿import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
+import { PaymentService, PixTransaction } from '../../../core/services/payment.service';
 
 @Component({
   selector: 'app-statement-page',
   template: `
-    <div class="statement-container page-with-nav">
-      <header class="page-header">
-        <button mat-icon-button (click)="router.navigate(['/dashboard'])">
-          <mat-icon>arrow_back</mat-icon>
+    <div class="statement-container">
+      <div class="header">
+        <button mat-icon-button (click)="goBack()"><mat-icon>arrow_back</mat-icon></button>
+        <h2>Extrato</h2>
+      </div>
+
+      <div class="loading" *ngIf="loading">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Carregando extrato...</span>
+      </div>
+
+      <div class="empty" *ngIf="!loading && transactions.length === 0">
+        <mat-icon>receipt_long</mat-icon>
+        <p>Nenhuma transacao encontrada</p>
+      </div>
+
+      <div class="tx-list" *ngIf="!loading && transactions.length > 0">
+        <div class="tx-item" *ngFor="let tx of transactions" (click)="viewDetail(tx)">
+          <div class="tx-icon" [ngClass]="getTxClass(tx)">
+            <mat-icon>{{ getTxIcon(tx) }}</mat-icon>
+          </div>
+          <div class="tx-info">
+            <strong>{{ getTxLabel(tx) }}</strong>
+            <span class="tx-date">{{ tx.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span class="tx-status" [ngClass]="'status-' + tx.status.toLowerCase()">
+              {{ getStatusLabel(tx.status) }}
+            </span>
+          </div>
+          <div class="tx-amount" [ngClass]="isIncoming(tx) ? 'incoming' : 'outgoing'">
+            {{ isIncoming(tx) ? '+' : '-' }} R$ {{ tx.amount | number:'1.2-2' }}
+          </div>
+        </div>
+
+        <button mat-button color="primary" (click)="loadMore()" *ngIf="hasMore"
+                [disabled]="loadingMore">
+          {{ loadingMore ? 'Carregando...' : 'Carregar mais' }}
         </button>
-        <h1>Extrato</h1>
-        <div style="width:40px"></div>
-      </header>
-
-      <!-- Balance summary -->
-      <div class="balance-summary">
-        <div class="summary-item">
-          <span class="summary-label">Saldo atual</span>
-          <span class="summary-value">{{ balance | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
-        </div>
       </div>
 
-      <!-- Filters -->
-      <div class="filters">
-        <button class="filter-chip" [class.active]="filter === 'all'" (click)="filter = 'all'">Todos</button>
-        <button class="filter-chip" [class.active]="filter === 'CREDIT'" (click)="filter = 'CREDIT'">Entradas</button>
-        <button class="filter-chip" [class.active]="filter === 'DEBIT'" (click)="filter = 'DEBIT'">Saídas</button>
-      </div>
-
-      <!-- Transactions -->
-      <div class="tx-list">
-        <div *ngIf="filteredTransactions().length === 0" class="empty-state">
-          <mat-icon>receipt_long</mat-icon>
-          <p>Nenhuma movimentação</p>
-        </div>
-
-        <div class="tx-item" *ngFor="let t of filteredTransactions()">
-          <div class="tx-icon" [class.credit]="t.type === 'CREDIT'">
-            <mat-icon>{{ t.type === 'CREDIT' ? 'south_west' : 'north_east' }}</mat-icon>
-          </div>
-          <div class="tx-details">
-            <span class="tx-desc">{{ t.description }}</span>
-            <span class="tx-date">{{ formatDate(t.createdAt) }}</span>
-          </div>
-          <span class="tx-amount" [class.credit]="t.type === 'CREDIT'">
-            {{ t.type === 'CREDIT' ? '+' : '-' }}{{ t.amount | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
-          </span>
-        </div>
-      </div>
+      <app-bottom-nav></app-bottom-nav>
     </div>
-
-    <app-bottom-nav></app-bottom-nav>
   `,
   styles: [`
-    .statement-container { min-height: 100vh; background: var(--krt-bg); }
-    .page-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px; background: white; border-bottom: 1px solid var(--krt-divider);
-    }
-    .page-header h1 { font-size: 1.1rem; font-weight: 700; margin: 0; }
-
-    .balance-summary {
-      background: white; padding: 20px; margin: 16px 20px;
-      border-radius: var(--krt-radius); box-shadow: var(--krt-shadow-sm);
-    }
-    .summary-label { font-size: 0.82rem; color: var(--krt-text-muted); display: block; }
-    .summary-value { font-size: 1.5rem; font-weight: 800; color: var(--krt-text); }
-
-    .filters {
-      display: flex; gap: 8px; padding: 0 20px 16px; overflow-x: auto;
-    }
-    .filter-chip {
-      background: white; border: 1.5px solid var(--krt-border); border-radius: 20px;
-      padding: 8px 18px; font-size: 0.82rem; font-weight: 600;
-      cursor: pointer; white-space: nowrap; transition: all 0.2s;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    .filter-chip.active {
-      background: var(--krt-primary); color: white; border-color: var(--krt-primary);
-    }
-
-    .tx-list {
-      padding: 0 20px 20px; max-width: 500px; margin: 0 auto;
-    }
-    .empty-state {
-      text-align: center; padding: 40px;
-      background: white; border-radius: var(--krt-radius);
-    }
-    .empty-state mat-icon { font-size: 40px; width: 40px; height: 40px; color: var(--krt-text-muted); }
-    .empty-state p { color: var(--krt-text-muted); margin-top: 8px; }
-
+    .statement-container { padding: 16px 16px 80px; max-width: 500px; margin: 0 auto; }
+    .header { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+    .header h2 { margin: 0; color: var(--krt-primary); }
+    .loading { display: flex; align-items: center; gap: 12px; justify-content: center; padding: 40px; }
+    .empty { text-align: center; padding: 60px 20px; color: #999; }
+    .empty mat-icon { font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; }
+    .tx-list { display: flex; flex-direction: column; gap: 8px; }
     .tx-item {
       display: flex; align-items: center; gap: 12px;
-      background: white; padding: 16px; margin-bottom: 8px;
-      border-radius: var(--krt-radius-sm); box-shadow: var(--krt-shadow-sm);
+      padding: 14px 16px; background: white; border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer;
+      transition: transform 0.15s;
     }
+    .tx-item:hover { transform: translateX(4px); }
     .tx-icon {
       width: 40px; height: 40px; border-radius: 12px;
-      background: #FFF0F0; color: var(--krt-danger);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
     }
-    .tx-icon.credit { background: #E8F5E9; color: var(--krt-success); }
-    .tx-details { flex: 1; }
-    .tx-desc { display: block; font-size: 0.88rem; font-weight: 500; }
-    .tx-date { font-size: 0.75rem; color: var(--krt-text-muted); }
-    .tx-amount { font-weight: 700; font-size: 0.9rem; color: var(--krt-danger); white-space: nowrap; }
-    .tx-amount.credit { color: var(--krt-success); }
+    .tx-icon.sent { background: #ffe0e0; color: #e53935; }
+    .tx-icon.received { background: #e0f7f0; color: #00c853; }
+    .tx-icon mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    .tx-info { flex: 1; display: flex; flex-direction: column; }
+    .tx-info strong { font-size: 0.9rem; }
+    .tx-date { font-size: 0.75rem; color: #999; }
+    .tx-status { font-size: 0.7rem; font-weight: 600; }
+    .status-completed { color: #00c853; }
+    .status-pendinganalysis, .status-pending, .status-approved { color: #ff9800; }
+    .status-rejected, .status-failed { color: #e53935; }
+    .status-compensated { color: #9c27b0; }
+    .status-underreview { color: #2196f3; }
+    .tx-amount { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+    .tx-amount.incoming { color: #00c853; }
+    .tx-amount.outgoing { color: #e53935; }
   `]
 })
 export class StatementPageComponent implements OnInit {
-  transactions: any[] = [];
-  balance = 0;
-  filter = 'all';
+  transactions: PixTransaction[] = [];
+  loading = true;
+  loadingMore = false;
+  hasMore = true;
+  page = 1;
+  pageSize = 20;
+  accountId = '';
 
-  constructor(public router: Router) {}
+  constructor(
+    private auth: AuthService,
+    private paymentService: PaymentService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
-    this.balance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
-    this.transactions = JSON.parse(localStorage.getItem('krt_transactions') || '[]');
+    this.accountId = this.auth.getAccountId() || '';
+    if (this.accountId) {
+      this.loadTransactions();
+    } else {
+      this.loading = false;
+    }
   }
 
-  filteredTransactions() {
-    if (this.filter === 'all') return this.transactions;
-    return this.transactions.filter((t: any) => t.type === this.filter);
+  loadTransactions() {
+    this.loading = this.page === 1;
+    this.loadingMore = this.page > 1;
+
+    this.paymentService.getHistory(this.accountId, this.page, this.pageSize).subscribe({
+      next: (txs) => {
+        if (this.page === 1) {
+          this.transactions = txs;
+        } else {
+          this.transactions = [...this.transactions, ...txs];
+        }
+        this.hasMore = txs.length === this.pageSize;
+        this.loading = false;
+        this.loadingMore = false;
+      },
+      error: (err) => {
+        console.error('Erro ao carregar extrato:', err);
+        this.loading = false;
+        this.loadingMore = false;
+      }
+    });
   }
 
-  formatDate(d: string): string {
-    if (!d) return '';
-    const date = new Date(d);
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' · '
-         + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  loadMore() {
+    this.page++;
+    this.loadTransactions();
+  }
+
+  isIncoming(tx: PixTransaction): boolean {
+    return tx.destinationAccountId === this.accountId;
+  }
+
+  getTxClass(tx: PixTransaction): string {
+    return this.isIncoming(tx) ? 'received' : 'sent';
+  }
+
+  getTxIcon(tx: PixTransaction): string {
+    return this.isIncoming(tx) ? 'call_received' : 'call_made';
+  }
+
+  getTxLabel(tx: PixTransaction): string {
+    if (this.isIncoming(tx)) return 'Pix Recebido';
+    return tx.description || 'Pix Enviado';
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      'Completed': 'Concluido',
+      'PendingAnalysis': 'Em analise',
+      'Pending': 'Processando',
+      'Approved': 'Aprovado',
+      'Rejected': 'Rejeitado',
+      'Failed': 'Falhou',
+      'Compensated': 'Estornado',
+      'UnderReview': 'Em revisao',
+      'SourceDebited': 'Processando'
+    };
+    return labels[status] || status;
+  }
+
+  viewDetail(tx: PixTransaction) {
+    // Futuro: navegar para /receipt/:id
+    console.log('Detalhe da transacao:', tx.transactionId);
+  }
+
+  goBack() {
+    this.router.navigate(['/dashboard']);
   }
 }
