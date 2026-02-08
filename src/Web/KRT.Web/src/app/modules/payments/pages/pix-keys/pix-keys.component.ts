@@ -146,10 +146,19 @@ export class PixKeysComponent {
   showForm = false;
   newType = 'cpf';
   newValue = '';
-  keys = [
-    { type: 'CPF', value: '***.452.111-**', icon: 'badge', color: '#0047BB' },
-    { type: 'Chave Aleatoria', value: 'a1b2-c3d4-e5f6-7890', icon: 'shuffle', color: '#7C3AED' },
-  ];
+  keys: any[] = [];
+
+  ngOnInit() {
+    const cpf = localStorage.getItem('krt_account_doc') || '';
+    const email = localStorage.getItem('krt_account_email') || '';
+    if (cpf) {
+      const masked = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.\.\-**');
+      this.keys.push({ type: 'CPF', value: masked, icon: 'badge', color: '#0047BB' });
+    }
+    if (email) {
+      this.keys.push({ type: 'Email', value: email, icon: 'email', color: '#00897B' });
+    }
+  }
   types = [
     { id: 'cpf', label: 'CPF', icon: 'badge', color: '#0047BB' },
     { id: 'email', label: 'Email', icon: 'email', color: '#00C853' },
@@ -182,3 +191,4 @@ export class PixKeysComponent {
   copyKey(key: any) { navigator.clipboard.writeText(key.value); this.snackBar.open('Chave copiada!', '', { duration: 1500 }); }
   removeKey(key: any) { this.keys = this.keys.filter(k => k !== key); this.snackBar.open('Chave removida', '', { duration: 1500 }); }
 }
+

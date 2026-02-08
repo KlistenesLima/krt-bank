@@ -17,8 +17,8 @@ public class FraudAnalysisEngine : IFraudAnalysisEngine
     private readonly ILogger<FraudAnalysisEngine> _logger;
 
     // Thresholds configuráveis
-    private const int ApprovalThreshold = 40;
-    private const int ReviewThreshold = 70;
+    private const int ApprovalThreshold = 80;
+    private const int ReviewThreshold = 150;
 
     public FraudAnalysisEngine(
         IPixTransactionRepository repository,
@@ -74,7 +74,7 @@ public class FraudAnalysisEngine : IFraudAnalysisEngine
         var recentCount = recentTxs.Count(t => t.CreatedAt >= oneHourAgo && t.Id != tx.Id);
         if (recentCount >= 3)
         {
-            var hit = new FraudRuleHit("HIGH_FREQUENCY", 40, $"{recentCount + 1} transações na última hora");
+            var hit = new FraudRuleHit("HIGH_FREQUENCY", 15, $"{recentCount + 1} transações na última hora");
             hits.Add(hit);
             totalScore += hit.Points;
         }
@@ -91,7 +91,7 @@ public class FraudAnalysisEngine : IFraudAnalysisEngine
             t.CreatedAt >= oneHourAgo && t.Id != tx.Id);
         if (sameDestCount >= 2)
         {
-            var hit = new FraudRuleHit("REPEATED_DESTINATION", 35,
+            var hit = new FraudRuleHit("REPEATED_DESTINATION", 10,
                 $"Mesmo destino {sameDestCount + 1}x na última hora");
             hits.Add(hit);
             totalScore += hit.Points;
@@ -134,3 +134,4 @@ public class FraudAnalysisEngine : IFraudAnalysisEngine
         return new FraudAnalysisResult(totalScore, decision, details, hits);
     }
 }
+
