@@ -152,7 +152,7 @@ import { Router } from '@angular/router';
     .cta-card p { font-size: 0.82rem; color: #6B7280; margin: 0; line-height: 1.4; }
   `]
 })
-export class InvestmentsPageComponent {
+export class InvestmentsComponent {
   constructor(public router: Router) {}
 
   myInvestments = [
@@ -168,4 +168,3 @@ export class InvestmentsPageComponent {
     { name: 'Ações', desc: 'Renda variável · Alto risco', badge: 'Variável', icon: 'candlestick_chart', color: '#E53935', expanded: false },
   ];
 }
-

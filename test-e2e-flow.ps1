@@ -1,5 +1,5 @@
-﻿# ============================================================
-# KRT Bank — Teste End-to-End
+# ============================================================
+# KRT Bank Ã¢â‚¬â€ Teste End-to-End
 # Keycloak Auth -> Criar Conta -> Consultar -> Pix -> Seq
 # ============================================================
 param(
@@ -28,7 +28,7 @@ function Write-TestResult($name, $success, $detail = "") {
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  KRT Bank — E2E Test Suite" -ForegroundColor White
+Write-Host "  KRT Bank Ã¢â‚¬â€ E2E Test Suite" -ForegroundColor White
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -51,13 +51,13 @@ try {
 }
 
 # --- TEST 3: Keycloak Token (usuario demo) ---
-Write-Host "[3/$total] Keycloak Auth (demo/demo123)..." -ForegroundColor Yellow
+Write-Host "[3/$total] Keycloak Auth (CPF login)..." -ForegroundColor Yellow
 $token = $null
 try {
     $tokenResponse = Invoke-RestMethod -Uri "$KeycloakUrl/realms/krt-bank/protocol/openid-connect/token" `
         -Method POST `
         -ContentType "application/x-www-form-urlencoded" `
-        -Body "grant_type=password&client_id=krt-bank-app&username=demo&password=demo123"
+        -Body 'grant_type=password&client_id=krt-bank-app&username=10626054460&password=99515452@Aa3'
     $token = $tokenResponse.access_token
     Write-TestResult "Keycloak Token" ($null -ne $token) "token length: $($token.Length)"
 } catch {
@@ -90,6 +90,8 @@ try {
         CustomerName = "E2E Test User"
         CustomerDocument = $randomDoc
         CustomerEmail = $randomEmail
+        CustomerPhone = "83999990000"
+        Password = "E2eTest@123"
         BranchCode = "0001"
     } | ConvertTo-Json
 
@@ -99,7 +101,7 @@ try {
     $accountId = $createResult.id
     Write-TestResult "Criar Conta" ($null -ne $accountId) "id: $accountId"
 } catch {
-    # Pode dar erro se ja existir por CPF duplicado — tenta buscar
+    # Pode dar erro se ja existir por CPF duplicado Ã¢â‚¬â€ tenta buscar
     $statusCode = $_.Exception.Response.StatusCode.Value__
     if ($statusCode -eq 400) {
         Write-TestResult "Criar Conta" $false "Possivel CPF duplicado. Rode com doc diferente."
@@ -218,7 +220,7 @@ if ($accountId) {
     Write-Host "  DADOS DE TESTE:" -ForegroundColor Cyan
     Write-Host "  Account ID:     $accountId" -ForegroundColor White
     Write-Host "  CorrelationId:  $correlationId" -ForegroundColor White
-    Write-Host "  Keycloak User:  demo / demo123" -ForegroundColor White
+    Write-Host "  Keycloak User:  10626054460 / ***" -ForegroundColor White
     Write-Host ""
 }
 

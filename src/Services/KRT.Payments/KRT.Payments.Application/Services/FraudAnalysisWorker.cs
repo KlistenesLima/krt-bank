@@ -1,4 +1,4 @@
-﻿using KRT.BuildingBlocks.Infrastructure.Outbox;
+using KRT.BuildingBlocks.Infrastructure.Outbox;
 using KRT.BuildingBlocks.MessageBus;
 using KRT.BuildingBlocks.MessageBus.Notifications;
 using KRT.Payments.Application.Events;
@@ -23,12 +23,14 @@ namespace KRT.Payments.Application.Services;
 public class FraudAnalysisWorker : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ITransactionNotifier _notifier;
     private readonly ILogger<FraudAnalysisWorker> _logger;
 
-    public FraudAnalysisWorker(IServiceScopeFactory scopeFactory, ILogger<FraudAnalysisWorker> logger)
+    public FraudAnalysisWorker(IServiceScopeFactory scopeFactory, ILogger<FraudAnalysisWorker> logger, ITransactionNotifier notifier)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _notifier = notifier;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

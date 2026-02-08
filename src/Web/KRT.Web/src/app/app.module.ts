@@ -1,15 +1,12 @@
-﻿import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { ToastComponent } from './shared/components/toast/toast.component';
+import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
-import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule, Routes } from '@angular/router';
-
-// Keycloak
-import { KeycloakAngularModule, KeycloakService } from 'keycloak-angular';
-import { initializeKeycloak } from './core/auth/keycloak-init';
 
 // Angular Material
 import { MatCardModule } from '@angular/material/card';
@@ -56,8 +53,8 @@ const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: CreateAccountComponent },
-  
-  // Rotas protegidas (Keycloak redireciona para login se não autenticado)
+
+  // Rotas protegidas (AuthGuard verifica token JWT)
   { path: 'dashboard', component: DashboardPageComponent, canActivate: [AuthGuard] },
   { path: 'extract', component: StatementPageComponent, canActivate: [AuthGuard] },
   { path: 'pix', component: PixPageComponent, canActivate: [AuthGuard] },
@@ -100,13 +97,13 @@ const routes: Routes = [
     ChatDialogComponent,
     PixAreaComponent
   ],
-  imports: [
+  imports: [`n    ToastComponent,`n    ConnectionStatusComponent,
     BrowserModule,
     FormsModule,
     HttpClientModule,
     BrowserAnimationsModule,
     RouterModule.forRoot(routes),
-    KeycloakAngularModule,
+    // REMOVIDO: KeycloakAngularModule (conflitava com AuthInterceptor JWT)
     MatCardModule,
     MatInputModule,
     MatButtonModule,
@@ -122,15 +119,9 @@ const routes: Routes = [
     MatBadgeModule
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeKeycloak,
-      multi: true,
-      deps: [KeycloakService]
-    }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+    // REMOVIDO: APP_INITIALIZER + KeycloakService (agora usamos JWT puro)
   ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}
-
