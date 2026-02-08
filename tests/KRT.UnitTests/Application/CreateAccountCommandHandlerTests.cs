@@ -1,4 +1,4 @@
-﻿using KRT.Onboarding.Application.Interfaces;
+using KRT.Onboarding.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using FluentAssertions;
 using KRT.BuildingBlocks.Domain;
@@ -21,6 +21,10 @@ public class CreateAccountCommandHandlerTests
     public CreateAccountCommandHandlerTests()
     {
         _uowMock.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        _keycloakMock.Setup(k => k.CreateUserAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new KeycloakUserResult(true, Guid.NewGuid().ToString(), null));
         _handler = new CreateAccountCommandHandler(_repoMock.Object, _uowMock.Object, _keycloakMock.Object, _loggerMock.Object);
     }
 
@@ -31,7 +35,9 @@ public class CreateAccountCommandHandlerTests
         {
             CustomerName = "Maria",
             CustomerDocument = "12345678901",
-            CustomerEmail = "maria@test.com"
+            CustomerEmail = "maria@test.com",
+            CustomerPhone = "83999999999",
+            Password = "Teste@123"
         };
 
         var result = await _handler.Handle(cmd, CancellationToken.None);
@@ -53,12 +59,13 @@ public class CreateAccountCommandHandlerTests
         {
             CustomerName = "Pedro",
             CustomerDocument = "99988877766",
-            CustomerEmail = "pedro@test.com"
+            CustomerEmail = "pedro@test.com",
+            CustomerPhone = "83988888888",
+            Password = "Teste@123"
         }, CancellationToken.None);
 
         captured.Should().NotBeNull();
         captured!.CustomerName.Should().Be("Pedro");
-        captured.Balance.Should().Be(0);
+        captured.Balance.Should().Be(1000.00m);
     }
 }
-
