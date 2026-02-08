@@ -21,7 +21,7 @@ $maxRetries = 30
 $retry = 0
 while ($retry -lt $maxRetries) {
     try {
-        $null = Invoke-RestMethod -Uri "$KeycloakUrl/health/ready" -TimeoutSec 3 -ErrorAction Stop
+        $null = Invoke-RestMethod -Uri "$KeycloakUrl/realms/master" -TimeoutSec 3 -ErrorAction Stop
         Write-Host "  Keycloak pronto!" -ForegroundColor Green
         break
     } catch {
@@ -99,3 +99,4 @@ Write-Host "  Credenciais:   admin / admin" -ForegroundColor Cyan
 Write-Host "  Realm:         krt-bank" -ForegroundColor Cyan
 Write-Host "  Usuario demo:  demo / demo123" -ForegroundColor Cyan
 Write-Host ""
+
