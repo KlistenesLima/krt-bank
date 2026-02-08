@@ -413,14 +413,23 @@ export class PixPageComponent {
     const accountId = localStorage.getItem('krt_account_id');
     const token = localStorage.getItem('krt_token');
 
-    this.http.post('http://localhost:5000/api/v1/pix/transfer', {
-      senderAccountId: accountId,
-      receiverKey: this.pixKey.replace(/\D/g, ''),
-      amount: this.getAmount(),
-      description: this.description || 'Pix'
-    }, { headers: { Authorization: 'Bearer ' + token } }).subscribe({
-      next: () => { this.finishPix(); },
-      error: () => { this.finishPix(); }
+    const cleanKey = this.pixKey.replace(/\D/g, '');
+    const hdrs = { headers: { Authorization: 'Bearer ' + token } };
+    this.http.get<any>('http://localhost:5000/api/v1/accounts/by-document/' + cleanKey, hdrs).subscribe({
+      next: (dest: any) => {
+        this.http.post('http://localhost:5000/api/v1/pix', {
+          sourceAccountId: accountId,
+          destinationAccountId: dest.id,
+          pixKey: cleanKey,
+          amount: this.getAmount(),
+          description: this.description || 'Pix',
+          idempotencyKey: crypto.randomUUID()
+        }, hdrs).subscribe({
+          next: () => { this.finishPix(); },
+          error: () => { this.errorMsg = 'Erro ao enviar PIX'; this.finishPix(); }
+        });
+      },
+      error: () => { this.errorMsg = 'Chave PIX nao encontrada'; this.step = 1; this.isLoading = false; }
     });
   }
 
@@ -436,4 +445,8 @@ export class PixPageComponent {
 
   newPix() { this.step = 1; this.pixKey = ''; this.amountDisplay = ''; this.description = ''; }
 }
+
+
+
+
 

@@ -1,4 +1,5 @@
-﻿import { ThemeToggleComponent } from './shared/components/theme-toggle/theme-toggle.component';
+﻿import { ChatbotComponent } from './pages/chatbot/chatbot.component';
+import { ThemeToggleComponent } from './shared/components/theme-toggle/theme-toggle.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
@@ -66,6 +67,7 @@ const routes: Routes = [
   { path: 'profile/data', component: MyDataComponent, canActivate: [AuthGuard] },
   { path: 'profile/security', component: SecurityComponent, canActivate: [AuthGuard] },
   { path: 'profile/notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
+  { path: 'chatbot', component: ChatbotComponent, canActivate: [AuthGuard] },
   { path: 'cards', component: CardsPageComponent, canActivate: [AuthGuard] },
   { path: 'receipt/:id', component: ReceiptComponent, canActivate: [AuthGuard] },
   { path: 'investments', component: InvestmentsPageComponent, canActivate: [AuthGuard] },
@@ -129,5 +131,8 @@ const routes: Routes = [
   bootstrap: [AppComponent]
 })
 export class AppModule {}
+
+
+
 
 
