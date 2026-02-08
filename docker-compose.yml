@@ -48,6 +48,8 @@
     image: quay.io/keycloak/keycloak:23.0
     container_name: krt-keycloak
     command: start-dev
+    volumes:
+      - keycloak-data:/opt/keycloak/data
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -124,6 +126,7 @@
         condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Services__OnboardingUrl: "http://onboarding-api:80/"
       ASPNETCORE_URLS: "http://+:80"
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=REDACTED_DB_PASSWORD"
       Redis__ConnectionString: "redis:6379"
@@ -185,6 +188,10 @@
 volumes:
   postgres-data:
   seq-data:
+  keycloak-data:
+
+
+
 
 
 
