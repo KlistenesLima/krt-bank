@@ -1,4 +1,4 @@
-using Serilog;
+﻿using Serilog;
 using Serilog.Context;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -38,13 +38,15 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // HEALTH CHECKS (verifica se backends estão vivos)
+var onboardingUrl = builder.Configuration["ReverseProxy:Clusters:onboarding-cluster:Destinations:destination1:Address"] ?? "http://localhost:5001/";
+var paymentsUrl = builder.Configuration["ReverseProxy:Clusters:payments-cluster:Destinations:destination1:Address"] ?? "http://localhost:5002/";
 builder.Services.AddHealthChecks()
-    .AddUrlGroup(new Uri("http://localhost:5001/health"), name: "onboarding",
+    .AddUrlGroup(new Uri(onboardingUrl.TrimEnd('/') + "/health"), name: "onboarding",
         tags: new[] { "backend" },
-        timeout: TimeSpan.FromSeconds(5))
-    .AddUrlGroup(new Uri("http://localhost:5002/health"), name: "payments",
+        timeout: TimeSpan.FromSeconds(10))
+    .AddUrlGroup(new Uri(paymentsUrl.TrimEnd('/') + "/health"), name: "payments",
         tags: new[] { "backend" },
-        timeout: TimeSpan.FromSeconds(5));
+        timeout: TimeSpan.FromSeconds(10));
 
 // CORS
 builder.Services.AddCors(options =>
@@ -117,3 +119,4 @@ app.MapReverseProxy();
 
 Log.Information("KRT.Gateway starting with Rate Limiting + HealthChecks");
 app.Run();
+

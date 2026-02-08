@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { StatementComponent } from './statement.component';
 
@@ -31,7 +31,7 @@ describe('StatementComponent', () => {
     component.accountId = '00000000-0000-0000-0000-000000000001';
     component.typeFilter = 'PIX_SENT';
     component.applyFilters();
-    const req = httpMock.expectOne(r => r.url.includes('type=PIX_SENT'));
+    const req = httpMock.expectOne(r => r.urlWithParams.includes('type=PIX_SENT'));
     expect(req.request.params.get('type')).toBe('PIX_SENT');
     expect(component.page).toBe(1);
     req.flush({ items: [], totalItems: 0, totalPages: 0, summary: { totalIncome: 0, totalExpenses: 0, net: 0 } });

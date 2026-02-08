@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using KRT.Payments.Domain.Entities;
+using KRT.BuildingBlocks.Domain;
 using KRT.Payments.Api.Controllers;
 
 namespace KRT.Payments.Api.Data;
@@ -28,12 +29,14 @@ public class PaymentsDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Ignore<DomainEvent>();
 
         // PixTransaction
         modelBuilder.Entity<PixTransaction>(e =>
         {
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.SourceAccountId);
+            e.Property(x => x.Status).HasConversion<string>();
             e.HasIndex(x => x.DestinationAccountId);
         });
 
@@ -125,3 +128,5 @@ public class PaymentsDbContext : DbContext
         });
     }
 }
+
+

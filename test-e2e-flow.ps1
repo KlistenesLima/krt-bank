@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # KRT Bank Ã¢â‚¬â€ Teste End-to-End
 # Keycloak Auth -> Criar Conta -> Consultar -> Pix -> Seq
 # ============================================================
@@ -7,7 +7,7 @@ param(
     [string]$OnboardingUrl = "http://localhost:5001",
     [string]$PaymentsUrl = "http://localhost:5002",
     [string]$KeycloakUrl = "http://localhost:8080",
-    [string]$SeqUrl = "http://localhost:5341"
+    [string]$SeqUrl = "http://localhost:8081"
 )
 
 $passed = 0
@@ -232,6 +232,7 @@ Write-Host "  Swagger:  $PaymentsUrl/swagger" -ForegroundColor White
 Write-Host ""
 
 if ($failed -gt 0) { exit 1 } else { exit 0 }
+
 
 
 

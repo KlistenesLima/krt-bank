@@ -163,6 +163,7 @@
       RabbitMq__Password: "krt123"
       Kafka__BootstrapServers: "kafka:9092"
       Keycloak__Authority: "http://keycloak:8080/realms/krt-bank"
+      Keycloak__BaseUrl: "http://keycloak:8080"
       Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
     restart: unless-stopped
 
@@ -180,5 +181,6 @@
 volumes:
   postgres-data:
   seq-data:
+
 
 
