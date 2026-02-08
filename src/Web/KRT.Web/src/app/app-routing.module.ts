@@ -1,3 +1,6 @@
+import { ProfileComponent } from './pages/profile/profile.component';
+import { BoletosComponent } from './pages/boletos/boletos.component';
+import { ContactsComponent } from './pages/contacts/contacts.component';
 import { NotificationCenterComponent } from './pages/notifications/notification-center.component';
 import { ScheduledPixComponent } from './pages/scheduled-pix/scheduled-pix.component';
 import { StatementComponent } from './pages/statement/statement.component';
