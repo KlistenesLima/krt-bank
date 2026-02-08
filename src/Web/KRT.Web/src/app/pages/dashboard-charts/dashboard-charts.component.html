@@ -1,0 +1,49 @@
+<div class="dashboard-page">
+  <h2>Dashboard</h2>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards" *ngIf="summary">
+    <div class="card-stat blue">
+      <span class="label">Saldo Atual</span>
+      <span class="value">R$ {{ summary.balance | number:'1.2-2' }}</span>
+    </div>
+    <div class="card-stat green">
+      <span class="label">Entradas (mes)</span>
+      <span class="value">R$ {{ summary.incomeThisMonth | number:'1.2-2' }}</span>
+    </div>
+    <div class="card-stat red">
+      <span class="label">Saidas (mes)</span>
+      <span class="value">R$ {{ summary.expensesThisMonth | number:'1.2-2' }}</span>
+    </div>
+    <div class="card-stat purple">
+      <span class="label">Transacoes</span>
+      <span class="value">{{ summary.totalTransactions }}</span>
+    </div>
+  </div>
+
+  <!-- Balance History Chart -->
+  <div class="chart-container">
+    <h3>Historico de Saldo (30 dias)</h3>
+    <div class="chart-wrapper">
+      <canvas #balanceChart></canvas>
+    </div>
+  </div>
+
+  <!-- Row: Categories + Monthly -->
+  <div class="charts-row">
+    <div class="chart-container half">
+      <h3>Gastos por Categoria</h3>
+      <div class="chart-wrapper square">
+        <canvas #categoriesChart></canvas>
+      </div>
+    </div>
+    <div class="chart-container half">
+      <h3>Entradas vs Saidas (6 meses)</h3>
+      <div class="chart-wrapper square">
+        <canvas #monthlyChart></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">Carregando dashboard...</div>
+</div>

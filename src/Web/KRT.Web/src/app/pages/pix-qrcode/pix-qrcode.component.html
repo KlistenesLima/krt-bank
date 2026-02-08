@@ -1,0 +1,107 @@
+<div class="qrcode-page">
+  <h2>Pix QR Code</h2>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button [class.active]="activeTab === 'generate'" (click)="activeTab = 'generate'">
+      Gerar QR Code
+    </button>
+    <button [class.active]="activeTab === 'read'" (click)="activeTab = 'read'">
+      Ler QR Code
+    </button>
+    <button [class.active]="activeTab === 'limits'" (click)="activeTab = 'limits'; loadLimits()">
+      Meus Limites
+    </button>
+  </div>
+
+  <!-- GERAR QR CODE -->
+  <div class="tab-content" *ngIf="activeTab === 'generate'">
+    <div class="form-group">
+      <label>Chave Pix (CPF, email, telefone ou aleatoria)</label>
+      <input type="text" [(ngModel)]="pixKey" placeholder="Ex: 10626054460">
+    </div>
+    <div class="form-group">
+      <label>Valor (R$)</label>
+      <input type="number" [(ngModel)]="amount" placeholder="0.00" min="0.01" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>Nome do recebedor</label>
+      <input type="text" [(ngModel)]="merchantName" placeholder="KRT Bank">
+    </div>
+    <button class="btn-primary" (click)="generateQrCode()" [disabled]="loading || !pixKey || amount <= 0">
+      {{ loading ? 'Gerando...' : 'Gerar QR Code' }}
+    </button>
+
+    <div class="qr-result" *ngIf="qrCodeImage">
+      <img [src]="qrCodeImage" alt="QR Code Pix" class="qr-image">
+      <div class="payload-box">
+        <label>Pix Copia e Cola:</label>
+        <div class="payload-text">{{ pixPayload }}</div>
+        <button class="btn-secondary" (click)="copyPayload()">
+          {{ copySuccess ? 'Copiado!' : 'Copiar codigo' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LER QR CODE -->
+  <div class="tab-content" *ngIf="activeTab === 'read'">
+    <div class="upload-area">
+      <p>Selecione uma imagem de QR Code Pix:</p>
+      <input type="file" accept="image/*" (change)="onQrFileSelected($event)">
+    </div>
+    <div class="read-result" *ngIf="readResult">
+      <h4>Dados do QR Code:</h4>
+      <div class="info-row"><span>Chave Pix:</span><strong>{{ readResult.pixKey }}</strong></div>
+      <div class="info-row"><span>Valor:</span><strong>{{ readResult.amount }}</strong></div>
+      <div class="info-row"><span>Recebedor:</span><strong>{{ readResult.merchant }}</strong></div>
+      <p class="success-msg">{{ readResult.message }}</p>
+    </div>
+  </div>
+
+  <!-- LIMITES PIX -->
+  <div class="tab-content" *ngIf="activeTab === 'limits'">
+    <div *ngIf="limits" class="limits-container">
+      <div class="period-badge">Periodo atual: <strong>{{ limits.currentPeriod }}</strong></div>
+      
+      <div class="limit-card">
+        <h4>Diurno (06h - 20h)</h4>
+        <div class="limit-row">
+          <span>Por transacao:</span>
+          <strong>R$ {{ limits.daytime.perTransaction | number:'1.2-2' }}</strong>
+        </div>
+        <div class="limit-row">
+          <span>Limite diario:</span>
+          <strong>R$ {{ limits.daytime.daily | number:'1.2-2' }}</strong>
+        </div>
+        <div class="limit-row">
+          <span>Usado hoje:</span>
+          <strong>R$ {{ limits.daytime.usedToday | number:'1.2-2' }}</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="(limits.daytime.usedToday / limits.daytime.daily) * 100"></div>
+        </div>
+      </div>
+
+      <div class="limit-card">
+        <h4>Noturno (20h - 06h)</h4>
+        <div class="limit-row">
+          <span>Por transacao:</span>
+          <strong>R$ {{ limits.nighttime.perTransaction | number:'1.2-2' }}</strong>
+        </div>
+        <div class="limit-row">
+          <span>Limite diario:</span>
+          <strong>R$ {{ limits.nighttime.daily | number:'1.2-2' }}</strong>
+        </div>
+        <div class="limit-row">
+          <span>Usado hoje:</span>
+          <strong>R$ {{ limits.nighttime.usedToday | number:'1.2-2' }}</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill nighttime" [style.width.%]="(limits.nighttime.usedToday / limits.nighttime.daily) * 100"></div>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="!limits" class="loading-msg">Carregando limites...</div>
+  </div>
+</div>

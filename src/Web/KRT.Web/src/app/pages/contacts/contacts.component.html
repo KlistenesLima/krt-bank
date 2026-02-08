@@ -1,0 +1,40 @@
+<div class="contacts-page">
+  <div class="header-row">
+    <h2>Contatos Pix</h2>
+    <button class="btn-new" (click)="showForm = !showForm">{{ showForm ? '✕' : '+ Novo' }}</button>
+  </div>
+
+  <div class="form-panel" *ngIf="showForm">
+    <div class="form-grid">
+      <div class="field"><label>Nome</label><input [(ngModel)]="form.name" placeholder="Nome completo"></div>
+      <div class="field"><label>Apelido</label><input [(ngModel)]="form.nickname" placeholder="Opcional"></div>
+      <div class="field"><label>Chave Pix</label><input [(ngModel)]="form.pixKey" placeholder="CPF, email, telefone..."></div>
+      <div class="field"><label>Tipo</label>
+        <select [(ngModel)]="form.pixKeyType"><option *ngFor="let t of keyTypes" [value]="t">{{t}}</option></select>
+      </div>
+      <div class="field"><label>Banco</label><input [(ngModel)]="form.bankName" placeholder="Nome do banco"></div>
+    </div>
+    <button class="btn-submit" (click)="addContact()">Adicionar Contato</button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar contato..." (keyup.enter)="search()">
+    <button [class.active]="favoritesOnly" (click)="favoritesOnly = !favoritesOnly; loadContacts()">⭐ Favoritos</button>
+  </div>
+
+  <div class="contacts-list">
+    <div class="contact-card" *ngFor="let c of contacts">
+      <div class="avatar">{{ c.initials }}</div>
+      <div class="info">
+        <span class="name">{{ c.displayName }}</span>
+        <span class="key">{{ c.pixKeyType }}: {{ c.pixKey }}</span>
+        <span class="bank" *ngIf="c.bankName">{{ c.bankName }} · {{ c.transferCount }} transferencias</span>
+      </div>
+      <div class="actions">
+        <button class="fav-btn" [class.active]="c.isFavorite" (click)="toggleFavorite(c.id)">{{ c.isFavorite ? '⭐' : '☆' }}</button>
+        <button class="del-btn" (click)="deleteContact(c.id)">✕</button>
+      </div>
+    </div>
+    <div *ngIf="!loading && contacts.length === 0" class="empty">Nenhum contato encontrado</div>
+  </div>
+</div>
