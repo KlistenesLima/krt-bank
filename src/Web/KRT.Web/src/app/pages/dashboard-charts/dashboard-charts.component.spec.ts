@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { DashboardChartsComponent } from './dashboard-charts.component';
 import { environment } from '../../../environments/environment';
@@ -20,11 +20,14 @@ describe('DashboardChartsComponent', () => {
   afterEach(() => httpMock.verify());
 
   it('should create', () => {
+    fixture.detectChanges();
+    httpMock.match(r => r.url.includes('/dashboard/summary/'));
     expect(component).toBeTruthy();
   });
 
   it('should set default accountId', () => {
     fixture.detectChanges();
+    httpMock.match(r => r.url.includes('/dashboard/summary/'));
     expect(component.accountId).toBeTruthy();
   });
 

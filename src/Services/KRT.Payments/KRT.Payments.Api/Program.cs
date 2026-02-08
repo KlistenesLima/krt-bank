@@ -6,6 +6,8 @@ using KRT.Payments.Infra.IoC;
 using KRT.Payments.Application.Commands;
 using KRT.Payments.Api.Middlewares;
 using Serilog;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -140,7 +142,7 @@ for (int attempt = 1; attempt <= 10; attempt++)
     {
         using var scope2 = app.Services.CreateScope();
         var apiDb = scope2.ServiceProvider.GetRequiredService<KRT.Payments.Api.Data.PaymentsDbContext>();
-        apiDb.Database.EnsureCreated();
+        try { apiDb.GetService<IRelationalDatabaseCreator>().CreateTables(); } catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07") { /* tabelas ja existem, OK */ }
         Log.Information("Api.Data.PaymentsDbContext: tabelas criadas (tentativa {Attempt})", attempt);
         break;
     }
@@ -153,6 +155,8 @@ for (int attempt = 1; attempt <= 10; attempt++)
 }
 
 app.Run();
+
+
 
 
 
