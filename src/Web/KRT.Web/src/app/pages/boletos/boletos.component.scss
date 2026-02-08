@@ -1,0 +1,31 @@
+.boletos-page { max-width: 750px; margin: 0 auto; padding: 24px;
+  h2 { color: var(--text-primary, #1a237e); margin-bottom: 16px; } }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px;
+  button { padding: 10px 20px; border: 1px solid var(--border, #ddd); border-radius: 10px; background: var(--bg-card, white); cursor: pointer; font-weight: 600; color: var(--text-secondary, #666);
+    &.active { background: #1a237e; color: white; border-color: #1a237e; } } }
+.boleto-card { background: var(--bg-card, white); border: 1px solid var(--border, #e0e0e0); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.card-top { display: flex; justify-content: space-between; margin-bottom: 8px;
+  .beneficiary { font-weight: 700; color: var(--text-primary, #333); display: block; }
+  .due { font-size: 12px; color: var(--text-secondary, #888); } }
+.status-badge { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700;
+  &.pending { background: #fff3e0; color: #e65100; }
+  &.paid { background: #e8f5e9; color: #2e7d32; }
+  &.overdue { background: #ffebee; color: #c62828; }
+  &.cancelled { background: #f5f5f5; color: #666; } }
+.amount { font-size: 24px; font-weight: 700; color: var(--text-primary, #1a237e); }
+.barcode-line { font-family: monospace; font-size: 11px; color: var(--text-secondary, #888); margin-top: 8px; cursor: pointer; word-break: break-all; padding: 8px; background: var(--bg-primary, #f8f8f8); border-radius: 8px;
+  &:hover { background: var(--bg-primary, #f0f0f0); } }
+.card-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border, #f0f0f0); }
+.btn-pay { padding: 8px 20px; background: #e8f5e9; color: #2e7d32; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.btn-cancel { padding: 8px 20px; background: #ffebee; color: #c62828; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.form-panel { background: var(--bg-card, white); border: 1px solid var(--border, #e0e0e0); border-radius: 14px; padding: 20px;
+  h3 { margin: 0 0 16px; color: var(--text-primary, #333); } }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;
+  .field { display: flex; flex-direction: column; gap: 4px; &.full { grid-column: 1 / -1; }
+    label { font-size: 12px; font-weight: 600; color: var(--text-secondary, #666); }
+    input { padding: 10px; border: 1px solid var(--border, #ddd); border-radius: 8px; font-size: 14px; background: var(--bg-primary, white); color: var(--text-primary, #333); } } }
+.btn-submit { width: 100%; padding: 12px; background: linear-gradient(135deg, #1a237e, #3949ab); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; }
+.generated { margin-top: 16px; padding: 16px; background: #e8f5e9; border-radius: 10px;
+  h4 { color: #2e7d32; margin: 0 0 8px; }
+  .barcode-display { font-family: monospace; font-size: 12px; cursor: pointer; word-break: break-all; } }
+.empty { text-align: center; padding: 40px; color: var(--text-secondary, #888); }
