@@ -1,3 +1,5 @@
+import { ToastComponent } from './shared/components/toast/toast.component';
+import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { NgModule } from '@angular/core';
@@ -95,7 +97,7 @@ const routes: Routes = [
     ChatDialogComponent,
     PixAreaComponent
   ],
-  imports: [
+  imports: [`n    ToastComponent,`n    ConnectionStatusComponent,
     BrowserModule,
     FormsModule,
     HttpClientModule,

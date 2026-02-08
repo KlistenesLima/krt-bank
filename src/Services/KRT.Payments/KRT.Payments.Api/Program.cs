@@ -1,4 +1,6 @@
-﻿using KRT.Payments.Infra.IoC;
+using KRT.Payments.Api.Hubs;
+using KRT.Payments.Application.Interfaces;
+using KRT.Payments.Infra.IoC;
 using KRT.Payments.Application.Commands;
 using KRT.Payments.Api.Middlewares;
 using Serilog;
@@ -62,10 +64,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
-        b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+        b => b.WithOrigins("http://localhost:4200")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
 });
 
 builder.Services.AddHealthChecks();
+
+// SIGNALR — WebSocket para notificacoes em tempo real
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddSingleton<ITransactionNotifier, SignalRTransactionNotifier>();
 
 var app = builder.Build();
 
@@ -106,6 +120,9 @@ app.MapHealthChecks("/health");
 app.MapControllers();
 
 Log.Information("KRT.Payments starting on {Environment}", app.Environment.EnvironmentName);
+// SignalR endpoint
+app.MapHub<TransactionHub>("/hubs/transactions");
+
 app.Run();
 
 
