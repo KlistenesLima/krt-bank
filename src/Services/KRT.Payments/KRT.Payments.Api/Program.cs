@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using KRT.Payments.Api.Hubs;
 using KRT.Payments.Application.Interfaces;
 using KRT.Payments.Infra.IoC;
@@ -9,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. SERILOG (LÃª do appsettings.json â€” inclui Seq sink)
+// 1. SERILOG (LÃƒÂª do appsettings.json Ã¢â‚¬â€ inclui Seq sink)
 builder.Host.UseSerilog((context, config) =>
     config.ReadFrom.Configuration(context.Configuration));
 
@@ -18,7 +19,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 3. HTTP CONTEXT ACCESSOR (necessÃ¡rio para CorrelationId propagation)
+// 3. HTTP CONTEXT ACCESSOR (necessÃƒÂ¡rio para CorrelationId propagation)
 builder.Services.AddHttpContextAccessor();
 
 // 4. INFRASTRUCTURE (DB, Repos, UoW, Kafka, Outbox, HttpClient)
@@ -72,7 +73,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddHealthChecks();
 
-// SIGNALR â€” WebSocket para notificacoes em tempo real
+// SIGNALR Ã¢â‚¬â€ WebSocket para notificacoes em tempo real
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;
@@ -101,8 +102,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<ExceptionHandlingMiddleware>(); // 1Âº: Captura erros globais
-app.UseMiddleware<CorrelationIdMiddleware>();     // 2Âº: Injeta CorrelationId no LogContext + Items
+app.UseMiddleware<ExceptionHandlingMiddleware>(); // 1Ã‚Âº: Captura erros globais
+app.UseMiddleware<CorrelationIdMiddleware>();     // 2Ã‚Âº: Injeta CorrelationId no LogContext + Items
 
 app.UseSerilogRequestLogging(options =>
 {
@@ -126,6 +127,13 @@ app.MapControllers();
 Log.Information("KRT.Payments starting on {Environment}", app.Environment.EnvironmentName);
 // SignalR endpoint
 app.MapHub<TransactionHub>("/hubs/transactions");
+
+// Auto-migrate
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<KRT.Payments.Api.Data.PaymentsDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();
 

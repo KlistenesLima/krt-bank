@@ -1,23 +1,33 @@
-name: KRT Bank CI/CD
+﻿name: KRT Bank CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   DOTNET_VERSION: '8.0.x'
   NODE_VERSION: '20.x'
-  QUESTPDF_LICENSE: community
 
 jobs:
-  # ──────────────────────────────────────
-  # Backend: Build + Test
-  # ──────────────────────────────────────
   backend-build:
     name: Backend Build & Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: krt
+          POSTGRES_PASSWORD: KrtBank2026
+          POSTGRES_DB: krtbank_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -26,37 +36,21 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --no-restore --configuration Release
 
-      - name: Unit Tests
-        run: dotnet test tests/KRT.UnitTests/KRT.UnitTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=unit-results.trx" --collect:"XPlat Code Coverage"
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=krtbank_test;Username=krt;Password=KrtBank2026"
 
-      - name: Integration Tests
-        run: dotnet test tests/KRT.IntegrationTests/KRT.IntegrationTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-results.trx"
-        continue-on-error: true
-
-      - name: Publish Test Results
-        uses: dorny/test-reporter@v1
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
         if: always()
-        with:
-          name: .NET Test Results
-          path: '**/*.trx'
-          reporter: dotnet-trx
 
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          files: '**/coverage.cobertura.xml'
-          fail_ci_if_error: false
-
-  # ──────────────────────────────────────
-  # Frontend: Build + Test
-  # ──────────────────────────────────────
   frontend-build:
     name: Frontend Build & Test
     runs-on: ubuntu-latest
@@ -70,35 +64,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: src/Web/KRT.Web/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Lint
-        run: npx ng lint --force
-        continue-on-error: true
+        run: npx ng lint --quiet || true
 
       - name: Unit Tests (Jasmine/Karma)
         run: npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
-        continue-on-error: true
 
       - name: Build Production
         run: npx ng build --configuration=production
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: angular-dist
-          path: src/Web/KRT.Web/dist/
-          retention-days: 7
-
-  # ──────────────────────────────────────
-  # Cypress E2E (depende dos builds)
-  # ──────────────────────────────────────
   e2e-tests:
-    name: Cypress E2E Tests
+    name: E2E Tests (Cypress)
     runs-on: ubuntu-latest
     needs: [backend-build, frontend-build]
     defaults:
@@ -111,6 +93,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/Web/KRT.Web/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -119,57 +103,37 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           working-directory: src/Web/KRT.Web
-          start: npx ng serve
+          start: npx ng serve --port 4200
           wait-on: 'http://localhost:4200'
           wait-on-timeout: 120
-        continue-on-error: true
 
-      - name: Upload Cypress Screenshots
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: cypress-screenshots
-          path: src/Web/KRT.Web/cypress/screenshots
-          retention-days: 5
-
-  # ──────────────────────────────────────
-  # Docker Build
-  # ──────────────────────────────────────
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
-    needs: [backend-build]
+    needs: [backend-build, frontend-build]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Build Gateway
+        run: docker build -f src/Services/KRT.Gateway/KRT.Gateway/Dockerfile -t krt-gateway:latest .
 
       - name: Build Payments API
-        run: docker build -f src/Services/KRT.Payments/KRT.Payments.Api/Dockerfile -t krt-payments-api:${{ github.sha }} .
+        run: docker build -f src/Services/KRT.Payments/KRT.Payments.Api/Dockerfile -t krt-payments:latest .
 
       - name: Build Onboarding API
-        run: docker build -f src/Services/KRT.Onboarding/KRT.Onboarding.Api/Dockerfile -t krt-onboarding-api:${{ github.sha }} .
+        run: docker build -f src/Services/KRT.Onboarding/KRT.Onboarding.Api/Dockerfile -t krt-onboarding:latest .
 
-      - name: Build Gateway
-        run: docker build -f src/Services/KRT.Gateway/KRT.Gateway/Dockerfile -t krt-gateway:${{ github.sha }} .
-
-  # ──────────────────────────────────────
-  # Deploy (staging)
-  # ──────────────────────────────────────
   deploy-staging:
-    name: Deploy to Staging
+    name: Deploy Staging
     runs-on: ubuntu-latest
     needs: [docker-build, e2e-tests]
     if: github.ref == 'refs/heads/main'
     environment: staging
     steps:
       - uses: actions/checkout@v4
-
-      - name: Deploy notification
+      - name: Deploy
         run: |
-          echo "🚀 Deploying KRT Bank to staging..."
-          echo "Commit: ${{ github.sha }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Deploy would run docker-compose up -d here"
+          echo "Deploying to staging environment..."
+          echo "Docker images built and ready for deployment"
+          # docker-compose -f docker-compose.yml up -d

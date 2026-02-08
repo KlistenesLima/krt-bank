@@ -1,6 +1,7 @@
+﻿using KRT.Payments.Api.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
 
 namespace KRT.Payments.Api.Controllers;
 
@@ -8,109 +9,94 @@ namespace KRT.Payments.Api.Controllers;
 [Route("api/v1/kyc")]
 public class KycController : ControllerBase
 {
-    private static readonly ConcurrentDictionary<Guid, KycProfile> _store = new();
+    private readonly PaymentsDbContext _db;
+    public KycController(PaymentsDbContext db) => _db = db;
 
     [HttpGet("{accountId}")]
     [AllowAnonymous]
-    public IActionResult GetStatus(Guid accountId)
+    public async Task<IActionResult> GetStatus(Guid accountId)
     {
-        var kyc = _store.GetOrAdd(accountId, _ => new KycProfile { AccountId = accountId });
-        return Ok(kyc);
+        var profile = await _db.KycProfiles.FindAsync(accountId);
+        if (profile == null)
+        {
+            profile = new KycProfile { AccountId = accountId };
+            _db.KycProfiles.Add(profile);
+            await _db.SaveChangesAsync();
+        }
+        return Ok(new
+        {
+            profile.AccountId, profile.CurrentStep, profile.OverallStatus,
+            document = new { uploaded = profile.DocumentUploaded, type = profile.DocumentType, file = profile.DocumentFileName, uploadedAt = profile.DocumentUploadedAt, validation = profile.DocumentValidation },
+            selfie = new { uploaded = profile.SelfieUploaded, uploadedAt = profile.SelfieUploadedAt, faceMatch = profile.FaceMatch },
+            personalData = new { confirmed = profile.DataConfirmed, fullName = profile.FullName, cpf = profile.Cpf, birthDate = profile.BirthDate, motherName = profile.MotherName, confirmedAt = profile.DataConfirmedAt },
+            completionPercent = (profile.DocumentUploaded ? 33 : 0) + (profile.SelfieUploaded ? 33 : 0) + (profile.DataConfirmed ? 34 : 0)
+        });
     }
 
-    /// <summary>
-    /// Upload de documento (RG, CNH, Passaporte) — aceita base64.
-    /// </summary>
     [HttpPost("{accountId}/document")]
     [AllowAnonymous]
-    public IActionResult UploadDocument(Guid accountId, [FromBody] DocumentUploadRequest req)
+    public async Task<IActionResult> UploadDocument(Guid accountId, [FromBody] DocumentUploadRequest req)
     {
-        var kyc = _store.GetOrAdd(accountId, _ => new KycProfile { AccountId = accountId });
-
-        if (string.IsNullOrEmpty(req.DocumentType) || string.IsNullOrEmpty(req.Base64Data))
-            return BadRequest(new { error = "Tipo de documento e imagem sao obrigatorios" });
-
-        kyc.DocumentType = req.DocumentType;
-        kyc.DocumentUploaded = true;
-        kyc.DocumentUploadedAt = DateTime.UtcNow;
-        kyc.DocumentFileName = req.FileName ?? $"doc_{accountId:N}.jpg";
-
-        // Simulacao de validacao automatica
-        var rng = new Random(accountId.GetHashCode());
-        kyc.DocumentValidation = new ValidationResult
-        {
-            IsValid = rng.Next(100) > 10,  // 90% chance valido
-            Confidence = Math.Round(85 + rng.NextDouble() * 15, 1),
-            Details = "Documento legivel, dados conferem",
-            ValidatedAt = DateTime.UtcNow
-        };
-
-        kyc.UpdateStep();
-        return Ok(new { message = "Documento enviado e validado", kyc.DocumentValidation, kyc.CurrentStep });
+        var profile = await GetOrCreate(accountId);
+        profile.DocumentUploaded = true;
+        profile.DocumentType = req.DocumentType;
+        profile.DocumentFileName = req.FileName;
+        profile.DocumentUploadedAt = DateTime.UtcNow;
+        profile.DocumentValidation = new ValidationResult { IsValid = true, Score = 0.95, Details = "Documento validado com sucesso" };
+        profile.CurrentStep = "selfie";
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Documento enviado e validado", validation = profile.DocumentValidation });
     }
 
-    /// <summary>
-    /// Upload de selfie para prova de vida — aceita base64.
-    /// </summary>
     [HttpPost("{accountId}/selfie")]
     [AllowAnonymous]
-    public IActionResult UploadSelfie(Guid accountId, [FromBody] SelfieUploadRequest req)
+    public async Task<IActionResult> UploadSelfie(Guid accountId)
     {
-        var kyc = _store.GetOrAdd(accountId, _ => new KycProfile { AccountId = accountId });
-
-        if (string.IsNullOrEmpty(req.Base64Data))
-            return BadRequest(new { error = "Imagem da selfie e obrigatoria" });
-
-        kyc.SelfieUploaded = true;
-        kyc.SelfieUploadedAt = DateTime.UtcNow;
-
-        // Simulacao face match
-        var rng = new Random(accountId.GetHashCode() + 1);
-        kyc.FaceMatch = new FaceMatchResult
-        {
-            IsMatch = rng.Next(100) > 5, // 95% chance match
-            Confidence = Math.Round(88 + rng.NextDouble() * 12, 1),
-            LivenessScore = Math.Round(90 + rng.NextDouble() * 10, 1),
-            Details = "Face detectada, liveness confirmado",
-            ValidatedAt = DateTime.UtcNow
-        };
-
-        kyc.UpdateStep();
-        return Ok(new { message = "Selfie enviada e validada", kyc.FaceMatch, kyc.CurrentStep });
+        var profile = await GetOrCreate(accountId);
+        profile.SelfieUploaded = true;
+        profile.SelfieUploadedAt = DateTime.UtcNow;
+        profile.FaceMatch = new FaceMatchResult { Match = true, Confidence = 0.97, LivenessScore = 0.99, Details = "Face match confirmado" };
+        profile.CurrentStep = "confirm";
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Selfie validada com sucesso", faceMatch = profile.FaceMatch });
     }
 
-    /// <summary>
-    /// Confirma dados pessoais (etapa final).
-    /// </summary>
     [HttpPost("{accountId}/confirm")]
     [AllowAnonymous]
-    public IActionResult ConfirmData(Guid accountId, [FromBody] ConfirmDataRequest req)
+    public async Task<IActionResult> ConfirmData(Guid accountId, [FromBody] ConfirmDataRequest req)
     {
-        var kyc = _store.GetOrAdd(accountId, _ => new KycProfile { AccountId = accountId });
-
-        kyc.FullName = req.FullName;
-        kyc.Cpf = req.Cpf;
-        kyc.BirthDate = req.BirthDate;
-        kyc.MotherName = req.MotherName;
-        kyc.DataConfirmed = true;
-        kyc.DataConfirmedAt = DateTime.UtcNow;
-        kyc.UpdateStep();
-
-        return Ok(new { message = "Dados confirmados. Conta em analise.", kyc.CurrentStep, kyc.OverallStatus });
+        var profile = await GetOrCreate(accountId);
+        profile.DataConfirmed = true;
+        profile.FullName = req.FullName;
+        profile.Cpf = req.Cpf;
+        profile.BirthDate = req.BirthDate;
+        profile.MotherName = req.MotherName;
+        profile.DataConfirmedAt = DateTime.UtcNow;
+        profile.OverallStatus = "Em analise";
+        profile.CurrentStep = "review";
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Dados confirmados. KYC em analise.", profile.OverallStatus });
     }
 
-    /// <summary>
-    /// Aprova/rejeita conta (simulacao admin).
-    /// </summary>
     [HttpPost("{accountId}/approve")]
     [AllowAnonymous]
-    public IActionResult Approve(Guid accountId, [FromBody] ApproveRequest req)
+    public async Task<IActionResult> Approve(Guid accountId)
     {
-        var kyc = _store.GetOrAdd(accountId, _ => new KycProfile { AccountId = accountId });
-        kyc.OverallStatus = req.Approved ? "Aprovado" : "Rejeitado";
-        kyc.ReviewedAt = DateTime.UtcNow;
-        kyc.ReviewNotes = req.Notes;
-        return Ok(new { message = $"Conta {kyc.OverallStatus.ToLower()}", kyc.OverallStatus });
+        var profile = await GetOrCreate(accountId);
+        profile.OverallStatus = "Aprovado";
+        profile.CurrentStep = "completed";
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "KYC aprovado com sucesso" });
+    }
+
+    private async Task<KycProfile> GetOrCreate(Guid accountId)
+    {
+        var p = await _db.KycProfiles.FindAsync(accountId);
+        if (p != null) return p;
+        p = new KycProfile { AccountId = accountId };
+        _db.KycProfiles.Add(p);
+        await _db.SaveChangesAsync();
+        return p;
     }
 }
 
@@ -119,59 +105,23 @@ public class KycProfile
     public Guid AccountId { get; set; }
     public string CurrentStep { get; set; } = "document";
     public string OverallStatus { get; set; } = "Pendente";
-
-    // Documento
     public bool DocumentUploaded { get; set; }
     public string DocumentType { get; set; } = "";
     public string DocumentFileName { get; set; } = "";
     public DateTime? DocumentUploadedAt { get; set; }
     public ValidationResult? DocumentValidation { get; set; }
-
-    // Selfie
     public bool SelfieUploaded { get; set; }
     public DateTime? SelfieUploadedAt { get; set; }
     public FaceMatchResult? FaceMatch { get; set; }
-
-    // Dados
     public bool DataConfirmed { get; set; }
     public string FullName { get; set; } = "";
     public string Cpf { get; set; } = "";
     public DateTime? BirthDate { get; set; }
     public string MotherName { get; set; } = "";
     public DateTime? DataConfirmedAt { get; set; }
-    public DateTime? ReviewedAt { get; set; }
-    public string? ReviewNotes { get; set; }
-
-    public void UpdateStep()
-    {
-        if (!DocumentUploaded) CurrentStep = "document";
-        else if (!SelfieUploaded) CurrentStep = "selfie";
-        else if (!DataConfirmed) CurrentStep = "confirm";
-        else CurrentStep = "review";
-
-        if (DataConfirmed && DocumentValidation?.IsValid == true && FaceMatch?.IsMatch == true)
-            OverallStatus = "Em analise";
-    }
 }
 
-public class ValidationResult
-{
-    public bool IsValid { get; set; }
-    public double Confidence { get; set; }
-    public string Details { get; set; } = "";
-    public DateTime ValidatedAt { get; set; }
-}
-
-public class FaceMatchResult
-{
-    public bool IsMatch { get; set; }
-    public double Confidence { get; set; }
-    public double LivenessScore { get; set; }
-    public string Details { get; set; } = "";
-    public DateTime ValidatedAt { get; set; }
-}
-
-public record DocumentUploadRequest(string DocumentType, string Base64Data, string? FileName);
-public record SelfieUploadRequest(string Base64Data);
+public class ValidationResult { public bool IsValid { get; set; } public double Score { get; set; } public string Details { get; set; } = ""; }
+public class FaceMatchResult { public bool Match { get; set; } public double Confidence { get; set; } public double LivenessScore { get; set; } public string Details { get; set; } = ""; }
+public record DocumentUploadRequest(string DocumentType, string FileName);
 public record ConfirmDataRequest(string FullName, string Cpf, DateTime BirthDate, string MotherName);
-public record ApproveRequest(bool Approved, string? Notes);

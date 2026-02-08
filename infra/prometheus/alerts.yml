@@ -1,23 +1,21 @@
-groups:
+﻿groups:
   - name: krt-bank-alerts
     rules:
       - alert: HighErrorRate
-        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
-        for: 5m
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "Alta taxa de erros no {{ $labels.service }}"
-          description: "Taxa de erro acima de 5% por mais de 5 minutos"
+          summary: "Alta taxa de erro no servico {{ $labels.service }}"
 
       - alert: HighLatency
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        expr: http_request_duration_seconds{quantile="0.95"} > 2
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Alta latencia no {{ $labels.service }}"
-          description: "P95 latencia acima de 2 segundos"
+          summary: "Latencia P95 alta no servico {{ $labels.service }}"
 
       - alert: ServiceDown
         expr: up == 0
@@ -25,12 +23,12 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Servico {{ $labels.job }} indisponivel"
+          summary: "Servico {{ $labels.job }} esta fora do ar"
 
       - alert: HighMemoryUsage
-        expr: process_resident_memory_bytes / 1024 / 1024 > 512
-        for: 10m
+        expr: process_resident_memory_bytes > 500000000
+        for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Alto uso de memoria no {{ $labels.service }}"
+          summary: "Uso de memoria alto no servico {{ $labels.service }}"

@@ -1,20 +1,22 @@
-describe('Navigation', () => {
+﻿describe('Navigation', () => {
   const routes = [
-    { path: '/dashboard-charts', title: 'Dashboard' },
-    { path: '/statement', title: 'Extrato' },
-    { path: '/contacts', title: 'Contatos' },
-    { path: '/goals', title: 'Metas' },
-    { path: '/notifications', title: 'Notifica' },
-    { path: '/chatbot', title: 'KRT Assistant' },
-    { path: '/admin', title: 'Painel' }
+    { path: '/dashboard', name: 'Dashboard' },
+    { path: '/statement', name: 'Extrato' },
+    { path: '/contacts', name: 'Contatos' },
+    { path: '/boletos', name: 'Boletos' },
+    { path: '/scheduled-pix', name: 'Pix Agendado' },
+    { path: '/virtual-card', name: 'Cartao Virtual' },
+    { path: '/notifications', name: 'Notificacoes' },
+    { path: '/profile', name: 'Perfil' },
+    { path: '/chatbot', name: 'Chatbot' },
+    { path: '/goals', name: 'Metas' },
   ];
 
-  routes.forEach(route => {
-    it(`should navigate to ${route.path}`, () => {
-      cy.intercept('GET', '**/api/v1/**', { statusCode: 200, body: {} });
-      cy.intercept('POST', '**/api/v1/**', { statusCode: 200, body: {} });
-      cy.visit(route.path);
-      cy.url().should('include', route.path);
+  routes.forEach(({ path, name }) => {
+    it('should navigate to ' + name + ' (' + path + ')', () => {
+      cy.visit(path);
+      cy.url().should('include', path);
+      cy.get('body').should('not.contain', 'Cannot GET');
     });
   });
 });
