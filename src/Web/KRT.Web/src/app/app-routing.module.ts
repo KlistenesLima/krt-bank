@@ -1,3 +1,9 @@
+import { MonitoringComponent } from './pages/monitoring/monitoring.component';
+import { ChatbotComponent } from './pages/chatbot/chatbot.component';
+import { MarketplaceComponent } from './pages/marketplace/marketplace.component';
+import { AdminComponent } from './pages/admin/admin.component';
+import { KycComponent } from './pages/kyc/kyc.component';
+import { InsuranceComponent } from './pages/insurance/insurance.component';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { BoletosComponent } from './pages/boletos/boletos.component';
 import { ContactsComponent } from './pages/contacts/contacts.component';

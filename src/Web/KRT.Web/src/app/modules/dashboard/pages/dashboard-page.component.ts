@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { AccountService } from '../../../core/services/account.service';
@@ -282,7 +282,8 @@ export class DashboardPageComponent implements OnInit {
 
   constructor(
     public router: Router,
-    private authService: AuthService
+    private auth: AuthService,
+    private accountService: AccountService
   ) {}
 
   ngOnInit() {
@@ -311,7 +312,7 @@ export class DashboardPageComponent implements OnInit {
   }
 
   logout() {
-    this.authService.logout();
+    this.auth.logout();
   }
 
   /** Busca saldo real da API */
@@ -331,4 +332,6 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 }
+
+
 

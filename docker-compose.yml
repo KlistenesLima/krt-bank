@@ -1,33 +1,48 @@
-version: '3.8'
-
-services:
-  # === Infrastructure ===
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: krt-sqlserver
+﻿services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: krt-postgres
     environment:
-      SA_PASSWORD: "KrtBank@2026!"
-      ACCEPT_EULA: "Y"
+      POSTGRES_USER: krt
+      POSTGRES_PASSWORD: KrtBank2026
+      POSTGRES_DB: krtbank
     ports:
-      - "1433:1433"
+      - "5433:5432"
     volumes:
-      - sqlserver-data:/var/opt/mssql
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U krt -d krtbank"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: krt-rabbitmq
     ports:
       - "5672:5672"
-      - "15672:15672"
+      - "15680:15672"
     environment:
       RABBITMQ_DEFAULT_USER: krt
       RABBITMQ_DEFAULT_PASS: krt123
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
     container_name: krt-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
@@ -39,7 +54,44 @@ services:
     ports:
       - "8080:8080"
 
-  # === Services ===
+  seq:
+    image: datalust/seq:2024.1
+    container_name: krt-seq
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5341:5341"
+      - "8081:80"
+    volumes:
+      - seq-data:/data
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: krt-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "32181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: krt-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
   gateway:
     build:
       context: .
@@ -52,6 +104,7 @@ services:
       - onboarding-api
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
+    restart: unless-stopped
 
   payments-api:
     build:
@@ -61,14 +114,27 @@ services:
     ports:
       - "5002:80"
     depends_on:
-      - sqlserver
-      - rabbitmq
-      - redis
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
-      ASPNETCORE_ENVIRONMENT: Docker
-      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=KrtPayments;User=sa;Password=KrtBank@2026!;TrustServerCertificate=true"
-      RabbitMQ__Host: "rabbitmq"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:80"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=KrtBank2026"
+      Redis__ConnectionString: "redis:6379"
       Redis__Configuration: "redis:6379"
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__UserName: "krt"
+      RabbitMq__Password: "krt123"
+      Kafka__BootstrapServers: "kafka:9092"
+      Keycloak__Authority: "http://keycloak:8080/realms/krt-bank"
+      Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
+    restart: unless-stopped
 
   onboarding-api:
     build:
@@ -78,14 +144,41 @@ services:
     ports:
       - "5001:80"
     depends_on:
-      - sqlserver
-      - rabbitmq
-      - redis
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
-      ASPNETCORE_ENVIRONMENT: Docker
-      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=KrtOnboarding;User=sa;Password=KrtBank@2026!;TrustServerCertificate=true"
-      RabbitMQ__Host: "rabbitmq"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:80"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=KrtBank2026"
+      Redis__ConnectionString: "redis:6379"
       Redis__Configuration: "redis:6379"
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__UserName: "krt"
+      RabbitMq__Password: "krt123"
+      Kafka__BootstrapServers: "kafka:9092"
+      Keycloak__Authority: "http://keycloak:8080/realms/krt-bank"
+      Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Web/KRT.Web/Dockerfile
+    container_name: krt-web
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway
+    restart: unless-stopped
 
 volumes:
-  sqlserver-data:
+  postgres-data:
+  seq-data:
+
+

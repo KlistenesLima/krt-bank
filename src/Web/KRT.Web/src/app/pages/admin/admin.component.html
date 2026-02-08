@@ -1,0 +1,72 @@
+<div class="admin-page">
+  <h2>Painel Administrativo</h2>
+
+  <div class="admin-tabs">
+    <button [class.active]="activeTab === 'overview'" (click)="activeTab = 'overview'">Dashboard</button>
+    <button [class.active]="activeTab === 'accounts'" (click)="activeTab = 'accounts'">Contas Pendentes ({{ pendingAccounts.length }})</button>
+    <button [class.active]="activeTab === 'fraud'" (click)="activeTab = 'fraud'">Fraude ({{ fraudAlerts.length }})</button>
+  </div>
+
+  <!-- Overview -->
+  <div *ngIf="activeTab === 'overview' && dashboard">
+    <div class="metrics-grid">
+      <div class="metric-card"><span class="m-label">Contas Totais</span><span class="m-value">{{ dashboard.overview.totalAccounts | number }}</span></div>
+      <div class="metric-card green"><span class="m-label">Contas Ativas</span><span class="m-value">{{ dashboard.overview.activeAccounts | number }}</span></div>
+      <div class="metric-card orange"><span class="m-label">Pendentes</span><span class="m-value">{{ dashboard.overview.pendingApproval }}</span></div>
+      <div class="metric-card red"><span class="m-label">Bloqueadas</span><span class="m-value">{{ dashboard.overview.blockedAccounts }}</span></div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card"><span class="m-label">Transacoes Hoje</span><span class="m-value">{{ dashboard.transactions.today | number }}</span></div>
+      <div class="metric-card"><span class="m-label">Volume Total</span><span class="m-value">R$ {{ dashboard.transactions.totalVolume | number:'1.0-0' }}</span></div>
+      <div class="metric-card red"><span class="m-label">Alertas Fraude</span><span class="m-value">{{ dashboard.fraud.alertsToday }}</span></div>
+      <div class="metric-card green"><span class="m-label">Fraude Evitada</span><span class="m-value">R$ {{ dashboard.fraud.totalFraudPrevented | number:'1.0-0' }}</span></div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card"><span class="m-label">Receita Pix</span><span class="m-value">R$ {{ dashboard.revenue.pixFees | number:'1.0-0' }}</span></div>
+      <div class="metric-card"><span class="m-label">Receita Cartao</span><span class="m-value">R$ {{ dashboard.revenue.cardFees | number:'1.0-0' }}</span></div>
+      <div class="metric-card"><span class="m-label">Seguros</span><span class="m-value">R$ {{ dashboard.revenue.insurance | number:'1.0-0' }}</span></div>
+      <div class="metric-card"><span class="m-label">Emprestimos</span><span class="m-value">R$ {{ dashboard.revenue.loanInterest | number:'1.0-0' }}</span></div>
+    </div>
+    <div class="system-bar">
+      <span>⚡ Latencia: {{ dashboard.systemHealth.apiLatency }}</span>
+      <span>✅ Uptime: {{ dashboard.systemHealth.uptime }}</span>
+      <span>❌ Erros: {{ dashboard.systemHealth.errorRate }}</span>
+      <span>👥 Sessoes: {{ dashboard.systemHealth.activeSessions }}</span>
+    </div>
+  </div>
+
+  <!-- Contas Pendentes -->
+  <div *ngIf="activeTab === 'accounts'">
+    <div class="account-row" *ngFor="let a of pendingAccounts">
+      <div class="acc-info">
+        <span class="acc-name">{{ a.name }}</span>
+        <span class="acc-detail">{{ a.email }} · {{ a.cpf }} · {{ a.kycStatus }}</span>
+        <span class="acc-date">{{ a.createdAt | date:'dd/MM HH:mm' }} · Risk: {{ a.riskScore }}%</span>
+      </div>
+      <div class="acc-actions">
+        <button class="btn-approve" (click)="reviewAccount(a.id, true)">✅ Aprovar</button>
+        <button class="btn-reject" (click)="reviewAccount(a.id, false)">❌ Rejeitar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fraude -->
+  <div *ngIf="activeTab === 'fraud'">
+    <div class="fraud-row" *ngFor="let a of fraudAlerts" [ngClass]="getSeverityClass(a.severity)">
+      <div class="fraud-info">
+        <span class="fraud-type">{{ a.type }}</span>
+        <span class="fraud-desc">{{ a.description }} · {{ a.accountName }}</span>
+        <span class="fraud-amount" *ngIf="a.amount > 0">R$ {{ a.amount | number:'1.2-2' }}</span>
+      </div>
+      <div class="fraud-meta">
+        <span class="sev-badge">{{ a.severity }}</span>
+        <span class="status-txt">{{ a.status }}</span>
+      </div>
+      <div class="fraud-actions" *ngIf="a.status === 'Pendente'">
+        <button class="btn-block" (click)="fraudAction(a.id, 'block')">🚫 Bloquear</button>
+        <button class="btn-ok" (click)="fraudAction(a.id, 'approve')">✅ Liberar</button>
+        <button class="btn-inv" (click)="fraudAction(a.id, 'investigate')">🔍 Investigar</button>
+      </div>
+    </div>
+  </div>
+</div>
