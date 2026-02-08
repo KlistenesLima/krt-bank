@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using KRT.Payments.Api.Services;
+using KRT.Payments.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KRT.Payments.Application.Commands;
 using KRT.Payments.Domain.Interfaces;
@@ -13,16 +15,24 @@ public class PixController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IPixTransactionRepository _repository;
+    private readonly QrCodeService _qrCodeService;
+    private readonly PdfReceiptService _pdfService;
 
-    public PixController(IMediator mediator, IPixTransactionRepository repository)
+    public PixController(
+        IMediator mediator,
+        IPixTransactionRepository repository,
+        QrCodeService qrCodeService,
+        PdfReceiptService pdfService)
     {
         _mediator = mediator;
         _repository = repository;
+        _qrCodeService = qrCodeService;
+        _pdfService = pdfService;
     }
 
     /// <summary>
-    /// Inicia uma transferência Pix. A transação é criada e entra na fila
-    /// de análise anti-fraude assíncrona.
+    /// Inicia uma transferencia Pix. A transacao e criada e entra na fila
+    /// de analise anti-fraude assincrona.
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> ProcessPix([FromBody] PixTransferRequest request)
@@ -42,24 +52,23 @@ public class PixController : ControllerBase
         if (!result.IsValid)
             return BadRequest(new { success = false, error = result.Errors.FirstOrDefault() });
 
-        // Retorna 202 Accepted (processamento assíncrono)
         return Accepted(new
         {
             success = true,
             transactionId = result.Id,
             status = "PendingAnalysis",
-            message = "Transação recebida. Análise anti-fraude em andamento. Consulte GET /api/v1/pix/{id} para acompanhar."
+            message = "Transacao recebida. Analise anti-fraude em andamento. Consulte GET /api/v1/pix/{id} para acompanhar."
         });
     }
 
     /// <summary>
-    /// Consulta o status de uma transação Pix (inclui resultado da análise de fraude).
+    /// Consulta o status de uma transacao Pix (inclui resultado da analise de fraude).
     /// </summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetStatus(Guid id)
     {
         var tx = await _repository.GetByIdAsync(id);
-        if (tx == null) return NotFound(new { error = "Transação não encontrada" });
+        if (tx == null) return NotFound(new { error = "Transacao nao encontrada" });
 
         return Ok(new
         {
@@ -84,7 +93,7 @@ public class PixController : ControllerBase
     }
 
     /// <summary>
-    /// Lista transações de uma conta (extrato Pix).
+    /// Lista transacoes de uma conta (extrato Pix).
     /// </summary>
     [HttpGet("account/{accountId:guid}")]
     public async Task<IActionResult> GetByAccount(Guid accountId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
@@ -103,7 +112,166 @@ public class PixController : ControllerBase
             completedAt = tx.CompletedAt
         }));
     }
+
+    // ===== QR CODE PIX =====
+
+    /// <summary>
+    /// Gera QR Code Pix para receber pagamento.
+    /// </summary>
+    [HttpPost("qrcode/generate")]
+    [AllowAnonymous]
+    public IActionResult GenerateQrCode([FromBody] GenerateQrCodeRequest request)
+    {
+        var payload = _qrCodeService.GeneratePixPayload(
+            request.PixKey,
+            request.MerchantName ?? "KRT Bank",
+            request.City ?? "Sao Paulo",
+            request.Amount,
+            request.TxId ?? Guid.NewGuid().ToString("N")[..25]);
+
+        var base64 = _qrCodeService.GenerateQrCodeBase64(payload);
+
+        return Ok(new
+        {
+            payload,
+            qrCodeBase64 = base64,
+            qrCodeDataUrl = $"data:image/png;base64,{base64}"
+        });
+    }
+
+    /// <summary>
+    /// Gera QR Code como imagem PNG.
+    /// </summary>
+    [HttpPost("qrcode/image")]
+    [AllowAnonymous]
+    public IActionResult GenerateQrCodeImage([FromBody] GenerateQrCodeRequest request)
+    {
+        var payload = _qrCodeService.GeneratePixPayload(
+            request.PixKey,
+            request.MerchantName ?? "KRT Bank",
+            request.City ?? "Sao Paulo",
+            request.Amount,
+            request.TxId ?? Guid.NewGuid().ToString("N")[..25]);
+
+        var bytes = _qrCodeService.GenerateQrCodeBytes(payload);
+        return File(bytes, "image/png", "pix-qrcode.png");
+    }
+
+    // ===== COMPROVANTE PDF =====
+
+    /// <summary>
+    /// Gera comprovante PDF de uma transacao Pix.
+    /// </summary>
+    [HttpGet("receipt/{transactionId}")]
+    [AllowAnonymous]
+    public IActionResult GenerateReceipt(Guid transactionId)
+    {
+        var qrPayload = $"PIX-RECEIPT-{transactionId}";
+        var qrBytes = _qrCodeService.GenerateQrCodeBytes(qrPayload);
+
+        var data = new PixReceiptData
+        {
+            TransactionId = transactionId.ToString(),
+            SourceName = "Klistenes De Lima Leite",
+            SourceDocument = "10626054460",
+            DestinationName = "Maria Silva",
+            DestinationDocument = "98765432100",
+            Amount = 150.00m,
+            Status = "Completed",
+            Timestamp = DateTime.UtcNow,
+            QrCodeBytes = qrBytes
+        };
+
+        var pdf = _pdfService.GeneratePixReceipt(data);
+        return File(pdf, "application/pdf", $"comprovante-pix-{transactionId:N}.pdf");
+    }
+
+    /// <summary>
+    /// Gera comprovante PDF com dados fornecidos.
+    /// </summary>
+    [HttpPost("receipt")]
+    [AllowAnonymous]
+    public IActionResult GenerateReceiptFromData([FromBody] PixReceiptRequest request)
+    {
+        var qrPayload = $"PIX-{request.TransactionId}";
+        var qrBytes = _qrCodeService.GenerateQrCodeBytes(qrPayload);
+
+        var data = new PixReceiptData
+        {
+            TransactionId = request.TransactionId,
+            SourceName = request.SourceName,
+            SourceDocument = request.SourceDocument,
+            DestinationName = request.DestinationName,
+            DestinationDocument = request.DestinationDocument,
+            Amount = request.Amount,
+            Status = request.Status ?? "Completed",
+            Timestamp = request.Timestamp ?? DateTime.UtcNow,
+            QrCodeBytes = qrBytes
+        };
+
+        var pdf = _pdfService.GeneratePixReceipt(data);
+        return File(pdf, "application/pdf", $"comprovante-pix-{request.TransactionId}.pdf");
+    }
+
+    // ===== LIMITES PIX =====
+
+    /// <summary>
+    /// Consulta limites Pix de uma conta.
+    /// </summary>
+    [HttpGet("limits/{accountId}")]
+    [AllowAnonymous]
+    public IActionResult GetLimits(Guid accountId)
+    {
+        var limits = PixLimit.CreateDefault(accountId);
+        var now = DateTime.UtcNow;
+        var period = now.Hour >= 6 && now.Hour < 20 ? "Diurno" : "Noturno";
+
+        return Ok(new
+        {
+            accountId,
+            currentPeriod = period,
+            daytime = new
+            {
+                perTransaction = limits.DaytimePerTransaction,
+                daily = limits.DaytimeDaily,
+                usedToday = limits.DaytimeUsedToday,
+                remaining = limits.DaytimeDaily - limits.DaytimeUsedToday
+            },
+            nighttime = new
+            {
+                perTransaction = limits.NighttimePerTransaction,
+                daily = limits.NighttimeDaily,
+                usedToday = limits.NighttimeUsedToday,
+                remaining = limits.NighttimeDaily - limits.NighttimeUsedToday
+            }
+        });
+    }
+
+    /// <summary>
+    /// Atualiza limites Pix de uma conta.
+    /// </summary>
+    [HttpPut("limits/{accountId}")]
+    [AllowAnonymous]
+    public IActionResult UpdateLimits(Guid accountId, [FromBody] UpdateLimitsRequest request)
+    {
+        var limits = PixLimit.CreateDefault(accountId);
+        limits.UpdateLimits(
+            request.DaytimePerTransaction,
+            request.DaytimeDaily,
+            request.NighttimePerTransaction,
+            request.NighttimeDaily);
+
+        return Ok(new
+        {
+            accountId,
+            message = "Limites atualizados com sucesso",
+            daytime = new { perTransaction = limits.DaytimePerTransaction, daily = limits.DaytimeDaily },
+            nighttime = new { perTransaction = limits.NighttimePerTransaction, daily = limits.NighttimeDaily }
+        });
+    }
 }
+
+// === Request DTOs ===
 
 public record PixTransferRequest(
     Guid SourceAccountId,
@@ -111,6 +279,27 @@ public record PixTransferRequest(
     string PixKey,
     decimal Amount,
     string? Description,
-    Guid IdempotencyKey
-);
+    Guid IdempotencyKey);
 
+public record GenerateQrCodeRequest(
+    string PixKey,
+    decimal Amount,
+    string? MerchantName = null,
+    string? City = null,
+    string? TxId = null);
+
+public record PixReceiptRequest(
+    string TransactionId,
+    string SourceName,
+    string SourceDocument,
+    string DestinationName,
+    string DestinationDocument,
+    decimal Amount,
+    string? Status = null,
+    DateTime? Timestamp = null);
+
+public record UpdateLimitsRequest(
+    decimal? DaytimePerTransaction,
+    decimal? DaytimeDaily,
+    decimal? NighttimePerTransaction,
+    decimal? NighttimeDaily);
