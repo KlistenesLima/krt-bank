@@ -1,3 +1,4 @@
+import { ThemeToggleComponent } from './shared/components/theme-toggle/theme-toggle.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
@@ -97,7 +98,7 @@ const routes: Routes = [
     ChatDialogComponent,
     PixAreaComponent
   ],
-  imports: [`n    ToastComponent,`n    ConnectionStatusComponent,
+  imports: [`n    ThemeToggleComponent,`n    ToastComponent,`n    ConnectionStatusComponent,
     BrowserModule,
     FormsModule,
     HttpClientModule,

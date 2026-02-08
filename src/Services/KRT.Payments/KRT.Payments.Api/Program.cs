@@ -9,7 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. SERILOG (Lê do appsettings.json — inclui Seq sink)
+// 1. SERILOG (LÃª do appsettings.json â€” inclui Seq sink)
 builder.Host.UseSerilog((context, config) =>
     config.ReadFrom.Configuration(context.Configuration));
 
@@ -18,7 +18,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 3. HTTP CONTEXT ACCESSOR (necessário para CorrelationId propagation)
+// 3. HTTP CONTEXT ACCESSOR (necessÃ¡rio para CorrelationId propagation)
 builder.Services.AddHttpContextAccessor();
 
 // 4. INFRASTRUCTURE (DB, Repos, UoW, Kafka, Outbox, HttpClient)
@@ -72,7 +72,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddHealthChecks();
 
-// SIGNALR — WebSocket para notificacoes em tempo real
+// SIGNALR â€” WebSocket para notificacoes em tempo real
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;
@@ -80,6 +80,10 @@ builder.Services.AddSignalR(options =>
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddSingleton<ITransactionNotifier, SignalRTransactionNotifier>();
+
+// QR Code + PDF Receipt services
+builder.Services.AddSingleton<KRT.Payments.Api.Services.QrCodeService>();
+builder.Services.AddSingleton<KRT.Payments.Api.Services.PdfReceiptService>();
 
 var app = builder.Build();
 
@@ -97,8 +101,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<ExceptionHandlingMiddleware>(); // 1º: Captura erros globais
-app.UseMiddleware<CorrelationIdMiddleware>();     // 2º: Injeta CorrelationId no LogContext + Items
+app.UseMiddleware<ExceptionHandlingMiddleware>(); // 1Âº: Captura erros globais
+app.UseMiddleware<CorrelationIdMiddleware>();     // 2Âº: Injeta CorrelationId no LogContext + Items
 
 app.UseSerilogRequestLogging(options =>
 {
