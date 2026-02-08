@@ -195,3 +195,4 @@ export class RechargeComponent {
 
   reset() { this.phone = ''; this.selected = 0; this.done = false; }
 }
+
