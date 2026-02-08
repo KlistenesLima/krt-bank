@@ -1,3 +1,4 @@
+﻿using KRT.Payments.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using KRT.Payments.Api.Hubs;
 using KRT.Payments.Application.Interfaces;
@@ -86,6 +87,10 @@ builder.Services.AddSingleton<ITransactionNotifier, SignalRTransactionNotifier>(
 builder.Services.AddSingleton<KRT.Payments.Api.Services.QrCodeService>();
 builder.Services.AddSingleton<KRT.Payments.Api.Services.PdfReceiptService>();
 
+// Registrar PaymentsDbContext (Api.Data) para controllers novos
+builder.Services.AddDbContext<KRT.Payments.Api.Data.PaymentsDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 var app = builder.Build();
 
 // 8. AUTO-MIGRATION (Apenas DEV)
@@ -128,14 +133,28 @@ Log.Information("KRT.Payments starting on {Environment}", app.Environment.Enviro
 // SignalR endpoint
 app.MapHub<TransactionHub>("/hubs/transactions");
 
-// Auto-migrate
-using (var scope = app.Services.CreateScope())
+// Auto-migrate Api.Data.PaymentsDbContext (controllers novos)
+for (int attempt = 1; attempt <= 10; attempt++)
 {
-    var db = scope.ServiceProvider.GetRequiredService<KRT.Payments.Api.Data.PaymentsDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        using var scope2 = app.Services.CreateScope();
+        var apiDb = scope2.ServiceProvider.GetRequiredService<KRT.Payments.Api.Data.PaymentsDbContext>();
+        apiDb.Database.EnsureCreated();
+        Log.Information("Api.Data.PaymentsDbContext: tabelas criadas (tentativa {Attempt})", attempt);
+        break;
+    }
+    catch (Exception ex)
+    {
+        Log.Warning("Api DB EnsureCreated tentativa {Attempt}/10 falhou: {Error}", attempt, ex.Message);
+        if (attempt == 10) Log.Error(ex, "Api DB EnsureCreated falhou apos 10 tentativas");
+        else Thread.Sleep(3000);
+    }
 }
 
 app.Run();
+
+
 
 
 

@@ -1,4 +1,4 @@
-using KRT.Payments.Api.Data;
+﻿using KRT.Payments.Api.Data;
 using KRT.Payments.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -71,7 +71,7 @@ public class BoletoController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> PayByBarcode([FromBody] PayBarcodeRequest req)
     {
-        var b = Boleto.FromBarcode(Guid.NewGuid(), req.Barcode, req.BeneficiaryName ?? "Beneficiario", req.Amount);
+        var b = Boleto.FromBarcode(Guid.NewGuid(), req.Barcode, req.Amount, req.BeneficiaryName ?? "Beneficiario");
         b.Pay(req.Amount);
         _db.Boletos.Add(b);
         await _db.SaveChangesAsync();

@@ -1,7 +1,10 @@
 {
   "name": "krt-bank-web",
   "version": "0.0.0",
-  "scripts": { "cy:open": "cypress open", "cy:run": "cypress run", "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless",
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",

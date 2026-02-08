@@ -1,7 +1,4 @@
-﻿version: '3.8'
-
-services:
-  # === Infrastructure ===
+﻿services:
   postgres:
     image: postgres:16-alpine
     container_name: krt-postgres
@@ -15,9 +12,10 @@ services:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U krt -d krtbank"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -28,12 +26,23 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: krt
       RABBITMQ_DEFAULT_PASS: REDACTED_RABBITMQ_PASSWORD
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
     container_name: krt-redis
     ports:
       - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
@@ -46,7 +55,7 @@ services:
       - "8080:8080"
 
   seq:
-    image: datalust/seq:latest
+    image: datalust/seq:2024.1
     container_name: krt-seq
     environment:
       ACCEPT_EULA: "Y"
@@ -55,6 +64,7 @@ services:
       - "8081:80"
     volumes:
       - seq-data:/data
+    restart: unless-stopped
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -82,7 +92,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
-  # === Services ===
   gateway:
     build:
       context: .
@@ -95,6 +104,7 @@ services:
       - onboarding-api
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
+    restart: unless-stopped
 
   payments-api:
     build:
@@ -104,18 +114,27 @@ services:
     ports:
       - "5002:80"
     depends_on:
-      - postgres
-      - rabbitmq
-      - redis
-      - kafka
-      - seq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
-      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:80"
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=REDACTED_DB_PASSWORD"
-      RabbitMQ__Host: "rabbitmq"
+      Redis__ConnectionString: "redis:6379"
       Redis__Configuration: "redis:6379"
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__UserName: "krt"
+      RabbitMq__Password: "REDACTED_RABBITMQ_PASSWORD"
       Kafka__BootstrapServers: "kafka:9092"
+      Keycloak__Authority: "http://keycloak:8080/realms/krt-bank"
       Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
+    restart: unless-stopped
 
   onboarding-api:
     build:
@@ -125,19 +144,41 @@ services:
     ports:
       - "5001:80"
     depends_on:
-      - postgres
-      - rabbitmq
-      - redis
-      - kafka
-      - seq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
-      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:80"
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=REDACTED_DB_PASSWORD"
-      RabbitMQ__Host: "rabbitmq"
+      Redis__ConnectionString: "redis:6379"
       Redis__Configuration: "redis:6379"
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__UserName: "krt"
+      RabbitMq__Password: "REDACTED_RABBITMQ_PASSWORD"
       Kafka__BootstrapServers: "kafka:9092"
+      Keycloak__Authority: "http://keycloak:8080/realms/krt-bank"
       Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Web/KRT.Web/Dockerfile
+    container_name: krt-web
+    ports:
+      - "4200:80"
+    depends_on:
+      - gateway
+    restart: unless-stopped
 
 volumes:
   postgres-data:
   seq-data:
+
+

@@ -40,7 +40,18 @@ public class ScheduledPixController : ControllerBase
         try
         {
             var freq = Enum.Parse<ScheduledPixFrequency>(req.Frequency, true);
-            var sp = ScheduledPix.Create(req.AccountId, req.DestinationPixKey, req.DestinationName, req.Amount, req.ScheduledDate, freq, req.Description);
+            var sp = ScheduledPix.Create(
+                req.AccountId,
+                req.DestinationAccountId ?? Guid.NewGuid(),
+                req.DestinationPixKey,
+                req.DestinationName,
+                req.Amount,
+                req.Description ?? "",
+                req.ScheduledDate,
+                freq,
+                req.EndDate,
+                req.MaxExecutions
+            );
             _db.ScheduledPixTransactions.Add(sp);
             await _db.SaveChangesAsync();
             return Created("", new { sp.Id, message = freq == ScheduledPixFrequency.Once ? "Pix agendado" : "Pix recorrente criado" });
@@ -54,7 +65,12 @@ public class ScheduledPixController : ControllerBase
     {
         var s = await _db.ScheduledPixTransactions.FindAsync(id);
         if (s == null) return NotFound();
-        try { s.Execute(); await _db.SaveChangesAsync(); return Ok(new { message = "Pix executado", s.ExecutionCount, s.NextExecution }); }
+        try
+        {
+            var result = s.Execute();
+            await _db.SaveChangesAsync();
+            return Ok(new { message = result.message, s.ExecutionCount, s.NextExecutionDate });
+        }
         catch (Exception ex) { return BadRequest(new { error = ex.Message }); }
     }
 
@@ -99,5 +115,16 @@ public class ScheduledPixController : ControllerBase
     }
 }
 
-public record CreateScheduledPixRequest(Guid AccountId, string DestinationPixKey, string DestinationName, decimal Amount, DateTime ScheduledDate, string Frequency = "Once", string? Description = null);
+public record CreateScheduledPixRequest(
+    Guid AccountId,
+    Guid? DestinationAccountId,
+    string DestinationPixKey,
+    string DestinationName,
+    decimal Amount,
+    DateTime ScheduledDate,
+    string Frequency = "Once",
+    string? Description = null,
+    DateTime? EndDate = null,
+    int? MaxExecutions = null
+);
 public record UpdateAmountRequest(decimal Amount);
