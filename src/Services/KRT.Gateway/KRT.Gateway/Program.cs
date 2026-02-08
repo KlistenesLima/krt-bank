@@ -1,4 +1,4 @@
-﻿using Serilog;
+using Serilog;
 using Serilog.Context;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -109,6 +109,9 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
         await context.Response.WriteAsJsonAsync(result);
     }
 });
+
+// WebSocket support para SignalR
+app.UseWebSockets();
 
 app.MapReverseProxy();
 

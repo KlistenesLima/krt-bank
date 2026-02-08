@@ -1,4 +1,6 @@
-﻿import { Component } from '@angular/core';
+import { ToastComponent } from './shared/components/toast/toast.component';
+import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-root',
