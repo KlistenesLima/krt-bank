@@ -1,0 +1,34 @@
+<div class="mon-page">
+  <div class="mon-header">
+    <h2>Monitoramento</h2>
+    <span class="last-update">Atualizado: {{ lastUpdated | date:'HH:mm:ss' }}</span>
+  </div>
+
+  <div *ngIf="metrics">
+    <div class="kpi-grid">
+      <div class="kpi"><span class="kpi-lbl">Servico</span><span class="kpi-val">{{ metrics.service }}</span></div>
+      <div class="kpi"><span class="kpi-lbl">Uptime</span><span class="kpi-val green">{{ metrics.uptime }}</span></div>
+      <div class="kpi"><span class="kpi-lbl">Requests</span><span class="kpi-val">{{ metrics.totalRequests | number }}</span></div>
+      <div class="kpi"><span class="kpi-lbl">Erros</span><span class="kpi-val" [class.red]="metrics.totalErrors > 0">{{ metrics.totalErrors }}</span></div>
+      <div class="kpi"><span class="kpi-lbl">Taxa Erro</span><span class="kpi-val" [class.red]="metrics.errorRate > 1">{{ metrics.errorRate }}%</span></div>
+      <div class="kpi"><span class="kpi-lbl">Memoria</span><span class="kpi-val">{{ metrics.memory.workingSetMb }} MB</span></div>
+      <div class="kpi"><span class="kpi-lbl">GC Memory</span><span class="kpi-val">{{ metrics.memory.gcTotalMemoryMb }} MB</span></div>
+      <div class="kpi"><span class="kpi-lbl">Threads</span><span class="kpi-val">{{ metrics.threads }}</span></div>
+    </div>
+
+    <h3>Top Endpoints (por latencia)</h3>
+    <div class="endpoint-list">
+      <div class="ep-row" *ngFor="let e of metrics.topEndpoints; let i = index">
+        <span class="ep-rank">#{{ i + 1 }}</span>
+        <span class="ep-name">{{ e.endpoint }}</span>
+        <span class="ep-ms" [class.slow]="e.avgMs > 100">{{ e.avgMs }}ms</span>
+      </div>
+    </div>
+
+    <div class="ext-links">
+      <a href="http://localhost:3000" target="_blank" class="ext-btn grafana">📊 Grafana Dashboard</a>
+      <a href="http://localhost:9090" target="_blank" class="ext-btn prometheus">🔥 Prometheus</a>
+      <a href="http://localhost:9093" target="_blank" class="ext-btn alert">🔔 AlertManager</a>
+    </div>
+  </div>
+</div>
