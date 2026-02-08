@@ -1,4 +1,4 @@
-using KRT.Payments.Api.Data;
+﻿using KRT.Payments.Api.Data;
 using KRT.Payments.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -82,3 +82,6 @@ public class GoalsController : ControllerBase
         return Ok(new { message = "Meta cancelada" });
     }
 }
+
+public record CreateGoalRequest(string Title, decimal TargetAmount, DateTime Deadline, string? Icon = null, string? Category = null);
+public record GoalAmountRequest(decimal Amount);

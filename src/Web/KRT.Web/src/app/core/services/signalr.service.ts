@@ -1,7 +1,7 @@
-import { Injectable, OnDestroy } from '@angular/core';
+﻿import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
-import { AuthService } from '../auth/auth.service';
+import { AuthService } from './auth.service';
 
 export interface BalanceUpdate {
   accountId: string;

@@ -1,465 +1,185 @@
-﻿# KRT Bank - Digital Banking Platform
+# 🏦 KRT Bank — Digital Banking Platform
 
-![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
-![Angular 17](https://img.shields.io/badge/Angular-17+-DD0031?logo=angular)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
-![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.x-FF6600?logo=rabbitmq)
-![Kafka](https://img.shields.io/badge/Kafka-7.5-231F20?logo=apachekafka)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Keycloak](https://img.shields.io/badge/Keycloak-23-4D4D4D)
+Plataforma bancária digital completa, construída com **Microservices**, **.NET 8**, **Angular 17** e **11 containers Docker**.
 
-Plataforma bancaria digital completa construida com arquitetura de microsservicos, seguindo principios de **DDD**, **CQRS**, **Event-Driven Architecture**, **Saga Pattern** e **Outbox Pattern**. O sistema abrange desde o onboarding KYC ate observabilidade em producao com Grafana e Prometheus.
+> **Stack completa rodando com um único comando:** `docker-compose up -d --build`
 
-**30 modulos** | **57+ endpoints REST** | **129 arquivos C#** | **70 arquivos TypeScript** | **16 page components** | **12 containers Docker**
+---
+
+## 📋 Índice
+
+- [Visão Geral](#visão-geral)
+- [Arquitetura](#arquitetura)
+- [Stack Tecnológica](#stack-tecnológica)
+- [Pré-requisitos](#pré-requisitos)
+- [Quick Start (Docker)](#quick-start-docker)
+- [Desenvolvimento Local](#desenvolvimento-local)
+- [URLs e Credenciais](#urls-e-credenciais)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [APIs e Endpoints](#apis-e-endpoints)
+- [Testes](#testes)
+- [Observabilidade](#observabilidade)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Visão Geral
+
+O KRT Bank é um sistema bancário digital que oferece:
+
+- **Onboarding** — Criação de contas, KYC, autenticação JWT
+- **Pagamentos** — PIX (instantâneo, agendado, QR Code), boletos, transferências
+- **Cartões** — Cartões virtuais com limite configurável
+- **Investimentos** — Simulação de investimentos e metas financeiras
+- **Seguros** — Contratação e gestão de apólices
+- **Notificações** — Email, SMS e push via RabbitMQ
+- **Dashboard** — Visão consolidada com gráficos e extrato
+- **Chat** — Chatbot integrado para atendimento
 
 ---
 
 ## Arquitetura
 
 ```
-                              +-------------------------------------+
-                              |          Angular 17+ SPA            |
-                              |   (Dashboard, Pix, Admin, Chat)     |
-                              +----------------+--------------------+
-                                               | HTTP / WebSocket
-                              +----------------v--------------------+
-                              |     API Gateway (YARP Proxy)         |
-                              |    :5000 - Routing + Rate Limiting   |
-                              +---+----------------------+----------+
-                                  |                      |
-                   +--------------v--------+  +----------v-------------+
-                   |   Payments API :5002   |  |  Onboarding API :5001  |
-                   |                        |  |                        |
-                   |  - Pix (Saga Pattern)  |  |  - Registro de Conta   |
-                   |  - Boletos             |  |  - KYC (Doc + Selfie)  |
-                   |  - Cartoes Virtuais    |  |  - Validacao Facial    |
-                   |  - Dashboard/Extrato   |  |  - JWT Auth             |
-                   |  - Metas Financeiras   |  +--------+---------------+
-                   |  - Simulador Emprest.  |           |
-                   |  - Chatbot / Market.   |           |
-                   |  - Admin / Seguros     |           |
-                   |  - Notificacoes        |           |
-                   |  - Metricas/Health     |           |
-                   +--+------+------+------+           |
-                      |      |      |                   |
-            +---------v+  +--v----+ +v--------+  +-----v------+
-            |PostgreSQL |  |Redis  | |RabbitMQ |  | Keycloak   |
-            |  :5432    |  |:6379  | |:5672    |  | :8080      |
-            +-----------+  +-------+ +---------+  +------------+
-
-            +-----------+  +-----------+
-            | Zookeeper |  |   Kafka   |
-            |  :2181    |--|  :29092   |
-            +-----------+  +-----------+
-
-            +-----------+  +------------+  +--------------+
-            |Prometheus |  |  Grafana   |  | AlertManager |
-            |  :9090    |--|  :3000     |  |   :9093      |
-            +-----------+  +------------+  +--------------+
+┌─────────────────────────────────────────────────────────────┐
+│                    Angular 17 (SPA)                         │
+│                   http://localhost:4200                      │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                ┌──────────▼──────────┐
+                │   Gateway (YARP)    │
+                │  http://localhost:5000│
+                └────┬────────────┬───┘
+                     │            │
+          ┌──────────▼──┐  ┌─────▼───────────┐
+          │ Onboarding  │  │   Payments API   │
+          │  API :5001  │  │     :5002        │
+          └──────┬──────┘  └──┬──────┬────┬───┘
+                 │            │      │    │
+     ┌───────────┼────────────┼──────┼────┼────────────┐
+     │           │            │      │    │             │
+  ┌──▼───┐  ┌───▼──┐  ┌──────▼┐  ┌─▼──┐ │  ┌────────┐│
+  │Postgre│  │Redis │  │Rabbit │  │Kafka│ │  │Keycloak││
+  │ SQL   │  │      │  │  MQ   │  │    │ │  │        ││
+  └───────┘  └──────┘  └───────┘  └────┘ │  └────────┘│
+                                     ┌────▼───┐        │
+                                     │  SEQ   │        │
+                                     │ (Logs) │        │
+                                     └────────┘        │
+     └─────────────────────────────────────────────────┘
+                  Docker Compose Network
 ```
 
 ---
 
-## Stack Tecnologica
+## Stack Tecnológica
 
 | Camada | Tecnologias |
 |--------|-------------|
-| **Backend** | .NET 8, ASP.NET Core, Entity Framework Core, MediatR, FluentValidation |
-| **Frontend** | Angular 17+ (Standalone Components), Chart.js, SCSS, Responsive Design |
-| **Autenticacao** | JWT Bearer + Keycloak 23 (OpenID Connect / OAuth 2.0) |
-| **Mensageria** | RabbitMQ 3.x (Saga Pattern) + Apache Kafka (Event Streaming, Outbox) |
-| **Cache** | Redis 7 (Session, Rate Limiting) |
-| **Real-time** | SignalR WebSocket (Saldo ao vivo, Push Notifications) |
-| **Banco de Dados** | PostgreSQL 16 (Code-First Migrations, EF Core + Npgsql) |
-| **API Gateway** | YARP Reverse Proxy (Roteamento, Rate Limiting: 100 req/min) |
-| **PDF** | QuestPDF (Comprovantes, Extratos) |
-| **QR Code** | QRCoder (Pix QR Code BR Standard) |
-| **Logging** | Serilog + Seq (Structured Logging, Enrichers) — SEQ UI em http://localhost:5341 |
-| **Testes** | xUnit + Moq + FluentAssertions, Jasmine/Karma, Cypress E2E |
-| **CI/CD** | GitHub Actions (5 jobs: build, test, e2e, docker, deploy) |
-| **Observabilidade** | Prometheus + Grafana + AlertManager + Node Exporter |
-| **Containers** | Docker + Docker Compose (12 servicos) |
+| **Frontend** | Angular 17, Angular Material 17, Chart.js, RxJS |
+| **API Gateway** | ASP.NET 8 + YARP (Reverse Proxy), Rate Limiting |
+| **Backend** | ASP.NET 8 Web API, MediatR (CQRS), Rich Domain Entities |
+| **Persistência** | PostgreSQL 16, Entity Framework Core 8, Redis 7 (cache) |
+| **Mensageria** | RabbitMQ 3 (notificações), Apache Kafka (eventos de domínio) |
+| **Autenticação** | Keycloak 23 (OpenID Connect), JWT Bearer Tokens |
+| **Real-time** | SignalR (atualizações de saldo) |
+| **Logging** | Serilog + SEQ (Structured Logging com UI em http://localhost:8081) |
+| **Testes** | xUnit (83 unitários + 8 integração), Cypress (E2E) |
+| **Containerização** | Docker, Docker Compose (11 containers) |
 
 ---
 
-## Features Implementadas (30 Modulos)
+## Pré-requisitos
 
-### Fase 1 - Fundacao (Partes 1-6)
+- **Docker Desktop** ≥ 4.0 (com Docker Compose V2)
+- **RAM disponível:** ≥ 4 GB para os containers
 
-| # | Modulo | Descricao | Destaques Tecnicos |
-|---|--------|-----------|-------------------|
-| 1-4 | Onboarding + DDD | Cadastro de conta, entidades de dominio ricas, value objects | Aggregate Root, Repository Pattern, Domain Events |
-| 5-6 | Autenticacao JWT | Login, registro, refresh tokens, autorizacao por roles | Bearer Token, Claims-based Auth, Keycloak Integration |
-
-### Fase 2 - Core Banking (Partes 7-14)
-
-| # | Modulo | Descricao | Destaques Tecnicos |
-|---|--------|-----------|-------------------|
-| 7-8 | Pix com Saga Pattern | Transferencia Pix completa com orquestracao distribuida | Saga Orchestrator, Compensating Transactions, RabbitMQ |
-| 9-10 | Motor de Fraude | Analise de risco em tempo real com regras configuraveis | Rule Engine, Risk Scoring, Auto-block, Kafka Consumers |
-| 11 | Testes E2E + Keycloak | Testes de integracao ponta a ponta com auth real | WebApplicationFactory, OpenID Connect |
-| 12 | SignalR WebSocket | Notificacoes push, saldo ao vivo, alertas de transacao | Hub Pattern, Real-time Groups, Connection Management |
-| 13 | QR Code + PDF + Limites | Gerar/ler QR Code Pix, comprovantes PDF, limites configuraveis | QRCoder BR Standard, QuestPDF Templates, PixLimit Entity |
-| 14 | Cartoes Virtuais + Dark Mode | Cartao Visa/Mastercard, CVV dinamico, bloquear/desbloquear | Card Number Generation (Luhn), Rotating CVV, Theme Toggle |
-
-### Fase 3 - Experiencia do Usuario (Partes 15-22)
-
-| # | Modulo | Descricao | Destaques Tecnicos |
-|---|--------|-----------|-------------------|
-| 15 | Dashboard Interativo | Graficos de saldo, gastos por categoria, resumo mensal | Chart.js (Line, Doughnut, Bar), Auto-categorizacao |
-| 16 | Extrato Completo | Filtros avancados, paginacao, export CSV/PDF | Server-side Pagination, Query Filters, File Generation |
-| 17 | Pix Agendado/Recorrente | Agendamento unico e recorrente (diario/semanal/mensal) | ScheduledPix Entity, Recurrence Engine, Pause/Resume |
-| 18 | Central de Notificacoes | Inbox com lidas/nao-lidas, categorias, filtros | Notification Center Pattern, Unread Badge, Batch Read |
-| 19 | Contatos Favoritos Pix | Agenda de contatos com favoritos e busca | PixContact Entity, Search, Favorite Toggle |
-| 20 | Boletos | Gerar, pagar, cancelar, codigo de barras automatico | Boleto Entity, Barcode Generation (47 digits), Status Machine |
-| 21 | Perfil e Configuracoes | Dados pessoais, preferencias, seguranca, log de atividade | 4 Settings Tabs, 2FA Toggle, Activity Audit Log |
-| 22 | Sidebar Navigation | Menu lateral colapsavel com grupos e badges | Collapsible Sidebar, Active Route, Notification Badge |
-
-### Fase 4 - Recursos Avancados (Partes 25-28)
-
-| # | Modulo | Descricao | Destaques Tecnicos |
-|---|--------|-----------|-------------------|
-| 25 | Metas Financeiras | Criar metas com progresso, depositos, resgates | FinancialGoal Entity, Progress Tracking, Monthly Required |
-| 25 | Simulador de Emprestimo | Tabela Price vs SAC com parcelas detalhadas | Price/SAC Algorithms, Amortization Schedule, Rate Comparison |
-| 26 | Onboarding KYC Completo | Upload documento (RG/CNH), selfie, validacao facial | Multi-step Wizard, Face Match Simulation, Liveness Score |
-| 26 | Seguros | 4 planos (Pix, Celular, Vida, Cartao) com contratacao | Insurance Plans, Policy Management, Claims System |
-| 27 | Painel Administrativo | Dashboard gerencial, aprovar contas, bloquear fraudes | Admin Metrics, Fraud Alert System, Account Review |
-| 28 | Chatbot IA | Assistente virtual com NLP basico e sugestoes contextuais | Intent Recognition, Contextual Suggestions, Chat UI |
-| 28 | Marketplace | Cashback, cupons, sistema de pontos, resgate | Points System, Offer Catalog, Redemption, History |
-
-### Fase 5 - Qualidade e DevOps (Partes 23-24, 29-30)
-
-| # | Modulo | Descricao | Destaques Tecnicos |
-|---|--------|-----------|-------------------|
-| 23 | Health Check e Docs | Endpoint de saude, lista de endpoints, status de servicos | Health Check Pattern, Service Status, Endpoint Catalog |
-| 24 | Docker Compose | Orquestracao completa com 12 containers | Multi-stage Dockerfile, Volume Persistence, Network |
-| 29 | Testes Frontend | Unit tests Jasmine + E2E Cypress | 5 Jasmine Specs, 4 Cypress E2E Specs |
-| 30 | CI/CD Pipeline + Observabilidade | GitHub Actions (5 jobs) + Prometheus + Grafana | 8 Dashboard Panels, 4 Alert Rules, Metrics Middleware |
+Para desenvolvimento local (opcional):
+- .NET SDK 8.0
+- Node.js ≥ 18
+- Angular CLI 17 (`npm install -g @angular/cli@17`)
 
 ---
 
-## API Reference (57+ Endpoints)
+## Quick Start (Docker)
 
-### Dashboard
-```
-GET    /api/v1/dashboard/summary/{accountId}
-GET    /api/v1/dashboard/balance-history/{accountId}
-GET    /api/v1/dashboard/spending-categories/{accountId}
-GET    /api/v1/dashboard/monthly-summary/{accountId}
-```
-
-### Extrato
-```
-GET    /api/v1/statement/{accountId}?page&size&type&startDate&endDate&search&sortBy&sortOrder
-GET    /api/v1/statement/{accountId}/export/csv
-GET    /api/v1/statement/{accountId}/export/pdf
-```
-
-### Pix
-```
-POST   /api/v1/pix/transfer
-POST   /api/v1/pix/qrcode/generate
-GET    /api/v1/pix/receipt/{transactionId}
-GET    /api/v1/pix/limits/{accountId}
-PUT    /api/v1/pix/limits/{accountId}
-```
-
-### Pix Agendado
-```
-GET    /api/v1/pix/scheduled/account/{accountId}
-POST   /api/v1/pix/scheduled
-POST   /api/v1/pix/scheduled/{id}/execute
-POST   /api/v1/pix/scheduled/{id}/cancel
-POST   /api/v1/pix/scheduled/{id}/pause
-POST   /api/v1/pix/scheduled/{id}/resume
-PUT    /api/v1/pix/scheduled/{id}/amount
-GET    /api/v1/pix/scheduled/{id}
-```
-
-### Contatos Pix
-```
-GET    /api/v1/contacts/{accountId}?favoritesOnly&search
-POST   /api/v1/contacts/{accountId}
-PUT    /api/v1/contacts/{accountId}/{contactId}
-POST   /api/v1/contacts/{accountId}/{contactId}/favorite
-DELETE /api/v1/contacts/{accountId}/{contactId}
-```
-
-### Boletos
-```
-GET    /api/v1/boletos/account/{accountId}?status
-POST   /api/v1/boletos/generate
-POST   /api/v1/boletos/pay/{boletoId}
-POST   /api/v1/boletos/pay-barcode
-POST   /api/v1/boletos/cancel/{boletoId}
-GET    /api/v1/boletos/{boletoId}
-```
-
-### Cartoes Virtuais
-```
-GET    /api/v1/cards/account/{accountId}
-POST   /api/v1/cards
-GET    /api/v1/cards/{cardId}
-POST   /api/v1/cards/{id}/block
-POST   /api/v1/cards/{id}/unblock
-DELETE /api/v1/cards/{id}
-POST   /api/v1/cards/{id}/rotate-cvv
-PUT    /api/v1/cards/{id}/settings
-```
-
-### Metas Financeiras
-```
-GET    /api/v1/goals/{accountId}?status
-POST   /api/v1/goals/{accountId}
-POST   /api/v1/goals/{accountId}/{goalId}/deposit
-POST   /api/v1/goals/{accountId}/{goalId}/withdraw
-POST   /api/v1/goals/{accountId}/{goalId}/cancel
-```
-
-### Simulador de Emprestimo
-```
-POST   /api/v1/loans/simulate
-GET    /api/v1/loans/rates
-```
-
-### Notificacoes
-```
-GET    /api/v1/notifications/{accountId}?unreadOnly&category
-GET    /api/v1/notifications/{accountId}/unread-count
-POST   /api/v1/notifications/{accountId}/{id}/read
-POST   /api/v1/notifications/{accountId}/read-all
-DELETE /api/v1/notifications/{accountId}/{id}
-POST   /api/v1/notifications/{accountId}
-```
-
-### Perfil e Configuracoes
-```
-GET    /api/v1/profile/{accountId}
-PUT    /api/v1/profile/{accountId}
-PUT    /api/v1/profile/{accountId}/preferences
-PUT    /api/v1/profile/{accountId}/security
-GET    /api/v1/profile/{accountId}/activity
-```
-
-### KYC / Onboarding
-```
-GET    /api/v1/kyc/{accountId}
-POST   /api/v1/kyc/{accountId}/document
-POST   /api/v1/kyc/{accountId}/selfie
-POST   /api/v1/kyc/{accountId}/confirm
-POST   /api/v1/kyc/{accountId}/approve
-```
-
-### Seguros
-```
-GET    /api/v1/insurance/plans
-GET    /api/v1/insurance/{accountId}/policies
-POST   /api/v1/insurance/{accountId}/subscribe
-POST   /api/v1/insurance/{accountId}/cancel/{policyId}
-POST   /api/v1/insurance/{accountId}/claim
-```
-
-### Chatbot
-```
-POST   /api/v1/chatbot/message
-GET    /api/v1/chatbot/suggestions
-```
-
-### Marketplace
-```
-GET    /api/v1/marketplace/offers
-GET    /api/v1/marketplace/{accountId}/points
-POST   /api/v1/marketplace/{accountId}/redeem
-GET    /api/v1/marketplace/{accountId}/history
-```
-
-### Admin
-```
-GET    /api/v1/admin/dashboard
-GET    /api/v1/admin/accounts/pending
-POST   /api/v1/admin/accounts/{accountId}/review
-GET    /api/v1/admin/fraud/alerts
-POST   /api/v1/admin/fraud/alerts/{alertId}/action
-GET    /api/v1/admin/metrics?days
-```
-
-### Metricas e Health
-```
-GET    /api/v1/health
-GET    /api/v1/health/detailed
-GET    /api/v1/health/endpoints
-GET    /api/v1/metrics/prometheus
-GET    /api/v1/metrics/json
-```
-
----
-
-## Testes
-
-### Backend (xUnit)
-
-```
-tests/
-├── KRT.IntegrationTests/
-│   └── Repositories/
-│       ├── AccountRepositoryTests.cs
-│       └── PixTransactionRepositoryTests.cs
-└── KRT.UnitTests/
-    ├── Application/
-    │   └── CreateAccountCommandHandlerTests.cs
-    └── Domain/
-        ├── BuildingBlocks/
-        │   └── ValueObjectAndResultTests.cs
-        ├── Onboarding/
-        │   └── AccountTests.cs
-        └── Payments/
-            ├── BoletoTests.cs
-            ├── PixContactTests.cs
-            ├── PixLimitTests.cs
-            ├── PixTransactionTests.cs
-            ├── ScheduledPixTests.cs
-            └── VirtualCardTests.cs
-```
-
-### Frontend (Jasmine/Karma)
-
-```
-├── dashboard-charts.component.spec.ts
-├── statement.component.spec.ts
-├── contacts.component.spec.ts
-├── goals.component.spec.ts
-└── chatbot.component.spec.ts
-```
-
-### E2E (Cypress)
-
-```
-cypress/e2e/
-├── dashboard.cy.ts
-├── statement.cy.ts
-├── chatbot.cy.ts
-└── navigation.cy.ts
-```
-
-### Executar Testes
+**Subir tudo com um comando:**
 
 ```bash
-# Backend
-dotnet test --verbosity normal
+git clone <repo-url> krt-bank
+cd krt-bank
+docker-compose up -d --build
+```
 
-# Frontend Unit
-cd src/Web/KRT.Web && npx ng test --watch=false --browsers=ChromeHeadless
+Aguarde ~2-3 minutos (primeiro build). Depois acesse:
 
-# Cypress E2E
-cd src/Web/KRT.Web && npx cypress open
-# ou headless:
-npx cypress run
+- **App:** http://localhost:4200
+- **Swagger Payments:** http://localhost:5002/swagger
+- **Swagger Onboarding:** http://localhost:5001/swagger
+
+**Parar tudo:**
+```bash
+docker-compose down
+```
+
+**Parar e limpar dados:**
+```bash
+docker-compose down -v
 ```
 
 ---
 
-## Como Executar
+## Desenvolvimento Local
 
-### Pre-requisitos
+Para desenvolvimento com hot-reload, rode a **infraestrutura no Docker** e as **APIs + Angular localmente**:
 
-- .NET 8 SDK
-- Node.js 20+
-- Docker e Docker Compose
-- Angular CLI (`npm install -g @angular/cli`)
-
-### Execucao Local
-
+### 1. Subir infraestrutura
 ```bash
-# 1. Infraestrutura
-docker-compose up -d postgres rabbitmq redis keycloak kafka zookeeper seq
+docker-compose up -d postgres redis rabbitmq kafka zookeeper keycloak seq
+```
 
-# 2. Backend (3 terminais)
-dotnet run --project src/Services/KRT.Payments/KRT.Payments.Api
-dotnet run --project src/Services/KRT.Onboarding/KRT.Onboarding.Api
-dotnet run --project src/Services/KRT.Gateway/KRT.Gateway
+### 2. APIs com hot-reload (cada uma em um terminal)
+```bash
+# Terminal 1 — Onboarding API
+cd src/Services/KRT.Onboarding/KRT.Onboarding.Api
+dotnet watch run
 
-# 3. Frontend
+# Terminal 2 — Payments API
+cd src/Services/KRT.Payments/KRT.Payments.Api
+dotnet watch run
+
+# Terminal 3 — Gateway
+cd src/Services/KRT.Gateway/KRT.Gateway
+dotnet run
+```
+
+### 3. Angular (outro terminal)
+```bash
 cd src/Web/KRT.Web
 npm install
 ng serve
 ```
 
-### Docker Compose (Stack completa)
-
-```bash
-# Aplicacao + infraestrutura
-docker-compose up -d
-
-# Com observabilidade (Prometheus + Grafana)
-docker-compose -f docker-compose.yml -f docker-compose.observability.yml up -d
-```
+> **Nota:** Os `appsettings.json` já apontam para `localhost` nas portas corretas dos containers (5433 para PostgreSQL, 6380 para Redis, etc).
 
 ---
 
-## URLs de Acesso
+## URLs e Credenciais
 
-| Servico | URL | Credenciais |
+| Serviço | URL | Credenciais |
 |---------|-----|-------------|
-| Frontend Angular | http://localhost:4200 | — |
-| API Gateway (YARP) | http://localhost:5000 | — |
-| Payments API (Swagger) | http://localhost:5002/swagger | — |
-| Onboarding API (Swagger) | http://localhost:5001/swagger | — |
-| PostgreSQL | localhost:5433 | krt / KrtBank2026 |
-| Redis | localhost:6380 | — |
-| Keycloak Admin | http://localhost:8080/admin | admin / admin |
-| RabbitMQ Management | http://localhost:15680 | krt / krt123 |
-| SEQ (Logs) | http://localhost:5341 | — |
-| Kafka (externo) | localhost:29092 | — |
-| Zookeeper | localhost:32181 | — |
-| Grafana | http://localhost:3000 | admin / krtbank2026 |
-| Prometheus | http://localhost:9090 | — |
-| AlertManager | http://localhost:9093 | — |
-
----
-
-## CI/CD Pipeline
-
-O pipeline GitHub Actions executa automaticamente em push para `main` e `develop`:
-
-```
-+-------------+    +-------------+    +-------------+
-|   Backend   |    |  Frontend   |    |    E2E      |
-|  Build+Test |--->|  Build+Test |--->|   Cypress   |
-|  (xUnit)    |    |  (Jasmine)  |    |             |
-+------+------+    +------+------+    +------+------+
-       |                  |                   |
-       +----------+-------+-------------------+
-                  |
-           +------v------+
-           |   Docker    |
-           |    Build    |
-           +------+------+
-                  |
-           +------v------+
-           |   Deploy    |
-           |   Staging   |
-           +-------------+
-```
-
-**Jobs:** backend-build, frontend-build, e2e-tests, docker-build (main only), deploy-staging (main only)
-
----
-
-## Observabilidade
-
-### Prometheus
-- Scrape de 3 servicos a cada 15s
-- 4 regras de alerta: HighErrorRate, HighLatency, ServiceDown, HighMemoryUsage
-- Retencao de 30 dias
-
-### Grafana Dashboard
-- Requests/segundo por servico
-- Taxa de erro (2xx / 4xx / 5xx)
-- Latencia P95 por endpoint
-- Uso de memoria por servico
-
-### Metrics Middleware
-Toda requisicao e rastreada via `MetricsMiddleware`, expondo metricas em formato Prometheus (`/api/v1/metrics/prometheus`) e JSON (`/api/v1/metrics/json`).
+| **Frontend Angular** | http://localhost:4200 | — |
+| **API Gateway (YARP)** | http://localhost:5000 | — |
+| **Payments API (Swagger)** | http://localhost:5002/swagger | — |
+| **Onboarding API (Swagger)** | http://localhost:5001/swagger | — |
+| **SEQ (Logs UI)** | http://localhost:8081 | — |
+| **SEQ (API)** | http://localhost:5341 | — |
+| **Keycloak Admin** | http://localhost:8080/admin | admin / admin |
+| **RabbitMQ Management** | http://localhost:15680 | krt / krt123 |
+| **PostgreSQL** | localhost:5433 | krt / KrtBank2026 (db: krtbank) |
+| **Redis** | localhost:6380 | — |
+| **Kafka** | localhost:29092 | — |
+| **Zookeeper** | localhost:32181 | — |
 
 ---
 
@@ -467,98 +187,195 @@ Toda requisicao e rastreada via `MetricsMiddleware`, expondo metricas em formato
 
 ```
 krt-bank/
-├── .github/workflows/
-│   └── ci.yml                              # Pipeline CI/CD (5 jobs)
-├── .docker/
-│   └── postgres-data-clean/
-├── infra/
-│   ├── grafana/
-│   │   ├── dashboards/                     # Dashboard JSON
-│   │   └── provisioning/                   # Datasources + dashboards
-│   ├── keycloak/
-│   │   └── krt-bank-realm.json             # Realm config (roles, clients)
-│   └── prometheus/
-│       ├── prometheus.yml                  # Scrape config
-│       └── alerts.yml                      # 4 alert rules
+├── docker-compose.yml                    # Stack completa (11 containers)
+├── docker-compose.observability.yml      # Prometheus + Grafana (opcional)
+│
 ├── src/
-│   ├── BuildingBlocks/
-│   │   ├── KRT.BuildingBlocks.Domain/      # Entity, ValueObject, Result
-│   │   ├── KRT.BuildingBlocks.EventBus/
-│   │   │   └── Kafka/                      # KafkaEventBus + KafkaConsumerBase
-│   │   ├── KRT.BuildingBlocks.Infrastructure/
-│   │   │   ├── Behaviors/                  # MediatR Pipeline Behaviors
-│   │   │   ├── Data/                       # Generic Repository + UnitOfWork
-│   │   │   ├── Idempotency/                # Idempotency Keys
-│   │   │   └── Outbox/                     # Outbox Pattern (transactional messaging)
-│   │   └── KRT.BuildingBlocks.MessageBus/
-│   │       └── Notifications/
+│   ├── BuildingBlocks/                   # Shared libraries
+│   │   ├── KRT.BuildingBlocks.Domain/        # Result pattern, Value Objects
+│   │   ├── KRT.BuildingBlocks.EventBus/      # Kafka abstractions
+│   │   ├── KRT.BuildingBlocks.Infrastructure/ # EF base, Outbox pattern
+│   │   └── KRT.BuildingBlocks.MessageBus/    # RabbitMQ (NotificationWorker)
+│   │
 │   ├── Services/
-│   │   ├── KRT.Gateway/KRT.Gateway/        # YARP Reverse Proxy + Rate Limiting
-│   │   ├── KRT.Onboarding/
-│   │   │   ├── KRT.Onboarding.Api/         # AccountsController, AuthController
-│   │   │   ├── KRT.Onboarding.Application/ # MediatR Commands/Queries
-│   │   │   ├── KRT.Onboarding.Domain/      # Account Entity (DDD)
-│   │   │   ├── KRT.Onboarding.Infra.Cache/ # Redis Cache
-│   │   │   ├── KRT.Onboarding.Infra.Data/  # EF Core + PostgreSQL
-│   │   │   ├── KRT.Onboarding.Infra.IoC/   # Dependency Injection
+│   │   ├── KRT.Gateway/                  # YARP reverse proxy
+│   │   │   └── KRT.Gateway/
+│   │   │       ├── appsettings.json          # Routes + Clusters (localhost)
+│   │   │       └── appsettings.Docker.json   # Routes + Clusters (container names)
+│   │   │
+│   │   ├── KRT.Onboarding/              # Account creation, Auth, KYC
+│   │   │   ├── KRT.Onboarding.Api/
+│   │   │   ├── KRT.Onboarding.Application/
+│   │   │   ├── KRT.Onboarding.Domain/
+│   │   │   ├── KRT.Onboarding.Infra.Data/
+│   │   │   ├── KRT.Onboarding.Infra.Cache/
+│   │   │   ├── KRT.Onboarding.Infra.IoC/
 │   │   │   └── KRT.Onboarding.Infra.MessageQueue/
-│   │   └── KRT.Payments/
-│   │       ├── KRT.Payments.Api/            # 19 Controllers
-│   │       ├── KRT.Payments.Application/    # MediatR Handlers
-│   │       ├── KRT.Payments.Domain/         # 12+ Entities
-│   │       ├── KRT.Payments.Infra.Data/     # EF Core + Npgsql
-│   │       ├── KRT.Payments.Infra.Http/     # HttpClient + Polly
+│   │   │
+│   │   └── KRT.Payments/                # PIX, Boletos, Cards, Insurance, Goals
+│   │       ├── KRT.Payments.Api/
+│   │       ├── KRT.Payments.Application/
+│   │       ├── KRT.Payments.Domain/
+│   │       ├── KRT.Payments.Infra.Data/
+│   │       ├── KRT.Payments.Infra.Http/
 │   │       └── KRT.Payments.Infra.IoC/
+│   │
 │   └── Web/
-│       └── KRT.Web/                         # Angular 17+ SPA
-│           ├── cypress/e2e/                  # 4 Cypress E2E specs
-│           └── src/app/
-│               ├── pages/ (16 page components)
-│               └── shared/components/ (6 shared components)
+│       └── KRT.Web/                      # Angular 17 SPA
+│           ├── src/app/
+│           │   ├── core/                     # Services, Guards, Interceptors
+│           │   ├── modules/                  # Feature modules (dashboard, pix, etc)
+│           │   └── shared/                   # Components reutilizáveis
+│           ├── Dockerfile                    # Multi-stage (Node build → Nginx serve)
+│           └── nginx.conf                    # SPA routing + gzip + cache
+│
 ├── tests/
-│   ├── KRT.IntegrationTests/                # Repository integration tests
-│   └── KRT.UnitTests/                       # Domain + Application unit tests
-├── docker-compose.yml                        # 12 servicos
-├── docker-compose.observability.yml          # Prometheus + Grafana
-└── README.md
+│   ├── KRT.Payments.UnitTests/           # 83 testes unitários
+│   └── KRT.Payments.IntegrationTests/    # 8 testes de integração
+│
+├── infra/                                # Prometheus, Grafana configs
+└── scripts/                              # Keycloak setup, E2E scripts
 ```
 
 ---
 
-## Padroes Arquiteturais
+## APIs e Endpoints
 
-| Padrao | Onde e Aplicado |
-|--------|----------------|
-| **Domain-Driven Design (DDD)** | Entidades ricas com comportamento (Account, FinancialGoal, VirtualCard, ScheduledPix, Boleto, PixContact) |
-| **CQRS** | Separacao de comandos e queries via MediatR (Pipeline Behaviors) |
-| **Saga Pattern** | Transferencia Pix com orquestracao e compensacao (RabbitMQ) |
-| **Event-Driven Architecture** | Kafka (Event Streaming) + RabbitMQ (Message Queue) |
-| **Outbox Pattern** | Garantia de entrega de eventos via OutboxProcessor<TContext> |
-| **Idempotency** | Chaves de idempotencia para operacoes financeiras |
-| **Repository + Unit of Work** | Abstracao de acesso a dados com transacoes |
-| **API Gateway** | YARP como ponto unico de entrada com rate limiting |
-| **Health Check Pattern** | Endpoints de saude para cada servico |
-| **Observer Pattern** | SignalR para notificacoes real-time |
-| **Strategy Pattern** | Motor de fraude com regras plugaveis |
-| **Factory Pattern** | Criacao de entidades via metodos estaticos Create() |
+### Onboarding API (`:5001`)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/api/v1/auth/register` | Criar conta |
+| POST | `/api/v1/auth/login` | Login (retorna JWT) |
+| POST | `/api/v1/auth/refresh` | Refresh token |
+| GET | `/api/v1/accounts/{id}` | Dados da conta |
+| GET | `/api/v1/accounts/{id}/balance` | Saldo |
+
+### Payments API (`:5002`)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/api/v1/pix/send` | Enviar PIX |
+| GET | `/api/v1/pix/keys/{accountId}` | Chaves PIX |
+| POST | `/api/v1/pix/keys` | Registrar chave PIX |
+| POST | `/api/v1/boleto/pay` | Pagar boleto |
+| POST | `/api/v1/boleto/generate` | Gerar boleto |
+| GET | `/api/v1/cards/{accountId}` | Listar cartões virtuais |
+| POST | `/api/v1/cards` | Criar cartão virtual |
+| GET | `/api/v1/insurance/plans` | Planos de seguro |
+| POST | `/api/v1/insurance/subscribe` | Contratar seguro |
+| GET | `/api/v1/goals/{accountId}` | Metas financeiras |
+| POST | `/api/v1/goals` | Criar meta |
+| GET | `/api/v1/scheduled-pix/{accountId}` | PIX agendados |
+| POST | `/api/v1/scheduled-pix` | Agendar PIX |
+| GET | `/api/v1/dashboard/{accountId}` | Dashboard consolidado |
+| GET | `/api/v1/payments/statement/{accountId}` | Extrato |
+
+> Documentação completa no Swagger: http://localhost:5002/swagger
 
 ---
 
-## Notas Tecnicas
+## Testes
 
-- **PostgreSQL 16** e utilizado como banco principal via EF Core + Npgsql com auto-migration no startup.
-- **Kafka** e utilizado para Event Streaming via `KafkaEventBus` e `KafkaConsumerBase` (Confluent.Kafka).
-- **RabbitMQ** e utilizado para a Saga do Pix e comunicacao entre servicos.
-- **YARP** (Yet Another Reverse Proxy) substitui o Ocelot como API Gateway, com rate limiting integrado (100 req/min por IP).
-- **Serilog + Seq** para structured logging em todos os servicos. SEQ roda em http://localhost:5341 e recebe logs de ambas as APIs.
-- **Seed data** e gerado automaticamente para facilitar demonstracoes.
-- **Dark Mode** suportado globalmente via CSS variables.
-- **Standalone Components** (Angular 17+) sao usados em todo o frontend, sem NgModules.
-- **QuestPDF** opera sob licenca Community para geracao de comprovantes e extratos.
+```bash
+# Testes unitários (83 testes)
+cd tests/KRT.Payments.UnitTests
+dotnet test
+
+# Testes de integração (8 testes)
+cd tests/KRT.Payments.IntegrationTests
+dotnet test
+
+# Todos os testes
+dotnet test KRT.sln
+
+# Testes E2E (Cypress — requer app rodando)
+cd src/Web/KRT.Web
+npx cypress run
+```
 
 ---
 
-## Autores
+## Observabilidade
 
-**KRT Bank** — Projeto Academico 2026
+### SEQ (Logs Estruturados) — Incluído na stack
 
+Todos os serviços enviam logs estruturados via Serilog para o SEQ:
+- **UI:** http://localhost:8081
+- **API:** http://localhost:5341
+
+Filtre logs por serviço: `Application = 'KRT.Payments.Api'`
+
+### Prometheus + Grafana (Opcional)
+
+```bash
+docker-compose -f docker-compose.observability.yml up -d
+```
+
+| Serviço | URL | Credenciais |
+|---------|-----|-------------|
+| Grafana | http://localhost:3000 | admin / krtbank2026 |
+| Prometheus | http://localhost:9090 | — |
+| AlertManager | http://localhost:9093 | — |
+
+---
+
+## Containers Docker
+
+| # | Container | Imagem | Porta | Healthcheck |
+|---|-----------|--------|-------|-------------|
+| 1 | krt-postgres | postgres:16-alpine | 5433 | `pg_isready` |
+| 2 | krt-redis | redis:7-alpine | 6380 | `redis-cli ping` |
+| 3 | krt-rabbitmq | rabbitmq:3-management | 5672, 15680 | `rabbitmq-diagnostics ping` |
+| 4 | krt-kafka | confluentinc/cp-kafka:7.5.0 | 9092, 29092 | — |
+| 5 | krt-zookeeper | confluentinc/cp-zookeeper:7.5.0 | 32181 | — |
+| 6 | krt-keycloak | keycloak:23.0 | 8080 | — |
+| 7 | krt-seq | datalust/seq:2024.1 | 5341, 8081 | — |
+| 8 | krt-onboarding | .NET 8 (build local) | 5001 | `/health` |
+| 9 | krt-payments | .NET 8 (build local) | 5002 | `/health` |
+| 10 | krt-gateway | .NET 8 + YARP | 5000 | `/health` |
+| 11 | krt-web | Node 20 build → Nginx | 4200 | `/nginx-health` |
+
+---
+
+## Troubleshooting
+
+### Container crashando (`Restarting`)
+```bash
+docker logs <container-name> --tail 30
+```
+
+### APIs não conectam ao PostgreSQL
+Os containers usam portas internas padrão (PostgreSQL `5432`, Redis `6379`). As portas externas (`5433`, `6380`) são só para acesso local. Verifique se os `environment` no docker-compose apontam para os nomes dos containers (`postgres`, `redis`, `rabbitmq`), não para `localhost`.
+
+### SEQ crashando
+A versão `latest` do SEQ pode ter bugs. O projeto usa `datalust/seq:2024.1` (estável). Se necessário:
+```bash
+docker volume rm krt-bank_seq-data
+docker-compose up -d seq
+```
+
+### Angular build falha no Docker
+Verifique se o `.dockerignore` na raiz exclui `node_modules`:
+```bash
+echo "src/Web/KRT.Web/node_modules" >> .dockerignore
+```
+
+### Gateway retorna 502
+O Gateway YARP precisa que as APIs estejam respondendo. Em ambiente Docker, usa `appsettings.Docker.json` com os nomes dos containers (`payments-api:80`, `onboarding-api:80`). Em desenvolvimento local, usa `appsettings.json` com `localhost:5001/5002`.
+
+### Nginx: `unknown directive "﻿server"`
+O `nginx.conf` tem BOM (Byte Order Mark). Reescreva sem BOM:
+```powershell
+[System.IO.File]::WriteAllText("path\nginx.conf", $content, (New-Object System.Text.UTF8Encoding $false))
+```
+
+---
+
+## Licença
+
+Este projeto é de uso acadêmico / portfólio.
+
+---
+
+> **KRT Bank** — Desenvolvido como projeto fullstack de banking digital.

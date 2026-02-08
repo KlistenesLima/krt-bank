@@ -27,9 +27,31 @@ public class NotificationWorker : BackgroundService
         _logger = logger;
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var channel = _connection.GetChannel();
+        // Retry: aguardar RabbitMQ ficar disponivel
+        IModel? channel = null;
+        for (int attempt = 1; attempt <= 30; attempt++)
+        {
+            if (stoppingToken.IsCancellationRequested) return;
+            try
+            {
+                channel = _connection.GetChannel();
+                _logger.LogInformation("NotificationWorker conectou ao RabbitMQ (tentativa {Attempt})", attempt);
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("NotificationWorker: RabbitMQ indisponivel, tentativa {Attempt}/30: {Error}", attempt, ex.Message);
+                if (attempt == 30)
+                {
+                    _logger.LogError(ex, "NotificationWorker: RabbitMQ indisponivel apos 30 tentativas. Worker desativado.");
+                    return;
+                }
+                await Task.Delay(5000, stoppingToken);
+            }
+        }
+        if (channel == null) return;
 
         // Processa 1 mensagem por vez (fair dispatch)
         channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
@@ -45,7 +67,7 @@ public class NotificationWorker : BackgroundService
 
         _logger.LogInformation("NotificationWorker started. Listening on 3 queues.");
 
-        return Task.CompletedTask;
+        return;
     }
 
     private void ConsumeQueue(IModel channel, string queueName,
@@ -132,3 +154,4 @@ public class NotificationWorker : BackgroundService
         return 0;
     }
 }
+
