@@ -1,6 +1,7 @@
+﻿using KRT.Payments.Api.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
 
 namespace KRT.Payments.Api.Controllers;
 
@@ -8,83 +9,82 @@ namespace KRT.Payments.Api.Controllers;
 [Route("api/v1/profile")]
 public class ProfileController : ControllerBase
 {
-    private static readonly ConcurrentDictionary<Guid, UserProfile> _store = new();
+    private readonly PaymentsDbContext _db;
+    public ProfileController(PaymentsDbContext db) => _db = db;
 
-    private static UserProfile GetOrCreate(Guid accountId)
+    private async Task<UserProfile> GetOrCreate(Guid accountId)
     {
-        return _store.GetOrAdd(accountId, id => new UserProfile
+        var p = await _db.UserProfiles.FindAsync(accountId);
+        if (p != null) return p;
+        p = new UserProfile
         {
-            AccountId = id,
-            Name = "Usuario KRT Bank",
-            Email = $"usuario{id.ToString()[..8]}@email.com",
-            Phone = "+55 83 99999-0000",
-            Cpf = "***.***.***-00",
-            BirthDate = new DateTime(1990, 6, 15),
-            Address = new AddressInfo { Street = "Rua Principal, 100", City = "Cajazeiras", State = "PB", ZipCode = "58900-000" },
-            Preferences = new UserPreferences(),
-            Security = new SecuritySettings(),
-            CreatedAt = DateTime.UtcNow.AddMonths(-6)
-        });
+            AccountId = accountId, Name = "Usuario KRT", Email = "usuario@krtbank.com",
+            Phone = "(83) 99999-0000", Cpf = "***.***.***-00", BirthDate = new DateTime(1995, 6, 15),
+            Address = new AddressInfo { Street = "Rua Example 123", City = "Cajazeiras", State = "PB" },
+            Preferences = new UserPreferences { DarkMode = false, PushNotifications = true, EmailNotifications = true, BiometricLogin = false, Language = "pt-BR" },
+            Security = new SecuritySettings { TwoFactorEnabled = false, BiometricEnabled = false, LoginAlerts = true, TransactionAlerts = true },
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.UserProfiles.Add(p);
+        await _db.SaveChangesAsync();
+        return p;
     }
 
     [HttpGet("{accountId}")]
     [AllowAnonymous]
-    public IActionResult GetProfile(Guid accountId) => Ok(GetOrCreate(accountId));
+    public async Task<IActionResult> GetProfile(Guid accountId)
+    {
+        var p = await GetOrCreate(accountId);
+        return Ok(p);
+    }
 
     [HttpPut("{accountId}")]
     [AllowAnonymous]
-    public IActionResult UpdateProfile(Guid accountId, [FromBody] UpdateProfileRequest request)
+    public async Task<IActionResult> UpdateProfile(Guid accountId, [FromBody] UpdateProfileRequest req)
     {
-        var p = GetOrCreate(accountId);
-        if (!string.IsNullOrWhiteSpace(request.Name)) p.Name = request.Name;
-        if (!string.IsNullOrWhiteSpace(request.Phone)) p.Phone = request.Phone;
-        if (request.Address != null)
-        {
-            p.Address.Street = request.Address.Street ?? p.Address.Street;
-            p.Address.City = request.Address.City ?? p.Address.City;
-            p.Address.State = request.Address.State ?? p.Address.State;
-            p.Address.ZipCode = request.Address.ZipCode ?? p.Address.ZipCode;
-        }
+        var p = await GetOrCreate(accountId);
+        if (!string.IsNullOrEmpty(req.Name)) p.Name = req.Name;
+        if (!string.IsNullOrEmpty(req.Email)) p.Email = req.Email;
+        if (!string.IsNullOrEmpty(req.Phone)) p.Phone = req.Phone;
+        if (req.Address != null) p.Address = req.Address;
         p.UpdatedAt = DateTime.UtcNow;
-        return Ok(new { message = "Perfil atualizado" });
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Perfil atualizado", profile = p });
     }
 
     [HttpPut("{accountId}/preferences")]
     [AllowAnonymous]
-    public IActionResult UpdatePreferences(Guid accountId, [FromBody] UserPreferences prefs)
+    public async Task<IActionResult> UpdatePreferences(Guid accountId, [FromBody] UserPreferences prefs)
     {
-        var p = GetOrCreate(accountId);
+        var p = await GetOrCreate(accountId);
         p.Preferences = prefs;
         p.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
         return Ok(new { message = "Preferencias atualizadas" });
     }
 
     [HttpPut("{accountId}/security")]
     [AllowAnonymous]
-    public IActionResult UpdateSecurity(Guid accountId, [FromBody] UpdateSecurityRequest request)
+    public async Task<IActionResult> UpdateSecurity(Guid accountId, [FromBody] SecuritySettings sec)
     {
-        var p = GetOrCreate(accountId);
-        if (request.TwoFactorEnabled.HasValue) p.Security.TwoFactorEnabled = request.TwoFactorEnabled.Value;
-        if (request.BiometricEnabled.HasValue) p.Security.BiometricEnabled = request.BiometricEnabled.Value;
-        if (request.TransactionNotifications.HasValue) p.Security.TransactionNotifications = request.TransactionNotifications.Value;
-        if (request.LoginNotifications.HasValue) p.Security.LoginNotifications = request.LoginNotifications.Value;
+        var p = await GetOrCreate(accountId);
+        p.Security = sec;
         p.UpdatedAt = DateTime.UtcNow;
-        return Ok(new { message = "Seguranca atualizada" });
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Configuracoes de seguranca atualizadas" });
     }
 
     [HttpGet("{accountId}/activity")]
     [AllowAnonymous]
     public IActionResult GetActivity(Guid accountId)
     {
-        var activities = new[]
+        return Ok(new[]
         {
-            new { action = "Login", device = "Chrome / Windows", ip = "189.xxx.xxx.42", date = DateTime.UtcNow.AddHours(-1) },
-            new { action = "Pix enviado", device = "App Android", ip = "189.xxx.xxx.42", date = DateTime.UtcNow.AddHours(-3) },
-            new { action = "Senha alterada", device = "Chrome / Windows", ip = "189.xxx.xxx.42", date = DateTime.UtcNow.AddDays(-2) },
-            new { action = "Login", device = "App iOS", ip = "200.xxx.xxx.15", date = DateTime.UtcNow.AddDays(-3) },
-            new { action = "Cartao virtual criado", device = "Chrome / Windows", ip = "189.xxx.xxx.42", date = DateTime.UtcNow.AddDays(-5) }
-        };
-        return Ok(activities);
+            new { date = DateTime.UtcNow.AddHours(-1), action = "Login", device = "Chrome - Windows", ip = "189.xxx.xxx.xx", location = "Cajazeiras, PB" },
+            new { date = DateTime.UtcNow.AddDays(-1), action = "Pix Enviado", device = "App Android", ip = "189.xxx.xxx.xx", location = "Cajazeiras, PB" },
+            new { date = DateTime.UtcNow.AddDays(-2), action = "Alteracao de senha", device = "Chrome - Windows", ip = "189.xxx.xxx.xx", location = "Cajazeiras, PB" },
+            new { date = DateTime.UtcNow.AddDays(-3), action = "Login", device = "App iOS", ip = "200.xxx.xxx.xx", location = "Joao Pessoa, PB" }
+        });
     }
 }
 
@@ -103,31 +103,7 @@ public class UserProfile
     public DateTime? UpdatedAt { get; set; }
 }
 
-public class AddressInfo
-{
-    public string Street { get; set; } = "";
-    public string City { get; set; } = "";
-    public string State { get; set; } = "";
-    public string ZipCode { get; set; } = "";
-}
-
-public class UserPreferences
-{
-    public bool DarkMode { get; set; } = false;
-    public string Language { get; set; } = "pt-BR";
-    public bool EmailNotifications { get; set; } = true;
-    public bool PushNotifications { get; set; } = true;
-    public bool SmsNotifications { get; set; } = false;
-    public string Currency { get; set; } = "BRL";
-}
-
-public class SecuritySettings
-{
-    public bool TwoFactorEnabled { get; set; } = false;
-    public bool BiometricEnabled { get; set; } = false;
-    public bool TransactionNotifications { get; set; } = true;
-    public bool LoginNotifications { get; set; } = true;
-}
-
-public record UpdateProfileRequest(string? Name, string? Phone, AddressInfo? Address);
-public record UpdateSecurityRequest(bool? TwoFactorEnabled, bool? BiometricEnabled, bool? TransactionNotifications, bool? LoginNotifications);
+public class AddressInfo { public string Street { get; set; } = ""; public string City { get; set; } = ""; public string State { get; set; } = ""; public string ZipCode { get; set; } = ""; public string Number { get; set; } = ""; }
+public class UserPreferences { public bool DarkMode { get; set; } public bool PushNotifications { get; set; } = true; public bool EmailNotifications { get; set; } = true; public bool BiometricLogin { get; set; } public string Language { get; set; } = "pt-BR"; }
+public class SecuritySettings { public bool TwoFactorEnabled { get; set; } public bool BiometricEnabled { get; set; } public bool LoginAlerts { get; set; } = true; public bool TransactionAlerts { get; set; } = true; }
+public record UpdateProfileRequest(string? Name, string? Email, string? Phone, AddressInfo? Address);

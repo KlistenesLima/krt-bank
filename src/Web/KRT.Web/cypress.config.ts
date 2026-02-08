@@ -1,4 +1,4 @@
-import { defineConfig } from 'cypress';
+﻿import { defineConfig } from 'cypress';
 
 export default defineConfig({
   e2e: {
@@ -9,6 +9,6 @@ export default defineConfig({
     viewportHeight: 720,
     video: false,
     screenshotOnRunFailure: true,
-    defaultCommandTimeout: 10000
-  }
+    defaultCommandTimeout: 10000,
+  },
 });
