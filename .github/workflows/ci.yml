@@ -1,0 +1,175 @@
+name: KRT Bank CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '20.x'
+  QUESTPDF_LICENSE: community
+
+jobs:
+  # ──────────────────────────────────────
+  # Backend: Build + Test
+  # ──────────────────────────────────────
+  backend-build:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Unit Tests
+        run: dotnet test tests/KRT.UnitTests/KRT.UnitTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=unit-results.trx" --collect:"XPlat Code Coverage"
+
+      - name: Integration Tests
+        run: dotnet test tests/KRT.IntegrationTests/KRT.IntegrationTests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-results.trx"
+        continue-on-error: true
+
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: .NET Test Results
+          path: '**/*.trx'
+          reporter: dotnet-trx
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: '**/coverage.cobertura.xml'
+          fail_ci_if_error: false
+
+  # ──────────────────────────────────────
+  # Frontend: Build + Test
+  # ──────────────────────────────────────
+  frontend-build:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/Web/KRT.Web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/Web/KRT.Web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx ng lint --force
+        continue-on-error: true
+
+      - name: Unit Tests (Jasmine/Karma)
+        run: npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
+        continue-on-error: true
+
+      - name: Build Production
+        run: npx ng build --configuration=production
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-dist
+          path: src/Web/KRT.Web/dist/
+          retention-days: 7
+
+  # ──────────────────────────────────────
+  # Cypress E2E (depende dos builds)
+  # ──────────────────────────────────────
+  e2e-tests:
+    name: Cypress E2E Tests
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    defaults:
+      run:
+        working-directory: src/Web/KRT.Web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: src/Web/KRT.Web
+          start: npx ng serve
+          wait-on: 'http://localhost:4200'
+          wait-on-timeout: 120
+        continue-on-error: true
+
+      - name: Upload Cypress Screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: src/Web/KRT.Web/cypress/screenshots
+          retention-days: 5
+
+  # ──────────────────────────────────────
+  # Docker Build
+  # ──────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Payments API
+        run: docker build -f src/Services/KRT.Payments/KRT.Payments.Api/Dockerfile -t krt-payments-api:${{ github.sha }} .
+
+      - name: Build Onboarding API
+        run: docker build -f src/Services/KRT.Onboarding/KRT.Onboarding.Api/Dockerfile -t krt-onboarding-api:${{ github.sha }} .
+
+      - name: Build Gateway
+        run: docker build -f src/Services/KRT.Gateway/KRT.Gateway/Dockerfile -t krt-gateway:${{ github.sha }} .
+
+  # ──────────────────────────────────────
+  # Deploy (staging)
+  # ──────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [docker-build, e2e-tests]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy notification
+        run: |
+          echo "🚀 Deploying KRT Bank to staging..."
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Deploy would run docker-compose up -d here"

@@ -1,0 +1,69 @@
+<div class="kyc-page" *ngIf="kyc">
+  <h2>Verificacao de Identidade</h2>
+
+  <div class="steps-bar">
+    <div class="step" [class.active]="getStepNumber() >= 1" [class.done]="getStepNumber() > 1">
+      <span class="num">1</span><span class="lbl">Documento</span></div>
+    <div class="step-line" [class.active]="getStepNumber() > 1"></div>
+    <div class="step" [class.active]="getStepNumber() >= 2" [class.done]="getStepNumber() > 2">
+      <span class="num">2</span><span class="lbl">Selfie</span></div>
+    <div class="step-line" [class.active]="getStepNumber() > 2"></div>
+    <div class="step" [class.active]="getStepNumber() >= 3" [class.done]="getStepNumber() > 3">
+      <span class="num">3</span><span class="lbl">Dados</span></div>
+    <div class="step-line" [class.active]="getStepNumber() > 3"></div>
+    <div class="step" [class.active]="getStepNumber() >= 4">
+      <span class="num">4</span><span class="lbl">Analise</span></div>
+  </div>
+
+  <!-- Step 1: Documento -->
+  <div class="step-panel" *ngIf="kyc.currentStep === 'document'">
+    <div class="step-icon">📄</div>
+    <h3>Envie seu documento</h3>
+    <p>Escolha o tipo e tire uma foto do documento</p>
+    <select [(ngModel)]="docType"><option *ngFor="let t of docTypes" [value]="t">{{t}}</option></select>
+    <div class="upload-area" (click)="uploadDocument()">
+      <span class="upload-icon">📷</span>
+      <span>Clique para enviar foto do {{ docType }}</span>
+    </div>
+  </div>
+
+  <!-- Step 2: Selfie -->
+  <div class="step-panel" *ngIf="kyc.currentStep === 'selfie'">
+    <div class="step-icon">🤳</div>
+    <h3>Tire uma selfie</h3>
+    <p>Precisamos confirmar que voce e o titular do documento</p>
+    <div class="validation-ok" *ngIf="kyc.documentValidation?.isValid">
+      ✅ Documento validado ({{ kyc.documentValidation.confidence }}% confianca)
+    </div>
+    <div class="upload-area" (click)="uploadSelfie()">
+      <span class="upload-icon">📸</span>
+      <span>Clique para tirar selfie</span>
+    </div>
+  </div>
+
+  <!-- Step 3: Confirmar dados -->
+  <div class="step-panel" *ngIf="kyc.currentStep === 'confirm'">
+    <div class="step-icon">✍️</div>
+    <h3>Confirme seus dados</h3>
+    <div class="validation-ok" *ngIf="kyc.faceMatch?.isMatch">
+      ✅ Face verificada ({{ kyc.faceMatch.confidence }}% match, liveness {{ kyc.faceMatch.livenessScore }}%)
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Nome completo</label><input [(ngModel)]="confirmForm.fullName"></div>
+      <div class="field"><label>CPF</label><input [(ngModel)]="confirmForm.cpf" placeholder="000.000.000-00"></div>
+      <div class="field"><label>Data nascimento</label><input type="date" [(ngModel)]="confirmForm.birthDate"></div>
+      <div class="field"><label>Nome da mae</label><input [(ngModel)]="confirmForm.motherName"></div>
+    </div>
+    <button class="btn-submit" (click)="confirmData()">Confirmar Dados</button>
+  </div>
+
+  <!-- Step 4: Analise -->
+  <div class="step-panel" *ngIf="kyc.currentStep === 'review'">
+    <div class="step-icon">⏳</div>
+    <h3>Conta em analise</h3>
+    <p>Seus dados estao sendo verificados. Voce sera notificado em breve.</p>
+    <div class="status-display" [ngClass]="kyc.overallStatus === 'Aprovado' ? 'approved' : kyc.overallStatus === 'Rejeitado' ? 'rejected' : 'pending'">
+      {{ kyc.overallStatus }}
+    </div>
+  </div>
+</div>
