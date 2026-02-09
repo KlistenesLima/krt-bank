@@ -1,5 +1,5 @@
-﻿# ============================================================
-# KRT Bank Ã¢â‚¬â€ Teste End-to-End
+# ============================================================
+# KRT Bank - E2E Test Suite
 # Keycloak Auth -> Criar Conta -> Consultar -> Pix -> Seq
 # ============================================================
 param(
@@ -28,7 +28,7 @@ function Write-TestResult($name, $success, $detail = "") {
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  KRT Bank Ã¢â‚¬â€ E2E Test Suite" -ForegroundColor White
+  Write-Host "  KRT Bank - E2E Test Suite" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -57,7 +57,7 @@ try {
     $tokenResponse = Invoke-RestMethod -Uri "$KeycloakUrl/realms/krt-bank/protocol/openid-connect/token" `
         -Method POST `
         -ContentType "application/x-www-form-urlencoded" `
-        -Body 'grant_type=password&client_id=krt-bank-app&username=10626054460&password=99515452@Aa3'
+        -Body 'grant_type=password&client_id=krt-bank-app&username=39880299809&password=Senha@123'
     $token = $tokenResponse.access_token
     Write-TestResult "Keycloak Token" ($null -ne $token) "token length: $($token.Length)"
 } catch {
@@ -101,7 +101,7 @@ try {
     $accountId = $createResult.id
     Write-TestResult "Criar Conta" ($null -ne $accountId) "id: $accountId"
 } catch {
-    # Pode dar erro se ja existir por CPF duplicado Ã¢â‚¬â€ tenta buscar
+    # Pode dar erro se ja existir por CPF duplicado - tenta buscar
     $statusCode = $_.Exception.Response.StatusCode.Value__
     if ($statusCode -eq 400) {
         Write-TestResult "Criar Conta" $false "Possivel CPF duplicado. Rode com doc diferente."
@@ -220,7 +220,7 @@ if ($accountId) {
     Write-Host "  DADOS DE TESTE:" -ForegroundColor Cyan
     Write-Host "  Account ID:     $accountId" -ForegroundColor White
     Write-Host "  CorrelationId:  $correlationId" -ForegroundColor White
-    Write-Host "  Keycloak User:  10626054460 / ***" -ForegroundColor White
+    Write-Host "  Keycloak User:  39880299809 / ***" -ForegroundColor White
     Write-Host ""
 }
 
