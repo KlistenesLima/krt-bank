@@ -14,6 +14,7 @@ public class Account : AggregateRoot
     public decimal Balance { get; private set; }
     public AccountStatus Status { get; private set; }
     public AccountType Type { get; private set; }
+    public string Role { get; private set; } = "User";
 
     // Concorrência Otimista gerenciada pela aplicação
     public byte[] RowVersion { get; private set; }
@@ -29,6 +30,7 @@ public class Account : AggregateRoot
         Phone = phone ?? "";
         Type = type;
         Status = AccountStatus.Active;
+        Role = "User";
         Balance = 0;
         
         // Inicializa token
@@ -50,6 +52,14 @@ public class Account : AggregateRoot
         UpdateAudit();
     }
 
+    public void SetRole(string role)
+    {
+        if (role != "User" && role != "Admin")
+            throw new BusinessRuleException("Role invalido");
+        Role = role;
+        UpdateAudit();
+    }
+
     public void Block(string reason)
     {
         if (Status != AccountStatus.Active)
@@ -63,6 +73,7 @@ public class Account : AggregateRoot
         if (Status == AccountStatus.Closed)
             throw new BusinessRuleException("Contas encerradas não podem ser reativadas");
         Status = AccountStatus.Active;
+        Role = "User";
         UpdateAudit();
     }
 
@@ -86,4 +97,5 @@ public class Account : AggregateRoot
         RowVersion = Guid.NewGuid().ToByteArray();
     }
 }
+
 

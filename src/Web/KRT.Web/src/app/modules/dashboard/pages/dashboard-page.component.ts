@@ -2,6 +2,7 @@
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { AccountService } from '../../../core/services/account.service';
+import { PaymentService } from '../../../core/services/payment.service';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -121,7 +122,17 @@ import { AccountService } from '../../../core/services/account.service';
       </section>
     </div>
 
-    <app-bottom-nav></app-bottom-nav>
+          <!-- ADMIN ACCESS -->
+      <div class="admin-access" *ngIf="isUserAdmin" (click)="router.navigate(['/admin'])">
+        <div class="admin-icon">🛡️</div>
+        <div class="admin-text">
+          <strong>Command Center</strong>
+          <span>Painel Administrativo</span>
+        </div>
+        <span class="admin-arrow">›</span>
+      </div>
+
+      <app-bottom-nav></app-bottom-nav>
   `,
   styles: [`
     .dashboard-container {
@@ -232,6 +243,18 @@ import { AccountService } from '../../../core/services/account.service';
     .pix-icon { color: var(--krt-accent-dark); }
 
     /* TRANSACTIONS */
+    .admin-access {
+      display: flex; align-items: center; gap: 14px;
+      margin: 16px 20px; padding: 16px; background: linear-gradient(135deg, #0a0e1a, #1a2235);
+      border-radius: 14px; cursor: pointer; transition: all 0.2s;
+      max-width: 500px; margin-left: auto; margin-right: auto;
+    }
+    .admin-access:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .admin-icon { font-size: 28px; }
+    .admin-text { flex: 1; }
+    .admin-text strong { display: block; color: #f1f5f9; font-size: 0.95rem; }
+    .admin-text span { color: #94a3b8; font-size: 0.8rem; }
+    .admin-arrow { color: #3b82f6; font-size: 24px; font-weight: 300; }
     .transactions-section {
       padding: 8px 20px 20px;
       max-width: 500px; margin: 0 auto;
@@ -279,11 +302,13 @@ export class DashboardPageComponent implements OnInit {
   showBalance = true;
   transactions: any[] = [];
   loading = true;
+  isUserAdmin = false;
 
   constructor(
     public router: Router,
     private auth: AuthService,
-    private accountService: AccountService
+    private accountService: AccountService,
+    private paymentService: PaymentService
   ) {}
 
   ngOnInit() {
@@ -291,8 +316,22 @@ export class DashboardPageComponent implements OnInit {
     this.userName = localStorage.getItem('krt_account_name') || 'Usuário';
     this.balance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
     this.showBalance = localStorage.getItem('krt_show_balance') !== 'false';
-    this.transactions = JSON.parse(localStorage.getItem('krt_transactions') || '[]');
+    this.isUserAdmin = this.auth.isAdmin();
     this.loading = false;
+    if (this.accountId) {
+      this.paymentService.getHistory(this.accountId, 1, 5).subscribe({
+        next: (txs) => {
+          this.transactions = txs.map((tx: any) => ({
+            type: tx.destinationAccountId === this.accountId ? 'CREDIT' : 'DEBIT',
+            description: tx.description || (tx.destinationAccountId === this.accountId ? 'Pix Recebido' : 'Pix Enviado'),
+            amount: tx.amount,
+            createdAt: tx.createdAt,
+            status: tx.status
+          }));
+        },
+        error: () => { this.transactions = []; }
+      });
+    }
   }
 
   getInitials(): string {
@@ -332,6 +371,8 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 }
+
+
 
 
 
