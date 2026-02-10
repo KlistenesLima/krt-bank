@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { PaymentService, PixTransaction } from '../../../core/services/payment.service';
@@ -63,6 +63,9 @@ import { PaymentService, PixTransaction } from '../../../core/services/payment.s
       transition: transform 0.15s;
     }
     .tx-item:hover { transform: translateX(4px); }
+      .tx-download-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; display: flex; align-items: center; transition: all 0.2s; }
+      .tx-download-btn:hover { background: rgba(0,71,187,0.08); }
+      .tx-download-btn mat-icon { font-size: 22px; width: 22px; height: 22px; color: #0047BB; }
     .tx-icon {
       width: 40px; height: 40px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
@@ -177,3 +180,4 @@ export class StatementPageComponent implements OnInit {
     this.router.navigate(['/dashboard']);
   }
 }
+

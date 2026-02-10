@@ -1,6 +1,7 @@
-﻿import { Component } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-pix-keys',
@@ -142,38 +143,76 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     .limit-fill { height: 100%; background: #0047BB; border-radius: 2px; transition: width 0.3s; }
   `]
 })
-export class PixKeysComponent {
+export class PixKeysComponent implements OnInit {
   showForm = false;
   newType = 'cpf';
   newValue = '';
   keys: any[] = [];
 
-  ngOnInit() {
-    const cpf = localStorage.getItem('krt_account_doc') || '';
-    const email = localStorage.getItem('krt_account_email') || '';
-    if (cpf) {
-      const masked = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.\.\-**');
-      this.keys.push({ type: 'CPF', value: masked, icon: 'badge', color: '#0047BB' });
-    }
-    if (email) {
-      this.keys.push({ type: 'Email', value: email, icon: 'email', color: '#00897B' });
-    }
-  }
   types = [
     { id: 'cpf', label: 'CPF', icon: 'badge', color: '#0047BB' },
     { id: 'email', label: 'Email', icon: 'email', color: '#00C853' },
     { id: 'phone', label: 'Celular', icon: 'phone', color: '#FF6B35' },
     { id: 'random', label: 'Aleatoria', icon: 'shuffle', color: '#7C3AED' },
   ];
-  constructor(public router: Router, private snackBar: MatSnackBar) {}
+
+  constructor(public router: Router, private snackBar: MatSnackBar, private http: HttpClient) {}
+
+  ngOnInit() {
+    this.loadKeys();
+  }
+
+  private getHeaders() {
+    const token = localStorage.getItem('krt_token');
+    return { headers: { Authorization: 'Bearer ' + token } };
+  }
+
+  private getAccountId(): string {
+    return localStorage.getItem('krt_account_id') || '';
+  }
+
+  loadKeys() {
+    const accountId = this.getAccountId();
+    if (!accountId) return;
+    this.http.get<any[]>('http://localhost:5000/api/v1/pix-keys/account/' + accountId, this.getHeaders()).subscribe({
+      next: (keys) => {
+        const typeMap: any = {
+          Cpf: { label: 'CPF', icon: 'badge', color: '#0047BB' },
+          Email: { label: 'Email', icon: 'email', color: '#00C853' },
+          Phone: { label: 'Celular', icon: 'phone', color: '#FF6B35' },
+          Random: { label: 'Aleatoria', icon: 'shuffle', color: '#7C3AED' }
+        };
+        this.keys = keys.map((k: any) => {
+          const t = typeMap[k.keyType] || typeMap['Cpf'];
+          return { id: k.id, type: t.label, value: k.keyValue, icon: t.icon, color: t.color, keyType: k.keyType };
+        });
+      },
+      error: () => { this.snackBar.open('Erro ao carregar chaves', '', { duration: 3000 }); }
+    });
+  }
+
   getNewLabel(): string { const m: any = { cpf: 'CPF', email: 'Seu email', phone: 'Seu celular' }; return m[this.newType] || ''; }
   getNewPlaceholder(): string { const m: any = { cpf: '000.000.000-00', email: 'email@exemplo.com', phone: '(00) 00000-0000' }; return m[this.newType] || ''; }
   getNewIcon(): string { const m: any = { cpf: 'badge', email: 'email', phone: 'phone' }; return m[this.newType] || 'key'; }
   getNewMaxLen(): number { const m: any = { cpf: 14, email: 100, phone: 15 }; return m[this.newType] || 50; }
+
   maskNewValue(event: any) {
-    if (this.newType === 'cpf') { let v = event.target.value.replace(/\D/g, ''); if (v.length > 11) v = v.slice(0, 11); if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4'); else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3'); else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2'); this.newValue = v; event.target.value = v; }
-    else if (this.newType === 'phone') { let v = event.target.value.replace(/\D/g, ''); if (v.length > 11) v = v.slice(0, 11); if (v.length > 6) v = v.replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3'); else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, '($1) $2'); this.newValue = v; event.target.value = v; }
+    if (this.newType === 'cpf') {
+      let v = event.target.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+      this.newValue = v; event.target.value = v;
+    } else if (this.newType === 'phone') {
+      let v = event.target.value.replace(/\D/g, '');
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 6) v = v.replace(/(\d{2})(\d{5})(\d{1,4})/, '($1) $2-$3');
+      else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})/, '($1) $2');
+      this.newValue = v; event.target.value = v;
+    }
   }
+
   isNewValid(): boolean {
     if (this.newType === 'cpf') return this.newValue.replace(/\D/g, '').length === 11;
     if (this.newType === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.newValue);
@@ -181,14 +220,40 @@ export class PixKeysComponent {
     if (this.newType === 'random') return true;
     return false;
   }
-  addKey() {
-    const t = this.types.find(x => x.id === this.newType)!;
-    const val = this.newType === 'random' ? Math.random().toString(36).substring(2, 10) + '-' + Math.random().toString(36).substring(2, 6) : this.newValue;
-    this.keys.push({ type: t.label, value: val, icon: t.icon, color: t.color });
-    this.showForm = false; this.newValue = '';
-    this.snackBar.open('Chave cadastrada!', '', { duration: 2000 });
-  }
-  copyKey(key: any) { navigator.clipboard.writeText(key.value); this.snackBar.open('Chave copiada!', '', { duration: 1500 }); }
-  removeKey(key: any) { this.keys = this.keys.filter(k => k !== key); this.snackBar.open('Chave removida', '', { duration: 1500 }); }
-}
 
+  addKey() {
+    const accountId = this.getAccountId();
+    if (!accountId) return;
+    const body: any = { accountId: accountId, keyType: this.newType };
+    if (this.newType !== 'random') { body.keyValue = this.newValue; }
+    this.http.post<any>('http://localhost:5000/api/v1/pix-keys/register', body, this.getHeaders()).subscribe({
+      next: () => {
+        this.snackBar.open('Chave PIX registrada!', '', { duration: 2000 });
+        this.showForm = false; this.newValue = '';
+        this.loadKeys();
+      },
+      error: (err: any) => {
+        const msg = err?.error?.error || 'Erro ao registrar chave PIX';
+        this.snackBar.open(msg, '', { duration: 3000 });
+      }
+    });
+  }
+
+  copyKey(key: any) {
+    navigator.clipboard.writeText(key.value);
+    this.snackBar.open('Chave copiada!', '', { duration: 1500 });
+  }
+
+  removeKey(key: any) {
+    if (!confirm('Tem certeza que deseja remover esta chave?')) return;
+    this.http.delete('http://localhost:5000/api/v1/pix-keys/' + key.id, this.getHeaders()).subscribe({
+      next: () => {
+        this.snackBar.open('Chave removida!', '', { duration: 2000 });
+        this.loadKeys();
+      },
+      error: () => {
+        this.snackBar.open('Erro ao remover chave', '', { duration: 3000 });
+      }
+    });
+  }
+}
