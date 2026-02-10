@@ -12,7 +12,7 @@ import { PaymentService } from '../../../core/services/payment.service';
       <header class="dash-header">
         <div class="header-content">
           <div class="user-info">
-            <div class="avatar">{{ getInitials() }}</div>
+            <div class="avatar" (click)="toggleDropdown()">{{ getInitials() }}</div>
             <div class="greeting">
               <span class="greeting-text">{{ getGreeting() }}</span>
               <h2 class="user-name">{{ userName }}</h2>
@@ -22,9 +22,34 @@ import { PaymentService } from '../../../core/services/payment.service';
             <button class="icon-btn" (click)="router.navigate(['/inbox'])">
               <mat-icon>notifications_none</mat-icon>
             </button>
-            <button class="icon-btn" (click)="logout()">
-              <mat-icon>logout</mat-icon>
-            </button>
+            <div class="avatar-menu-wrapper">
+              <button class="icon-btn avatar-btn" (click)="toggleDropdown()">
+                <mat-icon>account_circle</mat-icon>
+              </button>
+              <div class="avatar-dropdown" *ngIf="showDropdown" (click)="showDropdown = false">
+                <div class="dropdown-header">
+                  <div class="dropdown-avatar">{{ getInitials() }}</div>
+                  <div class="dropdown-user">
+                    <strong>{{ userName }}</strong>
+                    <span>{{ userEmail }}</span>
+                  </div>
+                </div>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" (click)="router.navigate(['/dashboard'])">
+                  <mat-icon>dashboard</mat-icon> Dashboard
+                </button>
+                <button class="dropdown-item" (click)="router.navigate(['/extract'])">
+                  <mat-icon>receipt_long</mat-icon> Extrato
+                </button>
+                <button class="dropdown-item admin-item" *ngIf="isUserAdmin" (click)="router.navigate(['/admin'])">
+                  <mat-icon>admin_panel_settings</mat-icon> Command Center
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item logout-item" (click)="logout()">
+                  <mat-icon>logout</mat-icon> Sair
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -293,6 +318,57 @@ import { PaymentService } from '../../../core/services/payment.service';
     .tx-date { font-size: 0.75rem; color: var(--krt-text-muted); }
     .tx-amount { font-weight: 700; font-size: 0.9rem; color: var(--krt-danger); }
     .tx-amount.credit { color: var(--krt-success); }
+
+    /* AVATAR DROPDOWN */
+    .avatar { cursor: pointer; transition: all 0.2s; }
+    .avatar:hover { background: rgba(255,255,255,0.35); }
+    .avatar-menu-wrapper { position: relative; }
+    .avatar-btn mat-icon { font-size: 26px; width: 26px; height: 26px; }
+    .avatar-dropdown {
+      position: absolute; top: 50px; right: 0; width: 260px;
+      background: white; border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+      z-index: 1000; overflow: hidden;
+      animation: dropIn 0.2s ease;
+    }
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px; background: #f8fafc;
+    }
+    .dropdown-avatar {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--krt-gradient); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem;
+    }
+    .dropdown-user strong {
+      display: block; font-size: 0.9rem; color: var(--krt-text);
+    }
+    .dropdown-user span {
+      font-size: 0.75rem; color: var(--krt-text-muted);
+    }
+    .dropdown-divider { height: 1px; background: #e2e8f0; margin: 0; }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 12px 16px; border: none; background: none;
+      font-size: 0.88rem; color: var(--krt-text); cursor: pointer;
+      transition: background 0.15s; text-align: left;
+    }
+    .dropdown-item:hover { background: #f1f5f9; }
+    .dropdown-item mat-icon {
+      font-size: 20px; width: 20px; height: 20px;
+      color: var(--krt-text-muted);
+    }
+    .dropdown-item.admin-item {
+      color: #3b82f6; font-weight: 600;
+    }
+    .dropdown-item.admin-item mat-icon { color: #3b82f6; }
+    .dropdown-item.logout-item { color: #ef4444; }
+    .dropdown-item.logout-item mat-icon { color: #ef4444; }
   `]
 })
 export class DashboardPageComponent implements OnInit {
@@ -303,6 +379,8 @@ export class DashboardPageComponent implements OnInit {
   transactions: any[] = [];
   loading = true;
   isUserAdmin = false;
+  showDropdown = false;
+  userEmail = '';
 
   constructor(
     public router: Router,
@@ -317,6 +395,7 @@ export class DashboardPageComponent implements OnInit {
     this.balance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
     this.showBalance = localStorage.getItem('krt_show_balance') !== 'false';
     this.isUserAdmin = this.auth.isAdmin();
+    this.userEmail = localStorage.getItem('krt_account_email') || '';
     this.loading = false;
     if (this.accountId) {
       this.paymentService.getHistory(this.accountId, 1, 5).subscribe({
@@ -345,6 +424,10 @@ export class DashboardPageComponent implements OnInit {
     return 'Boa noite,';
   }
 
+  toggleDropdown() {
+    this.showDropdown = !this.showDropdown;
+  }
+
   toggleEye() {
     this.showBalance = !this.showBalance;
     localStorage.setItem('krt_show_balance', String(this.showBalance));
@@ -371,6 +454,7 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 }
+
 
 
 
