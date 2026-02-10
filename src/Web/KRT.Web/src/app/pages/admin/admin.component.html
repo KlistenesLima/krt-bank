@@ -3,41 +3,41 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="logo" *ngIf="!sidebarCollapsed">
-        <span class="logo-icon">◆</span>
+        <span class="logo-icon">&#9670;</span>
         <span class="logo-text">KRT</span>
         <span class="logo-sub">COMMAND</span>
       </div>
       <button class="collapse-btn" (click)="sidebarCollapsed = !sidebarCollapsed">
-        {{ sidebarCollapsed ? '▶' : '◀' }}
+        {{ sidebarCollapsed ? '&#9654;' : '&#9664;' }}
       </button>
     </div>
 
     <nav class="sidebar-nav">
-      <button [class.active]="activeSection === 'dashboard'" (click)="activeSection = 'dashboard'">
-        <span class="nav-icon">📊</span>
+      <button [class.active]="activeSection === 'dashboard'" (click)="setSection('dashboard')">
+        <span class="nav-icon">&#128202;</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard</span>
       </button>
-      <button [class.active]="activeSection === 'transactions'" (click)="activeSection = 'transactions'">
-        <span class="nav-icon">💸</span>
+      <button [class.active]="activeSection === 'transactions'" (click)="setSection('transactions')">
+        <span class="nav-icon">&#128184;</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Transacoes</span>
       </button>
-      <button [class.active]="activeSection === 'accounts'" (click)="activeSection = 'accounts'">
-        <span class="nav-icon">👥</span>
+      <button [class.active]="activeSection === 'accounts'" (click)="setSection('accounts')">
+        <span class="nav-icon">&#128101;</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Contas</span>
       </button>
-      <button [class.active]="activeSection === 'fraud'" (click)="activeSection = 'fraud'">
-        <span class="nav-icon">🛡️</span>
+      <button [class.active]="activeSection === 'fraud'" (click)="setSection('fraud')">
+        <span class="nav-icon">&#128737;&#65039;</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Fraude</span>
         <span class="nav-badge" *ngIf="!sidebarCollapsed && fraudAlerts.length">{{ fraudAlerts.length }}</span>
       </button>
-      <button [class.active]="activeSection === 'system'" (click)="activeSection = 'system'">
-        <span class="nav-icon">⚙️</span>
+      <button [class.active]="activeSection === 'system'" (click)="setSection('system')">
+        <span class="nav-icon">&#9881;&#65039;</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Sistema</span>
       </button>
     </nav>
 
     <div class="sidebar-footer" *ngIf="!sidebarCollapsed">
-      <button class="back-btn" (click)="logout()">← Voltar ao App</button>
+      <button class="back-btn" (click)="logout()">&#8592; Voltar ao App</button>
     </div>
   </aside>
 
@@ -70,7 +70,7 @@
         <div class="kpi-card">
           <div class="kpi-header">
             <span class="kpi-label">Contas Ativas</span>
-            <span class="kpi-trend up">↑ 12%</span>
+            <span class="kpi-trend up">&#8593; 12%</span>
           </div>
           <div class="kpi-value">{{ dashboard.overview.activeAccounts | number }}</div>
           <div class="kpi-sub">de {{ dashboard.overview.totalAccounts | number }} totais</div>
@@ -78,7 +78,7 @@
         <div class="kpi-card accent-blue">
           <div class="kpi-header">
             <span class="kpi-label">Transacoes Hoje</span>
-            <span class="kpi-trend up">↑ 8%</span>
+            <span class="kpi-trend up">&#8593; 8%</span>
           </div>
           <div class="kpi-value">{{ dashboard.transactions.today | number }}</div>
           <div class="kpi-sub">Ticket medio: R$ {{ dashboard.transactions.avgTicket | number:'1.0-0' }}</div>
@@ -86,7 +86,7 @@
         <div class="kpi-card accent-green">
           <div class="kpi-header">
             <span class="kpi-label">Volume Total</span>
-            <span class="kpi-trend up">↑ 15%</span>
+            <span class="kpi-trend up">&#8593; 15%</span>
           </div>
           <div class="kpi-value">R$ {{ getTotalVolume() }}</div>
           <div class="kpi-sub">{{ dashboard.transactions.thisMonth | number }} este mes</div>
@@ -101,29 +101,33 @@
         </div>
       </div>
 
-      <!-- CHARTS ROW -->
+      <!-- CHARTS ROW: Line + Donut -->
       <div class="charts-row">
-        <!-- TRANSACTIONS CHART -->
-        <div class="chart-card">
+        <div class="chart-card chart-large">
           <div class="chart-header">
             <h3>Volume de Transacoes</h3>
             <span class="chart-period">Ultimos 14 dias</span>
           </div>
-          <div class="bar-chart">
-            <div class="bar-item" *ngFor="let m of metrics" [title]="getDayLabel(m.date) + ': ' + m.transactions + ' transacoes'">
-              <div class="bar" [style.height.%]="getBarHeight(m.transactions)">
-                <span class="bar-tooltip">{{ m.transactions }}</span>
-              </div>
-              <span class="bar-label">{{ getDayLabel(m.date) }}</span>
-            </div>
+          <div class="chart-canvas-wrapper">
+            <canvas id="chartTransactions"></canvas>
           </div>
         </div>
+        <div class="chart-card chart-small">
+          <div class="chart-header">
+            <h3>Receita por Produto</h3>
+          </div>
+          <div class="chart-canvas-wrapper donut-wrapper">
+            <canvas id="chartRevenue"></canvas>
+          </div>
+        </div>
+      </div>
 
-        <!-- ACTIVITY FEED -->
-        <div class="chart-card feed-card">
+      <!-- ACTIVITY FEED -->
+      <div class="charts-row">
+        <div class="chart-card full-width feed-card">
           <div class="chart-header">
             <h3>Atividade em Tempo Real</h3>
-            <span class="chart-period live-text">● Live</span>
+            <span class="chart-period live-text">&#9679; Live</span>
           </div>
           <div class="activity-feed">
             <div class="feed-item" *ngFor="let item of activityFeed">
@@ -138,36 +142,9 @@
         </div>
       </div>
 
-      <!-- REVENUE + SYSTEM ROW -->
+      <!-- SYSTEM HEALTH ROW -->
       <div class="charts-row">
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3>Receita por Produto</h3>
-          </div>
-          <div class="revenue-bars">
-            <div class="rev-item">
-              <div class="rev-label">PIX</div>
-              <div class="rev-bar-bg"><div class="rev-bar pix" [style.width.%]="(dashboard.revenue.pixFees / (dashboard.revenue.pixFees + dashboard.revenue.cardFees + dashboard.revenue.insurance + dashboard.revenue.loanInterest)) * 100"></div></div>
-              <div class="rev-val">R$ {{ dashboard.revenue.pixFees | number:'1.0-0' }}</div>
-            </div>
-            <div class="rev-item">
-              <div class="rev-label">Cartao</div>
-              <div class="rev-bar-bg"><div class="rev-bar card" [style.width.%]="(dashboard.revenue.cardFees / (dashboard.revenue.pixFees + dashboard.revenue.cardFees + dashboard.revenue.insurance + dashboard.revenue.loanInterest)) * 100"></div></div>
-              <div class="rev-val">R$ {{ dashboard.revenue.cardFees | number:'1.0-0' }}</div>
-            </div>
-            <div class="rev-item">
-              <div class="rev-label">Seguros</div>
-              <div class="rev-bar-bg"><div class="rev-bar insurance" [style.width.%]="(dashboard.revenue.insurance / (dashboard.revenue.pixFees + dashboard.revenue.cardFees + dashboard.revenue.insurance + dashboard.revenue.loanInterest)) * 100"></div></div>
-              <div class="rev-val">R$ {{ dashboard.revenue.insurance | number:'1.0-0' }}</div>
-            </div>
-            <div class="rev-item">
-              <div class="rev-label">Emprest.</div>
-              <div class="rev-bar-bg"><div class="rev-bar loan" [style.width.%]="(dashboard.revenue.loanInterest / (dashboard.revenue.pixFees + dashboard.revenue.cardFees + dashboard.revenue.insurance + dashboard.revenue.loanInterest)) * 100"></div></div>
-              <div class="rev-val">R$ {{ dashboard.revenue.loanInterest | number:'1.0-0' }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="chart-card">
+        <div class="chart-card full-width">
           <div class="chart-header"><h3>Saude do Sistema</h3></div>
           <div class="health-grid">
             <div class="health-item">
@@ -181,7 +158,7 @@
               <span class="health-val">{{ dashboard.systemHealth.uptime }}</span>
             </div>
             <div class="health-item">
-              <span class="health-dot" [class.green]="dashboard.systemHealth.errorRate < '1%'" [class.yellow]="dashboard.systemHealth.errorRate >= '1%'"></span>
+              <span class="health-dot" [class.green]="dashboard.systemHealth.errorRate &lt; '1%'" [class.yellow]="dashboard.systemHealth.errorRate >= '1%'"></span>
               <span class="health-label">Taxa de Erro</span>
               <span class="health-val">{{ dashboard.systemHealth.errorRate }}</span>
             </div>
@@ -255,15 +232,15 @@
           <div class="fraud-card-body">
             <p>{{ a.description }}</p>
             <div class="fraud-meta-row">
-              <span>👤 {{ a.accountName }}</span>
-              <span *ngIf="a.amount > 0">💰 R$ {{ a.amount | number:'1.2-2' }}</span>
-              <span>🕐 {{ a.createdAt | date:'HH:mm' }}</span>
+              <span>&#128100; {{ a.accountName }}</span>
+              <span *ngIf="a.amount > 0">&#128176; R$ {{ a.amount | number:'1.2-2' }}</span>
+              <span>&#128336; {{ a.createdAt | date:'HH:mm' }}</span>
             </div>
           </div>
           <div class="fraud-card-actions" *ngIf="a.status === 'Pendente'">
-            <button class="action-btn reject" (click)="fraudAction(a.id, 'block')">🚫 Bloquear</button>
-            <button class="action-btn approve" (click)="fraudAction(a.id, 'approve')">✅ Liberar</button>
-            <button class="action-btn investigate" (click)="fraudAction(a.id, 'investigate')">🔍 Investigar</button>
+            <button class="action-btn reject" (click)="fraudAction(a.id, 'block')">&#128683; Bloquear</button>
+            <button class="action-btn approve" (click)="fraudAction(a.id, 'approve')">&#9989; Liberar</button>
+            <button class="action-btn investigate" (click)="fraudAction(a.id, 'investigate')">&#128269; Investigar</button>
           </div>
         </div>
       </div>
@@ -277,13 +254,8 @@
             <h3>Volume Diario (R$)</h3>
             <span class="chart-period">Ultimos 14 dias</span>
           </div>
-          <div class="bar-chart tall">
-            <div class="bar-item" *ngFor="let m of metrics" [title]="getDayLabel(m.date) + ': R$ ' + (m.volume | number:'1.0-0')">
-              <div class="bar volume-bar" [style.height.%]="getVolumeBarHeight(m.volume)">
-                <span class="bar-tooltip">R${{ (m.volume / 1000) | number:'1.0-0' }}K</span>
-              </div>
-              <span class="bar-label">{{ getDayLabel(m.date) }}</span>
-            </div>
+          <div class="chart-canvas-wrapper chart-tall">
+            <canvas id="chartVolume"></canvas>
           </div>
         </div>
       </div>
@@ -300,57 +272,57 @@
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>API Gateway</h4>
-          <span class="service-detail">Porta 5000 · {{ dashboard.systemHealth.apiLatency }}</span>
+          <span class="service-detail">Porta 5000 &#183; {{ dashboard.systemHealth.apiLatency }}</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>Payments API</h4>
-          <span class="service-detail">Porta 5002 · .NET 8</span>
+          <span class="service-detail">Porta 5002 &#183; .NET 8</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>Onboarding API</h4>
-          <span class="service-detail">Porta 5001 · .NET 8</span>
+          <span class="service-detail">Porta 5001 &#183; .NET 8</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>PostgreSQL</h4>
-          <span class="service-detail">Porta 5432 · v16</span>
+          <span class="service-detail">Porta 5432 &#183; v16</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>Apache Kafka</h4>
-          <span class="service-detail">Porta 9092 · Mensageria</span>
+          <span class="service-detail">Porta 9092 &#183; Mensageria</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>RabbitMQ</h4>
-          <span class="service-detail">Porta 5672 · AMQP</span>
+          <span class="service-detail">Porta 5672 &#183; AMQP</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>Redis</h4>
-          <span class="service-detail">Porta 6379 · Cache</span>
+          <span class="service-detail">Porta 6379 &#183; Cache</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>Seq (Logs)</h4>
-          <span class="service-detail">Porta 8081 · Observabilidade</span>
+          <span class="service-detail">Porta 8081 &#183; Observabilidade</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>Fraud Worker</h4>
-          <span class="service-detail">Background · Saga Pattern</span>
+          <span class="service-detail">Background &#183; Saga Pattern</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>PIX Keys API</h4>
-          <span class="service-detail">Porta 5003 · Registry</span>
+          <span class="service-detail">Porta 5003 &#183; Registry</span>
         </div>
         <div class="service-card online">
           <div class="service-status"><span class="status-dot"></span> Online</div>
           <h4>Angular Web</h4>
-          <span class="service-detail">Porta 4200 · Frontend</span>
+          <span class="service-detail">Porta 4200 &#183; Frontend</span>
         </div>
       </div>
       <div class="system-summary">
@@ -362,4 +334,3 @@
     </div>
   </main>
 </div>
-
