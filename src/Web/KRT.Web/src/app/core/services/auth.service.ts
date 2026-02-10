@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
@@ -18,16 +18,14 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, { cpf, password }).pipe(
       tap((res: any) => {
         if (res.success) {
-          // Salva token JWT
           localStorage.setItem('krt_token', res.accessToken);
           localStorage.setItem('krt_refresh_token', res.refreshToken || '');
-
-          // Salva dados da conta (incluindo BALANCE e ID)
           localStorage.setItem('krt_account_id', res.account.id);
           localStorage.setItem('krt_account_name', res.account.name);
           localStorage.setItem('krt_account_doc', res.account.document);
           localStorage.setItem('krt_account_email', res.account.email);
           localStorage.setItem('krt_account_balance', res.account.balance?.toString() || '0');
+          localStorage.setItem('krt_account_role', res.account?.role || 'User');
           localStorage.setItem('krt_account_status', res.account.status || 'Active');
         }
       })
@@ -38,7 +36,7 @@ export class AuthService {
     const keys = [
       'krt_token', 'krt_refresh_token', 'krt_account_id',
       'krt_account_name', 'krt_account_doc', 'krt_account_email',
-      'krt_account_balance', 'krt_account_status'
+      'krt_account_balance', 'krt_account_status', 'krt_account_role'
     ];
     keys.forEach(k => localStorage.removeItem(k));
     this.router.navigate(['/login']);
@@ -48,12 +46,20 @@ export class AuthService {
     return !!localStorage.getItem('krt_token');
   }
 
+  isAuthenticated(): boolean {
+    return this.isLoggedIn();
+  }
+
   getToken(): string | null {
     return localStorage.getItem('krt_token');
   }
 
   getAccountId(): string | null {
     return localStorage.getItem('krt_account_id');
+  }
+
+  get accountId(): string | null {
+    return this.getAccountId();
   }
 
   getAccountName(): string | null {
@@ -65,13 +71,16 @@ export class AuthService {
     return bal ? parseFloat(bal) : 0;
   }
 
-  /** Atualiza o balance local (chamado apos refresh da API) */
   updateBalance(newBalance: number): void {
     localStorage.setItem('krt_account_balance', newBalance.toString());
   }
 
-  get accountId(): string | null {
-    return this.getAccountId();
+  getRole(): string {
+    return localStorage.getItem('krt_account_role') || 'User';
+  }
+
+  isAdmin(): boolean {
+    return this.getRole() === 'Admin';
   }
 
   get currentSession(): any {

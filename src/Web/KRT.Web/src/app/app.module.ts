@@ -1,4 +1,6 @@
-﻿import { ChatbotComponent } from './pages/chatbot/chatbot.component';
+﻿import { AdminGuard } from './core/guards/admin.guard';
+import { AdminComponent } from './pages/admin/admin.component';
+import { ChatbotComponent } from './pages/chatbot/chatbot.component';
 import { ThemeToggleComponent } from './shared/components/theme-toggle/theme-toggle.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
@@ -73,6 +75,7 @@ const routes: Routes = [
   { path: 'investments', component: InvestmentsPageComponent, canActivate: [AuthGuard] },
   { path: 'inbox', component: InboxPageComponent, canActivate: [AuthGuard] },
   { path: 'success', component: PaymentSuccessComponent, canActivate: [AuthGuard] },
+  { path: 'admin', component: AdminComponent, canActivate: [AdminGuard] },
   { path: '**', redirectTo: 'login' }
 ];
 
@@ -131,6 +134,9 @@ const routes: Routes = [
   bootstrap: [AppComponent]
 })
 export class AppModule {}
+
+
+
 
 
 
