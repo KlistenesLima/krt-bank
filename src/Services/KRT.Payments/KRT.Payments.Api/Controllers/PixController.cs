@@ -1,4 +1,4 @@
-using KRT.Payments.Api.Services;
+﻿using KRT.Payments.Api.Services;
 using KRT.Payments.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,10 +30,6 @@ public class PixController : ControllerBase
         _pdfService = pdfService;
     }
 
-    /// <summary>
-    /// Inicia uma transferencia Pix. A transacao e criada e entra na fila
-    /// de analise anti-fraude assincrona.
-    /// </summary>
     [HttpPost]
     public async Task<IActionResult> ProcessPix([FromBody] PixTransferRequest request)
     {
@@ -57,13 +53,10 @@ public class PixController : ControllerBase
             success = true,
             transactionId = result.Id,
             status = "PendingAnalysis",
-            message = "Transacao recebida. Analise anti-fraude em andamento. Consulte GET /api/v1/pix/{id} para acompanhar."
+            message = "Transacao recebida. Analise anti-fraude em andamento."
         });
     }
 
-    /// <summary>
-    /// Consulta o status de uma transacao Pix (inclui resultado da analise de fraude).
-    /// </summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetStatus(Guid id)
     {
@@ -92,9 +85,6 @@ public class PixController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// Lista transacoes de uma conta (extrato Pix).
-    /// </summary>
     [HttpGet("account/{accountId:guid}")]
     public async Task<IActionResult> GetByAccount(Guid accountId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
@@ -115,9 +105,6 @@ public class PixController : ControllerBase
 
     // ===== QR CODE PIX =====
 
-    /// <summary>
-    /// Gera QR Code Pix para receber pagamento.
-    /// </summary>
     [HttpPost("qrcode/generate")]
     [AllowAnonymous]
     public IActionResult GenerateQrCode([FromBody] GenerateQrCodeRequest request)
@@ -139,9 +126,6 @@ public class PixController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// Gera QR Code como imagem PNG.
-    /// </summary>
     [HttpPost("qrcode/image")]
     [AllowAnonymous]
     public IActionResult GenerateQrCodeImage([FromBody] GenerateQrCodeRequest request)
@@ -159,26 +143,49 @@ public class PixController : ControllerBase
 
     // ===== COMPROVANTE PDF =====
 
-    /// <summary>
-    /// Gera comprovante PDF de uma transacao Pix.
-    /// </summary>
     [HttpGet("receipt/{transactionId}")]
-    [AllowAnonymous]
-    public IActionResult GenerateReceipt(Guid transactionId)
+    [Authorize]
+    public async Task<IActionResult> GenerateReceipt(Guid transactionId, CancellationToken ct)
     {
+        var tx = await _repository.GetByIdAsync(transactionId, ct);
+        if (tx is null)
+            return NotFound(new { error = "Transacao nao encontrada." });
+
         var qrPayload = $"PIX-RECEIPT-{transactionId}";
         var qrBytes = _qrCodeService.GenerateQrCodeBytes(qrPayload);
+
+        var sourceName = tx.SourceAccountId.ToString()[..8];
+        var destName = tx.DestinationAccountId.ToString()[..8];
+        if (!string.IsNullOrEmpty(tx.Description))
+        {
+            var parts = tx.Description.Split(" para ", StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2)
+            {
+                sourceName = parts[0].Replace("Pix de ", "").Replace("PIX de ", "").Replace("Pix ", "").Trim();
+                destName = parts[1].Trim();
+            }
+        }
+
+        var statusText = tx.Status.ToString() switch
+        {
+            "Completed" => "Concluido",
+            "Failed" => "Falhou",
+            "UnderReview" => "Em analise",
+            "Pending" => "Pendente",
+            "Reversed" => "Estornado",
+            _ => tx.Status.ToString()
+        };
 
         var data = new PixReceiptData
         {
             TransactionId = transactionId.ToString(),
-            SourceName = "Klistenes De Lima Leite",
-            SourceDocument = "10626054460",
-            DestinationName = "Maria Silva",
-            DestinationDocument = "98765432100",
-            Amount = 150.00m,
-            Status = "Completed",
-            Timestamp = DateTime.UtcNow,
+            SourceName = sourceName,
+            SourceDocument = "",
+            DestinationName = destName,
+            DestinationDocument = tx.PixKey,
+            Amount = tx.Amount,
+            Status = statusText,
+            Timestamp = tx.CompletedAt ?? tx.CreatedAt,
             QrCodeBytes = qrBytes
         };
 
@@ -186,9 +193,6 @@ public class PixController : ControllerBase
         return File(pdf, "application/pdf", $"comprovante-pix-{transactionId:N}.pdf");
     }
 
-    /// <summary>
-    /// Gera comprovante PDF com dados fornecidos.
-    /// </summary>
     [HttpPost("receipt")]
     [AllowAnonymous]
     public IActionResult GenerateReceiptFromData([FromBody] PixReceiptRequest request)
@@ -215,9 +219,6 @@ public class PixController : ControllerBase
 
     // ===== LIMITES PIX =====
 
-    /// <summary>
-    /// Consulta limites Pix de uma conta.
-    /// </summary>
     [HttpGet("limits/{accountId}")]
     [AllowAnonymous]
     public IActionResult GetLimits(Guid accountId)
@@ -247,9 +248,6 @@ public class PixController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// Atualiza limites Pix de uma conta.
-    /// </summary>
     [HttpPut("limits/{accountId}")]
     [AllowAnonymous]
     public IActionResult UpdateLimits(Guid accountId, [FromBody] UpdateLimitsRequest request)

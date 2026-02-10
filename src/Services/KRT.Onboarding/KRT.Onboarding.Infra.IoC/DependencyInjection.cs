@@ -24,6 +24,7 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IPixKeyRepository, PixKeyRepository>();
 
         // Redis Cache
         services.Configure<RedisSettings>(configuration.GetSection("Redis"));
@@ -43,3 +44,4 @@ public static class DependencyInjection
         return services;
     }
 }
+

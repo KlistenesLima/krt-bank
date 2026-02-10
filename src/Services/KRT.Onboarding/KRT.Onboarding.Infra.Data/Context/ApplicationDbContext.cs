@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using KRT.Onboarding.Infra.Data.Mappings;
+using Microsoft.EntityFrameworkCore;
 using KRT.BuildingBlocks.Domain;
 using KRT.BuildingBlocks.Infrastructure.Outbox;
 using KRT.Onboarding.Domain.Entities;
+using KRT.Onboarding.Domain.Enums;
 
 namespace KRT.Onboarding.Infra.Data.Context;
 
@@ -9,6 +11,7 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+    public DbSet<PixKey> PixKeys => Set<PixKey>();
     public DbSet<Account> Accounts { get; set; } = null!;
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
 
@@ -42,4 +45,5 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
         return await SaveChangesAsync(cancellationToken);
     }
 }
+
 
