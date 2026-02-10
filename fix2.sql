@@ -1,0 +1,1 @@
+﻿ALTER TABLE "PixKeys" ADD COLUMN "UpdatedAt" TIMESTAMP NULL;

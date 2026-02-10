@@ -326,12 +326,19 @@ import { HttpClient } from '@angular/common/http';
     .success-amount { font-size: 2.2rem; font-weight: 800; color: #0047BB; margin: 4px 0; }
     .success-dest { color: #9CA3AF; font-size: 0.92rem; }
     .success-details { margin-top: 8px; color: #6B7280; font-size: 0.85rem; }
+    .btn-receipt { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 320px; margin: 0 auto; height: 50px; border: 2px solid #0047BB; border-radius: 14px; background: rgba(0,71,187,0.06); color: #0047BB; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; }
+    .btn-receipt:hover { background: rgba(0,71,187,0.12); }
+    .btn-receipt mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    .btn-receipt { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 320px; margin: 0 auto; height: 50px; border: 2px solid #0047BB; border-radius: 14px; background: rgba(0,71,187,0.06); color: #0047BB; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; }
+    .btn-receipt:hover { background: rgba(0,71,187,0.12); }
+    .btn-receipt mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
     ::ng-deep .mat-mdc-progress-spinner circle { stroke: white !important; }
   `]
 })
 export class PixPageComponent {
   step = 1;
+  lastTxId = '';
   keyType = 'cpf';
   pixKey = '';
   amountDisplay = '';
@@ -413,19 +420,27 @@ export class PixPageComponent {
     const accountId = localStorage.getItem('krt_account_id');
     const token = localStorage.getItem('krt_token');
 
-    const cleanKey = this.pixKey.replace(/\D/g, '');
+    let searchValue = this.pixKey;
+    if (this.keyType === 'cpf' || this.keyType === 'phone') {
+      searchValue = this.pixKey.replace(/\D/g, '');
+    }
     const hdrs = { headers: { Authorization: 'Bearer ' + token } };
-    this.http.get<any>('http://localhost:5000/api/v1/accounts/by-document/' + cleanKey, hdrs).subscribe({
+    const resolveUrl = 'http://localhost:5000/api/v1/pix-keys/resolve?type=' + this.keyType + '&value=' + encodeURIComponent(searchValue);
+    this.http.get<any>(resolveUrl, hdrs).subscribe({
       next: (dest: any) => {
+        if (dest.accountId === accountId) {
+          this.errorMsg = 'Nao e possivel enviar PIX para sua propria conta.';
+          this.isLoading = false; this.step = 1; return;
+        }
         this.http.post('http://localhost:5000/api/v1/pix', {
           sourceAccountId: accountId,
-          destinationAccountId: dest.id,
-          pixKey: cleanKey,
+          destinationAccountId: dest.accountId,
+          pixKey: searchValue,
           amount: this.getAmount(),
           description: this.description || 'Pix',
           idempotencyKey: crypto.randomUUID()
         }, hdrs).subscribe({
-          next: () => { this.finishPix(); },
+          next: (res: any) => { this.lastTxId = res?.transactionId || res?.id || ''; this.finishPix(); },
           error: () => { this.errorMsg = 'Erro ao enviar PIX'; this.finishPix(); }
         });
       },
@@ -443,8 +458,50 @@ export class PixPageComponent {
     this.step = 4;
   }
 
-  newPix() { this.step = 1; this.pixKey = ''; this.amountDisplay = ''; this.description = ''; }
+  downloadReceipt() {
+    const token = localStorage.getItem('krt_token');
+    if (this.lastTxId) {
+      // Usar GET com ID real da transacao
+      const url = 'http://localhost:5000/api/v1/pix/receipt/' + this.lastTxId;
+      fetch(url, { headers: { Authorization: 'Bearer ' + token } })
+        .then(r => r.blob())
+        .then(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'comprovante-pix-' + this.lastTxId.substring(0, 8) + '.pdf';
+          a.click(); URL.revokeObjectURL(a.href);
+        });
+    } else {
+      // Fallback: usar POST com dados da tela
+      const body = {
+        transactionId: Date.now().toString(),
+        sourceName: localStorage.getItem('krt_account_name') || 'Remetente',
+        sourceDocument: localStorage.getItem('krt_account_doc') || '',
+        destinationName: this.pixKey,
+        destinationDocument: this.pixKey,
+        amount: this.getAmount(),
+        status: 'Completed',
+        timestamp: new Date().toISOString()
+      };
+      fetch('http://localhost:5000/api/v1/pix/receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || '') },
+        body: JSON.stringify(body)
+      }).then(r => r.blob()).then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'comprovante-pix.pdf';
+        a.click(); URL.revokeObjectURL(a.href);
+      });
+    }
+  }
+
+  newPix() { this.step = 1; this.pixKey = ''; this.amountDisplay = ''; this.description = ''; this.lastTxId = ''; }
 }
+
+
+
+
 
 
 

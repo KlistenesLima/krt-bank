@@ -1,4 +1,4 @@
-using KRT.Payments.Api.Services;
+﻿using KRT.Payments.Api.Services;
 using KRT.Payments.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -163,22 +163,77 @@ public class PixController : ControllerBase
     /// Gera comprovante PDF de uma transacao Pix.
     /// </summary>
     [HttpGet("receipt/{transactionId}")]
-    [AllowAnonymous]
-    public IActionResult GenerateReceipt(Guid transactionId)
+    [Authorize]
+    public async Task<IActionResult> GenerateReceipt(Guid transactionId, CancellationToken ct)
     {
+        var tx = await _repository.GetByIdAsync(transactionId, ct);
+        if (tx is null)
+            return NotFound(new { error = "Transacao nao encontrada." });
+
         var qrPayload = $"PIX-RECEIPT-{transactionId}";
         var qrBytes = _qrCodeService.GenerateQrCodeBytes(qrPayload);
+
+        // Extrair nomes da descricao (formato: "Pix de X para Y" ou "PIX de X para Y")
+        var sourceName = tx.SourceAccountId.ToString()[..8];
+        var destName = tx.DestinationAccountId.ToString()[..8];
+        if (!string.IsNullOrEmpty(tx.Description))
+        {
+            var parts = tx.Description.Split(" para ", StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2)
+            {
+                sourceName = parts[0].Replace("Pix de ", "").Replace("PIX de ", "").Replace("Pix ", "").Trim();
+                destName = parts[1].Trim();
+            }
+        }
+
+        var statusText = tx.Status.ToString() switch
+        {
+            "Completed" => "Concluido",
+            "Failed" => "Falhou",
+            "UnderReview" => "Em analise",
+            "Pending" => "Pendente",
+            "Reversed" => "Estornado",
+            _ => tx.Status.ToString()
+        };
 
         var data = new PixReceiptData
         {
             TransactionId = transactionId.ToString(),
-            SourceName = "Klistenes De Lima Leite",
-            SourceDocument = "10626054460",
-            DestinationName = "Maria Silva",
-            DestinationDocument = "98765432100",
-            Amount = 150.00m,
-            Status = "Completed",
-            Timestamp = DateTime.UtcNow,
+            SourceName = sourceName,
+            SourceDocument = "",
+            DestinationName = destName,
+            DestinationDocument = tx.PixKey,
+            Amount = tx.Amount,
+            Status = statusText,
+            Timestamp = tx.CompletedAt ?? tx.CreatedAt,
+            QrCodeBytes = qrBytes
+        };
+
+        var pdf = _pdfService.GeneratePixReceipt(data);
+        return File(pdf, "application/pdf", $"comprovante-pix-{transactionId:N}.pdf");
+    }
+        }
+
+        var statusText = tx.Status.ToString() switch
+        {
+            "Completed" => "Concluido",
+            "Failed" => "Falhou",
+            "UnderReview" => "Em analise",
+            "Pending" => "Pendente",
+            "Reversed" => "Estornado",
+            _ => tx.Status.ToString()
+        };
+
+        var data = new PixReceiptData
+        {
+            TransactionId = transactionId.ToString(),
+            SourceName = sourceName,
+            SourceDocument = "",
+            DestinationName = destName,
+            DestinationDocument = tx.PixKey,
+            Amount = tx.Amount,
+            Status = statusText,
+            Timestamp = tx.CompletedAt ?? tx.CreatedAt,
             QrCodeBytes = qrBytes
         };
 
