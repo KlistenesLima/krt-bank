@@ -1,6 +1,6 @@
-
+﻿
 /* ============================
-   KRT Bank — Theme Variables
+   KRT Bank â€” Theme Variables
    ============================ */
 :root,
 [data-theme="light"] {
@@ -48,4 +48,46 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
+}
+
+/* KRT Design System Variables */
+:root,
+[data-theme="light"] {
+  --krt-bg: #f5f7fa;
+  --krt-gradient: linear-gradient(135deg, #0047BB 0%, #002a70 100%);
+  --krt-gradient-accent: linear-gradient(135deg, #00D4AA, #00B894);
+  --krt-text: #1a1a2e;
+  --krt-text-secondary: #666666;
+  --krt-text-muted: #999999;
+  --krt-primary: #0047BB;
+  --krt-accent-dark: #00B894;
+  --krt-radius: 16px;
+  --krt-radius-lg: 20px;
+}
+
+[data-theme="dark"] {
+  --krt-bg: #121212;
+  --krt-gradient: linear-gradient(135deg, #1a1a3e 0%, #0d1b2a 100%);
+  --krt-gradient-accent: linear-gradient(135deg, #00D4AA, #00B894);
+  --krt-text: #e0e0e0;
+  --krt-text-secondary: #aaaaaa;
+  --krt-text-muted: #777777;
+  --krt-primary: #7c8aff;
+  --krt-accent-dark: #4ECDC4;
+  --krt-radius: 16px;
+  --krt-radius-lg: 20px;
+}
+
+/* Dark mode transaction card overrides */
+[data-theme="dark"] .tx-card { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .tx-card:hover { border-color: rgba(124,138,255,0.3); }
+[data-theme="dark"] .tx-card.expanded { box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+
+/* Global smooth transitions */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0s;
+}
+body.theme-transitioning, body.theme-transitioning * {
+  transition-duration: 0.3s !important;
 }

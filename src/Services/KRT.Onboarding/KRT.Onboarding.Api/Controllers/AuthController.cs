@@ -75,10 +75,12 @@ public class AuthController : ControllerBase
                 document = account.Document,
                 email = account.Email,
                 balance = account.Balance,
-                status = account.Status.ToString()
+                status = account.Status.ToString(),
+                role = account.Role ?? "User"
             }
         });
     }
 }
 
 public record LoginRequest(string Cpf, string Password);
+
