@@ -172,7 +172,7 @@ import { HttpClient } from '@angular/common/http';
       padding: 16px 20px; background: #fff;
       border-bottom: 1px solid #F0F0F0;
     }
-    .page-header h1 { font-size: 1.05rem; font-weight: 700; margin: 0; color: #1A1A2E; }
+    .page-header h1 { font-size: 1.05rem; font-weight: 700; margin: 0; color: var(--text-primary); }
     .back-btn {
       background: none; border: none; cursor: pointer; padding: 4px;
       color: #1A1A2E; display: flex; align-items: center;
@@ -205,7 +205,7 @@ import { HttpClient } from '@angular/common/http';
       gap: 10px; margin-bottom: 28px;
     }
     .key-type-btn {
-      background: #fff; border: 2px solid #E5E7EB; border-radius: 16px;
+      background: var(--bg-card); border: 2px solid var(--border); border-radius: 16px;
       padding: 16px 8px; display: flex; flex-direction: column;
       align-items: center; gap: 8px; cursor: pointer;
       transition: all 0.2s;
@@ -234,7 +234,7 @@ import { HttpClient } from '@angular/common/http';
       display: flex; align-items: center; gap: 10px;
       border: 2px solid #E5E7EB; border-radius: 14px;
       padding: 0 16px; height: 52px;
-      transition: border-color 0.2s; background: #FAFBFC;
+      transition: border-color 0.2s; background: var(--bg-secondary);
     }
     .input-wrap:focus-within { border-color: #0047BB; background: #fff; }
     .input-wrap input {
@@ -276,7 +276,7 @@ import { HttpClient } from '@angular/common/http';
 
     .btn-secondary {
       height: 54px; border: 2px solid #E5E7EB; border-radius: 14px;
-      background: #fff; color: #555; font-size: 0.9rem; font-weight: 600;
+      background: var(--bg-card); color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;
       cursor: pointer; padding: 0 24px;
       font-family: 'Plus Jakarta Sans', sans-serif;
       transition: all 0.2s;
@@ -338,6 +338,8 @@ import { HttpClient } from '@angular/common/http';
 })
 export class PixPageComponent {
   step = 1;
+  confettiPieces: any[] = [];
+  successTime = new Date();
   lastTxId = '';
   keyType = 'cpf';
   pixKey = '';
@@ -498,6 +500,7 @@ export class PixPageComponent {
 
   newPix() { this.step = 1; this.pixKey = ''; this.amountDisplay = ''; this.description = ''; this.lastTxId = ''; }
 }
+
 
 
 
