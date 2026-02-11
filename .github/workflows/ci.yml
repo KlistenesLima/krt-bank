@@ -1,10 +1,10 @@
-﻿name: KRT Bank CI/CD
+name: KRT Bank CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev, homolog]
   pull_request:
-    branches: [main]
+    branches: [main, homolog]
 
 env:
   DOTNET_VERSION: '8.0.x'
