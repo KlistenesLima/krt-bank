@@ -31,7 +31,7 @@ import { Router } from '@angular/router';
   styles: [`
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0;
-      background: white; height: 68px;
+      background: #ffffff; height: 68px; border-top: 1px solid #e5e7eb; z-index: 999;
       display: flex; justify-content: space-around; align-items: center;
       border-top: 1px solid var(--krt-divider);
       box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
@@ -70,3 +70,5 @@ export class BottomNavComponent {
   go(path: string) { this.router.navigate([path]); }
   isActive(path: string): boolean { return this.router.url === path; }
 }
+
+

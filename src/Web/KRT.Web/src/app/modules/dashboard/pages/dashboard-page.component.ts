@@ -7,270 +7,309 @@ import { PaymentService } from '../../../core/services/payment.service';
 @Component({
   selector: 'app-dashboard-page',
   template: `
-    <div class="dashboard-container page-with-nav">
-      <!-- HEADER -->
-      <header class="dash-header">
-        <div class="header-content">
-          <div class="user-info">
-            <div class="avatar" (click)="toggleDropdown()">{{ getInitials() }}</div>
-            <div class="greeting">
-              <span class="greeting-text">{{ getGreeting() }}</span>
-              <h2 class="user-name">{{ userName }}</h2>
-            </div>
-          </div>
-          <div class="header-actions">
-            <button class="icon-btn" (click)="router.navigate(['/inbox'])">
-              <mat-icon>notifications_none</mat-icon>
-            </button>
-            <div class="avatar-menu-wrapper">
-              <button class="icon-btn avatar-btn" (click)="toggleDropdown()">
-                <mat-icon>account_circle</mat-icon>
-              </button>
-              <div class="avatar-dropdown" *ngIf="showDropdown" (click)="showDropdown = false">
-                <div class="dropdown-header">
-                  <div class="dropdown-avatar">{{ getInitials() }}</div>
-                  <div class="dropdown-user">
-                    <strong>{{ userName }}</strong>
-                    <span>{{ userEmail }}</span>
-                  </div>
-                </div>
-                <div class="dropdown-divider"></div>
-                <button class="dropdown-item" (click)="router.navigate(['/dashboard'])">
-                  <mat-icon>dashboard</mat-icon> Dashboard
-                </button>
-                <button class="dropdown-item" (click)="router.navigate(['/extract'])">
-                  <mat-icon>receipt_long</mat-icon> Extrato
-                </button>
-                <button class="dropdown-item admin-item" *ngIf="isUserAdmin" (click)="router.navigate(['/admin'])">
-                  <mat-icon>admin_panel_settings</mat-icon> Command Center
-                </button>
-                <div class="dropdown-divider"></div>
-                <button class="dropdown-item logout-item" (click)="logout()">
-                  <mat-icon>logout</mat-icon> Sair
-                </button>
+    <div class="dashboard-shell">
+      <!-- HEADER INTEGRADO COM SALDO -->
+      <header class="hero-header">
+        <div class="hero-inner">
+          <div class="hero-top">
+            <div class="user-info" (click)="toggleDropdown()">
+              <div class="avatar-ring">
+                <div class="avatar">{{ getInitials() }}</div>
+              </div>
+              <div class="greeting">
+                <span class="greeting-text">{{ getGreeting() }}</span>
+                <h2 class="user-name">{{ userName }}</h2>
               </div>
             </div>
+            <div class="header-actions">
+              <button class="glass-btn" (click)="router.navigate(['/inbox'])">
+                <mat-icon>notifications_none</mat-icon>
+              </button>
+              <div class="avatar-menu-wrapper">
+                <button class="glass-btn" (click)="toggleDropdown()">
+                  <mat-icon>account_circle</mat-icon>
+                </button>
+                <!-- Dropdown -->
+                <div class="dropdown" *ngIf="showDropdown">
+                  <div class="dropdown-card" (click)="$event.stopPropagation()">
+                    <div class="dd-header">
+                      <div class="dd-avatar">{{ getInitials() }}</div>
+                      <div>
+                        <strong>{{ userName }}</strong>
+                        <span>{{ userEmail }}</span>
+                      </div>
+                    </div>
+                    <div class="dd-sep"></div>
+                    <button class="dd-item" (click)="router.navigate(['/dashboard']); showDropdown=false">
+                      <mat-icon>dashboard</mat-icon> Dashboard
+                    </button>
+                    <button class="dd-item" (click)="router.navigate(['/extract']); showDropdown=false">
+                      <mat-icon>receipt_long</mat-icon> Extrato
+                    </button>
+                    <button class="dd-item admin" *ngIf="isUserAdmin" (click)="router.navigate(['/admin']); showDropdown=false">
+                      <mat-icon>admin_panel_settings</mat-icon> Command Center
+                    </button>
+                    <div class="dd-sep"></div>
+                    <button class="dd-item logout" (click)="logout()">
+                      <mat-icon>logout</mat-icon> Sair
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SALDO DENTRO DO HEADER -->
+          <div class="balance-area">
+            <div class="balance-row">
+              <span class="balance-label">Saldo disponivel</span>
+              <button class="eye-btn" (click)="toggleEye()">
+                <mat-icon>{{ showBalance ? 'visibility' : 'visibility_off' }}</mat-icon>
+              </button>
+            </div>
+            <div class="balance-value" [class.hidden]="!showBalance">
+              {{ showBalance ? (balance | currency:'BRL') : '•••••••' }}
+            </div>
+            <span class="account-tag" *ngIf="showBalance">Ag 0001 · Conta {{ accountId?.substring(0, 8) }}</span>
           </div>
         </div>
       </header>
 
-      <!-- SKELETON LOADING -->
-      <div class="skeleton-container" *ngIf="loading">
-        <section class="balance-section">
-          <div class="balance-card skeleton-card">
-            <div class="skel skel-text-sm"></div>
-            <div class="skel skel-text-lg"></div>
-            <div class="skel skel-text-xs"></div>
-          </div>
-        </section>
-        <section class="actions-section" style="padding: 24px 20px 0; max-width: 500px; margin: 0 auto;">
-          <div class="skel skel-text-sm" style="width: 80px; margin-bottom: 16px;"></div>
-          <div class="skel-grid">
-            <div class="skel skel-action"></div>
-            <div class="skel skel-action"></div>
-            <div class="skel skel-action"></div>
-            <div class="skel skel-action"></div>
-            <div class="skel skel-action"></div>
-            <div class="skel skel-action"></div>
-          </div>
-        </section>
-        <section style="padding: 16px 20px; max-width: 500px; margin: 0 auto;">
-          <div class="skel skel-bar"></div>
-        </section>
-        <section style="padding: 8px 20px; max-width: 500px; margin: 0 auto;">
-          <div class="skel skel-text-sm" style="width: 180px; margin-bottom: 12px;"></div>
-          <div class="skel skel-tx"></div>
-          <div class="skel skel-tx"></div>
-          <div class="skel skel-tx"></div>
-        </section>
+      <!-- SKELETON -->
+      <div class="content-area" *ngIf="loading">
+        <div class="skel-grid">
+          <div class="skel skel-action" *ngFor="let s of [1,2,3,4,5,6]"></div>
+        </div>
+        <div class="skel skel-bar"></div>
+        <div class="skel skel-tx" *ngFor="let s of [1,2,3]"></div>
       </div>
 
-      <!-- BALANCE CARD -->
-      <section class="balance-section slide-up" *ngIf="!loading">
-        <div class="balance-card">
-          <div class="balance-top">
-            <span class="balance-label">Saldo disponível</span>
-            <button class="eye-btn" (click)="toggleEye()">
-              <mat-icon>{{ showBalance ? 'visibility' : 'visibility_off' }}</mat-icon>
+      <!-- CONTEUDO PRINCIPAL -->
+      <div class="content-area" *ngIf="!loading">
+        <!-- Quick Actions -->
+        <section class="section slide-up">
+          <h3 class="section-title">Atalhos</h3>
+          <div class="actions-grid">
+            <button class="action-card" (click)="router.navigate(['/pix'])">
+              <div class="action-icon pix"><mat-icon>flash_on</mat-icon></div>
+              <span>Pix</span>
+            </button>
+            <button class="action-card" (click)="router.navigate(['/boleto'])">
+              <div class="action-icon boleto"><mat-icon>receipt_long</mat-icon></div>
+              <span>Boleto</span>
+            </button>
+            <button class="action-card" (click)="router.navigate(['/extract'])">
+              <div class="action-icon extract"><mat-icon>swap_vert</mat-icon></div>
+              <span>Extrato</span>
+            </button>
+            <button class="action-card" (click)="router.navigate(['/cards'])">
+              <div class="action-icon cards"><mat-icon>credit_card</mat-icon></div>
+              <span>Cartoes</span>
+            </button>
+            <button class="action-card" (click)="router.navigate(['/recharge'])">
+              <div class="action-icon recharge"><mat-icon>phone_android</mat-icon></div>
+              <span>Recarga</span>
+            </button>
+            <button class="action-card" (click)="router.navigate(['/investments'])">
+              <div class="action-icon invest"><mat-icon>trending_up</mat-icon></div>
+              <span>Investir</span>
             </button>
           </div>
-          <div class="balance-amount" [class.hidden-balance]="!showBalance">
-            {{ showBalance ? (balance | currency:'BRL') : '••••••' }}
-          </div>
-          <div class="balance-bottom" *ngIf="showBalance">
-            <span class="account-info">Ag 0001 · Conta {{ accountId?.substring(0, 8) }}</span>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- QUICK ACTIONS -->
-      <section class="actions-section slide-up delay-1" *ngIf="!loading">
-        <h3 class="section-title">Atalhos</h3>
-        <div class="actions-grid">
-          <button class="action-card" (click)="router.navigate(['/pix'])">
-            <div class="action-icon pix"><mat-icon>flash_on</mat-icon></div>
-            <span>Pix</span>
-          </button>
-          <button class="action-card" (click)="router.navigate(['/boleto'])">
-            <div class="action-icon boleto"><mat-icon>receipt_long</mat-icon></div>
-            <span>Boleto</span>
-          </button>
-          <button class="action-card" (click)="router.navigate(['/extract'])">
-            <div class="action-icon extract"><mat-icon>swap_vert</mat-icon></div>
-            <span>Extrato</span>
-          </button>
-          <button class="action-card" (click)="router.navigate(['/cards'])">
-            <div class="action-icon cards"><mat-icon>credit_card</mat-icon></div>
-            <span>Cartões</span>
-          </button>
-          <button class="action-card" (click)="router.navigate(['/recharge'])">
-            <div class="action-icon recharge"><mat-icon>phone_android</mat-icon></div>
-            <span>Recarga</span>
-          </button>
-          <button class="action-card" (click)="router.navigate(['/investments'])">
-            <div class="action-icon invest"><mat-icon>trending_up</mat-icon></div>
-            <span>Investir</span>
-          </button>
-        </div>
-      </section>
+        <!-- PIX Keys -->
+        <section class="section slide-up d1" (click)="router.navigate(['/pix/keys'])">
+          <div class="pix-keys-card">
+            <div class="pix-left">
+              <div class="pix-icon-wrap"><mat-icon>vpn_key</mat-icon></div>
+              <div>
+                <strong>Minhas chaves Pix</strong>
+                <span>Gerencie suas chaves</span>
+              </div>
+            </div>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </section>
 
-      <!-- PIX KEYS -->
-      <section class="pix-keys-section slide-up delay-2" *ngIf="!loading" (click)="router.navigate(['/pix/keys'])">
-        <div class="pix-keys-card">
-          <div class="pix-keys-left">
-            <mat-icon class="pix-icon">vpn_key</mat-icon>
-            <div>
-              <strong>Minhas chaves Pix</strong>
-              <p>Gerencie suas chaves</p>
+        <!-- Transactions -->
+        <section class="section slide-up d2">
+          <div class="section-row">
+            <h3 class="section-title">Movimentacoes recentes</h3>
+            <a class="link" (click)="router.navigate(['/extract'])">Ver tudo</a>
+          </div>
+
+          <div *ngIf="transactions.length === 0" class="empty-card">
+            <div class="empty-icon"><mat-icon>account_balance_wallet</mat-icon></div>
+            <strong>Nenhuma movimentacao ainda</strong>
+            <span>Faca seu primeiro Pix!</span>
+          </div>
+
+          <div class="tx-list" *ngIf="transactions.length > 0">
+            <div class="tx-item" *ngFor="let t of transactions">
+              <div class="tx-dot" [class.credit]="t.type === 'CREDIT'">
+                <mat-icon>{{ t.type === 'CREDIT' ? 'south_west' : 'north_east' }}</mat-icon>
+              </div>
+              <div class="tx-info">
+                <span class="tx-desc">{{ t.description }}</span>
+                <span class="tx-date">{{ t.createdAt | date:'dd/MM · HH:mm' }}</span>
+              </div>
+              <span class="tx-val" [class.credit]="t.type === 'CREDIT'">
+                {{ t.type === 'CREDIT' ? '+' : '-' }}{{ t.amount | currency:'BRL':'symbol':'1.2-2' }}
+              </span>
             </div>
           </div>
-          <mat-icon>chevron_right</mat-icon>
-        </div>
-      </section>
-
-      <!-- RECENT TRANSACTIONS -->
-      <section class="transactions-section slide-up delay-3" *ngIf="!loading">
-        <div class="section-header">
-          <h3 class="section-title">Movimentações recentes</h3>
-          <a class="see-all" (click)="router.navigate(['/extract'])">Ver tudo</a>
-        </div>
-
-        <div *ngIf="transactions.length === 0" class="empty-state">
-          <mat-icon>account_balance_wallet</mat-icon>
-          <p>Nenhuma movimentação ainda</p>
-          <span>Faça seu primeiro Pix!</span>
-        </div>
-
-        <div class="transaction-list" *ngIf="transactions.length > 0">
-          <div class="transaction-item" *ngFor="let t of transactions">
-            <div class="tx-icon" [class.credit]="t.type === 'CREDIT'">
-              <mat-icon>{{ t.type === 'CREDIT' ? 'south_west' : 'north_east' }}</mat-icon>
-            </div>
-            <div class="tx-info">
-              <span class="tx-desc">{{ t.description }}</span>
-              <span class="tx-date">{{ t.createdAt | date:'dd/MM · HH:mm' }}</span>
-            </div>
-            <span class="tx-amount" [class.credit]="t.type === 'CREDIT'">
-              {{ t.type === 'CREDIT' ? '+' : '-' }}{{ t.amount | currency:'BRL':'symbol':'1.2-2' }}
-            </span>
-          </div>
-        </div>
-      </section>
-    </div>
-
-          <!-- ADMIN ACCESS -->
-      <div class="admin-access slide-up delay-4" *ngIf="!loading && isUserAdmin" (click)="router.navigate(['/admin'])">
-        <div class="admin-icon">🛡️</div>
-        <div class="admin-text">
-          <strong>Command Center</strong>
-          <span>Painel Administrativo</span>
-        </div>
-        <span class="admin-arrow">›</span>
+        </section>
       </div>
 
       <app-bottom-nav></app-bottom-nav>
+    </div>
   `,
   styles: [`
-    .dashboard-container {
+    /* === SHELL === */
+    .dashboard-shell {
       min-height: 100vh;
-      background: var(--krt-bg);
+      background: #f0f2f5;
+      padding-bottom: 90px;
     }
 
-    /* HEADER */
-    .dash-header {
-      background: var(--krt-gradient);
-      padding: 20px 20px 60px;
-      border-radius: 0 0 32px 32px;
+    /* === HERO HEADER === */
+    .hero-header {
+      background: linear-gradient(135deg, #0047BB 0%, #0035a0 40%, #002a70 100%);
+      padding: 0 0 32px;
+      position: relative;
     }
-    .header-content {
+    .hero-header::after {
+      content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 24px;
+      background: #f0f2f5; border-radius: 24px 24px 0 0;
+    }
+    .hero-inner {
+      max-width: 500px; margin: 0 auto; padding: 0 20px;
+      position: relative; z-index: 2;
+    }
+
+    /* Top row */
+    .hero-top {
       display: flex; justify-content: space-between; align-items: center;
-      max-width: 500px; margin: 0 auto;
+      padding: 20px 0 24px;
     }
-    .user-info { display: flex; align-items: center; gap: 12px; }
+    .user-info { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .avatar-ring {
+      width: 48px; height: 48px; border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+      padding: 2px; display: flex; align-items: center; justify-content: center;
+    }
     .avatar {
-      width: 44px; height: 44px; border-radius: 14px;
-      background: rgba(255,255,255,0.2); color: white;
+      width: 100%; height: 100%; border-radius: 14px;
+      background: rgba(255,255,255,0.15); color: white;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.95rem;
-      backdrop-filter: blur(10px);
+      font-weight: 800; font-size: 0.9rem; backdrop-filter: blur(10px);
     }
-    .greeting-text { color: rgba(255,255,255,0.7); font-size: 0.8rem; }
-    .user-name { color: white; font-size: 1.1rem; font-weight: 600; margin: 0; }
-    .header-actions { display: flex; gap: 4px; }
-    .icon-btn {
-      background: rgba(255,255,255,0.12); border: none; border-radius: 12px;
-      width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-      color: white; cursor: pointer; transition: background 0.2s;
-    }
-    .icon-btn:hover { background: rgba(255,255,255,0.2); }
-    .icon-btn mat-icon { font-size: 22px; width: 22px; height: 22px; }
+    .greeting-text { color: rgba(255,255,255,0.75); font-size: 0.78rem; font-weight: 500; }
+    .user-name { color: white; font-size: 1.1rem; font-weight: 700; margin: 2px 0 0; }
 
-    /* BALANCE CARD */
-    .balance-section {
-      padding: 0 20px; margin-top: -40px;
-      max-width: 500px; margin-left: auto; margin-right: auto;
+    .header-actions { display: flex; gap: 8px; }
+    .glass-btn {
+      width: 42px; height: 42px; border-radius: 14px; border: none;
+      background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s;
+      backdrop-filter: blur(8px);
     }
-    .balance-card {
-      background: white; border-radius: var(--krt-radius-lg); padding: 24px;
-      box-shadow: var(--krt-shadow-lg);
-    }
-    .balance-top { display: flex; justify-content: space-between; align-items: center; }
-    .balance-label { font-size: 0.85rem; color: var(--krt-text-secondary); font-weight: 500; }
+    .glass-btn:hover { background: rgba(255,255,255,0.16); color: white; }
+    .glass-btn mat-icon { font-size: 22px; width: 22px; height: 22px; }
+
+    /* Balance area */
+    .balance-area { padding: 8px 0 0; }
+    .balance-row { display: flex; align-items: center; gap: 8px; }
+    .balance-label { font-size: 0.82rem; color: rgba(255,255,255,0.7); font-weight: 500; }
     .eye-btn {
-      background: none; border: none; cursor: pointer;
-      color: var(--krt-text-muted); padding: 4px;
+      background: none; border: none; padding: 2px; cursor: pointer;
+      color: rgba(255,255,255,0.4); display: flex;
     }
-    .balance-amount {
-        font-size: 1.5rem; font-weight: 700; color: var(--krt-text);
-        margin: 8px 0 4px; letter-spacing: -0.3px;
-      }
-    .hidden-balance { color: var(--krt-text-muted); letter-spacing: 4px; }
-    .balance-bottom { margin-top: 4px; }
-    .account-info { font-size: 0.78rem; color: var(--krt-text-muted); }
+    .eye-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .eye-btn:hover { color: rgba(255,255,255,0.7); }
+    .balance-value {
+      font-size: 2rem; font-weight: 800; color: white;
+      margin: 6px 0 4px; letter-spacing: -0.5px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .balance-value.hidden { color: rgba(255,255,255,0.3); letter-spacing: 4px; font-size: 1.5rem; }
+    .account-tag {
+      font-size: 0.75rem; color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.12); padding: 4px 12px;
+      border-radius: 20px; display: inline-block;
+    }
 
-    /* ACTIONS */
-    .actions-section {
-      padding: 24px 20px 0;
+    /* === DROPDOWN === */
+    .avatar-menu-wrapper { position: relative; }
+    .dropdown {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);
+    }
+    .dropdown-card {
+      position: absolute; top: 70px; right: 20px; width: 270px;
+      background: #ffffff; border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      overflow: hidden; animation: dropIn 0.2s ease;
+    }
+    @keyframes dropIn { from { opacity: 0; transform: translateY(-8px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .dd-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 18px 14px; background: #f8fafc;
+    }
+    .dd-avatar {
+      width: 44px; height: 44px; border-radius: 14px;
+      background: linear-gradient(135deg, #0047BB, #002a70); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.85rem;
+    }
+    .dd-header strong { display: block; font-size: 0.9rem; color: #1a1a2e; }
+    .dd-header span { font-size: 0.75rem; color: #9ca3af; }
+    .dd-sep { height: 1px; background: #f0f0f0; }
+    .dd-item {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 13px 18px; border: none; background: none;
+      font-size: 0.88rem; color: #374151; cursor: pointer;
+      transition: background 0.15s; text-align: left;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .dd-item:hover { background: #f8fafc; }
+    .dd-item mat-icon { font-size: 20px; width: 20px; height: 20px; color: #9ca3af; }
+    .dd-item.admin { color: #3b82f6; font-weight: 600; }
+    .dd-item.admin mat-icon { color: #3b82f6; }
+    .dd-item.logout { color: #ef4444; }
+    .dd-item.logout mat-icon { color: #ef4444; }
+
+    /* === CONTENT === */
+    .content-area {
       max-width: 500px; margin: 0 auto;
+      padding: 0 20px;
     }
+    .section { margin-bottom: 16px; }
     .section-title {
-      font-size: 1rem; font-weight: 700; color: var(--krt-text);
-      margin-bottom: 16px;
+      font-size: 0.95rem; font-weight: 800; color: #1a1a2e;
+      margin: 0 0 14px; letter-spacing: -0.2px;
     }
-    .actions-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-    }
+    .section-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .section-row .section-title { margin: 0; }
+    .link { font-size: 0.82rem; color: #0047BB; font-weight: 700; cursor: pointer; text-decoration: none; }
+
+    /* Actions */
+    .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .action-card {
-      background: white; border: none; border-radius: var(--krt-radius);
-      padding: 16px 8px; display: flex; flex-direction: column;
-      align-items: center; gap: 8px; cursor: pointer;
-      box-shadow: var(--krt-shadow-sm);
-      transition: all 0.2s;
+      background: #ffffff; border: none; border-radius: 18px;
+      padding: 18px 8px; display: flex; flex-direction: column;
+      align-items: center; gap: 10px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+      transition: all 0.25s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .action-card:hover { transform: translateY(-2px); box-shadow: var(--krt-shadow); }
-    .action-card span { font-size: 0.78rem; font-weight: 600; color: var(--krt-text); }
+    .action-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .action-card:active { transform: translateY(-1px); }
+    .action-card span { font-size: 0.78rem; font-weight: 700; color: #374151; }
     .action-icon {
-      width: 48px; height: 48px; border-radius: 14px;
+      width: 50px; height: 50px; border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
     }
     .action-icon mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
@@ -281,160 +320,85 @@ import { PaymentService } from '../../../core/services/payment.service';
     .action-icon.recharge { background: linear-gradient(135deg, #FF4081, #F50057); }
     .action-icon.invest { background: linear-gradient(135deg, #FFD600, #FFC107); }
 
-    /* PIX KEYS */
-    .pix-keys-section {
-      padding: 16px 20px;
-      max-width: 500px; margin: 0 auto; cursor: pointer;
-    }
+    /* PIX Keys */
     .pix-keys-card {
-      background: white; border-radius: var(--krt-radius); padding: 16px 20px;
+      background: #ffffff; border-radius: 18px; padding: 18px 20px;
       display: flex; justify-content: space-between; align-items: center;
-      box-shadow: var(--krt-shadow-sm);
-      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+      cursor: pointer; transition: all 0.2s;
     }
-    .pix-keys-card:hover { box-shadow: var(--krt-shadow); }
-    .pix-keys-left { display: flex; align-items: center; gap: 12px; }
-    .pix-keys-left strong { font-size: 0.9rem; color: var(--krt-text); }
-    .pix-keys-left p { font-size: 0.78rem; color: var(--krt-text-muted); margin: 0; }
-    .pix-icon { color: var(--krt-accent-dark); }
+    .pix-keys-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .pix-left { display: flex; align-items: center; gap: 14px; }
+    .pix-icon-wrap {
+      width: 42px; height: 42px; border-radius: 14px;
+      background: linear-gradient(135deg, #00D4AA, #00B894);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pix-icon-wrap mat-icon { color: white; font-size: 20px; width: 20px; height: 20px; }
+    .pix-left strong { display: block; font-size: 0.9rem; color: #1a1a2e; }
+    .pix-left span { font-size: 0.78rem; color: #9ca3af; }
+    .chevron { color: #d1d5db; }
 
-    /* TRANSACTIONS */
-    .admin-access {
+    /* Transactions */
+    .empty-card {
+      text-align: center; padding: 44px 20px;
+      background: #ffffff; border-radius: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+    }
+    .empty-icon {
+      width: 56px; height: 56px; border-radius: 18px;
+      background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .empty-icon mat-icon { font-size: 28px; width: 28px; height: 28px; color: #9ca3af; }
+    .empty-card strong { display: block; color: #1a1a2e; font-size: 0.95rem; margin-bottom: 4px; }
+    .empty-card span { color: #9ca3af; font-size: 0.85rem; }
+
+    .tx-list {
+      background: #ffffff; border-radius: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+      overflow: hidden;
+    }
+    .tx-item {
       display: flex; align-items: center; gap: 14px;
-      margin: 16px 20px; padding: 16px; background: linear-gradient(135deg, #0a0e1a, #1a2235);
-      border-radius: 14px; cursor: pointer; transition: all 0.2s;
-      max-width: 500px; margin-left: auto; margin-right: auto;
+      padding: 16px 18px; border-bottom: 1px solid #f5f5f5;
+      transition: background 0.15s;
     }
-    .admin-access:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-    .admin-icon { font-size: 28px; }
-    .admin-text { flex: 1; }
-    .admin-text strong { display: block; color: #f1f5f9; font-size: 0.95rem; }
-    .admin-text span { color: #94a3b8; font-size: 0.8rem; }
-    .admin-arrow { color: #3b82f6; font-size: 24px; font-weight: 300; }
-    .transactions-section {
-      padding: 8px 20px 20px;
-      max-width: 500px; margin: 0 auto;
-    }
-    .section-header { display: flex; justify-content: space-between; align-items: center; }
-    .see-all {
-      font-size: 0.85rem; color: var(--krt-primary); font-weight: 600;
-      cursor: pointer; text-decoration: none;
-    }
-    .empty-state {
-      text-align: center; padding: 40px 20px;
-      background: white; border-radius: var(--krt-radius);
-      box-shadow: var(--krt-shadow-sm);
-    }
-    .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; color: var(--krt-text-muted); margin-bottom: 12px; }
-    .empty-state p { font-weight: 600; color: var(--krt-text); margin-bottom: 4px; }
-    .empty-state span { font-size: 0.85rem; color: var(--krt-text-muted); }
-
-    .transaction-list {
-      background: white; border-radius: var(--krt-radius);
-      box-shadow: var(--krt-shadow-sm); overflow: hidden;
-    }
-    .transaction-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 16px; border-bottom: 1px solid var(--krt-divider);
-    }
-    .transaction-item:last-child { border-bottom: none; }
-    .tx-icon {
-      width: 40px; height: 40px; border-radius: 12px;
-      background: #FFF0F0; color: var(--krt-danger);
+    .tx-item:last-child { border-bottom: none; }
+    .tx-item:hover { background: #fafbfc; }
+    .tx-dot {
+      width: 42px; height: 42px; border-radius: 14px;
+      background: #fef2f2; color: #ef4444;
       display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
-    .tx-icon.credit { background: #E8F5E9; color: var(--krt-success); }
+    .tx-dot.credit { background: #f0fdf4; color: #16a34a; }
+    .tx-dot mat-icon { font-size: 20px; width: 20px; height: 20px; }
     .tx-info { flex: 1; }
-    .tx-desc { display: block; font-size: 0.9rem; font-weight: 500; color: var(--krt-text); }
-    .tx-date { font-size: 0.75rem; color: var(--krt-text-muted); }
-    .tx-amount { font-weight: 700; font-size: 0.9rem; color: var(--krt-danger); }
-    .tx-amount.credit { color: var(--krt-success); }
+    .tx-desc { display: block; font-size: 0.9rem; font-weight: 600; color: #1a1a2e; }
+    .tx-date { font-size: 0.75rem; color: #9ca3af; }
+    .tx-val { font-weight: 800; font-size: 0.92rem; color: #ef4444; white-space: nowrap; }
+    .tx-val.credit { color: #16a34a; }
 
-    /* SKELETON LOADING */
-    .skeleton-container { margin-top: -40px; }
-    .skeleton-card { display: flex; flex-direction: column; gap: 12px; }
+    /* Skeleton */
     .skel {
-      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 8px;
+      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 14px;
     }
-    .skel-text-xs { height: 12px; width: 40%; }
-    .skel-text-sm { height: 14px; width: 50%; }
-    .skel-text-lg { height: 32px; width: 65%; }
-    .skel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .skel-action { height: 80px; border-radius: 14px; }
-    .skel-bar { height: 60px; border-radius: 14px; }
-    .skel-tx { height: 64px; border-radius: 12px; margin-bottom: 8px; }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .skel-action { height: 90px; }
+    .skel-bar { height: 64px; margin-bottom: 16px; }
+    .skel-tx { height: 68px; margin-bottom: 8px; }
 
-    /* SLIDE UP ANIMATIONS */
-    .slide-up {
-      animation: slideUp 0.5s ease forwards;
-      opacity: 0;
-    }
-    .delay-1 { animation-delay: 0.08s; }
-    .delay-2 { animation-delay: 0.16s; }
-    .delay-3 { animation-delay: 0.24s; }
-    .delay-4 { animation-delay: 0.32s; }
+    /* Animations */
+    .slide-up { animation: slideUp 0.5s ease forwards; opacity: 0; }
+    .d1 { animation-delay: 0.08s; }
+    .d2 { animation-delay: 0.16s; }
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
-    /* AVATAR DROPDOWN */
-    .avatar { cursor: pointer; transition: all 0.2s; }
-    .avatar:hover { background: rgba(255,255,255,0.35); }
-    .avatar-menu-wrapper { position: relative; }
-    .avatar-btn mat-icon { font-size: 26px; width: 26px; height: 26px; }
-    .avatar-dropdown {
-      position: absolute; top: 50px; right: 0; width: 260px;
-      background: white; border-radius: 16px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-      z-index: 1000; overflow: hidden;
-      animation: dropIn 0.2s ease;
-    }
-    @keyframes dropIn {
-      from { opacity: 0; transform: translateY(-8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .dropdown-header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 16px; background: #f8fafc;
-    }
-    .dropdown-avatar {
-      width: 40px; height: 40px; border-radius: 12px;
-      background: var(--krt-gradient); color: white;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.85rem;
-    }
-    .dropdown-user strong {
-      display: block; font-size: 0.9rem; color: var(--krt-text);
-    }
-    .dropdown-user span {
-      font-size: 0.75rem; color: var(--krt-text-muted);
-    }
-    .dropdown-divider { height: 1px; background: #e2e8f0; margin: 0; }
-    .dropdown-item {
-      display: flex; align-items: center; gap: 10px;
-      width: 100%; padding: 12px 16px; border: none; background: none;
-      font-size: 0.88rem; color: var(--krt-text); cursor: pointer;
-      transition: background 0.15s; text-align: left;
-    }
-    .dropdown-item:hover { background: #f1f5f9; }
-    .dropdown-item mat-icon {
-      font-size: 20px; width: 20px; height: 20px;
-      color: var(--krt-text-muted);
-    }
-    .dropdown-item.admin-item {
-      color: #3b82f6; font-weight: 600;
-    }
-    .dropdown-item.admin-item mat-icon { color: #3b82f6; }
-    .dropdown-item.logout-item { color: #ef4444; }
-    .dropdown-item.logout-item mat-icon { color: #ef4444; }
   `]
 })
 export class DashboardPageComponent implements OnInit {
@@ -457,7 +421,7 @@ export class DashboardPageComponent implements OnInit {
 
   ngOnInit() {
     this.accountId = localStorage.getItem('krt_account_id') || '';
-    this.userName = localStorage.getItem('krt_account_name') || 'Usuário';
+    this.userName = localStorage.getItem('krt_account_name') || 'Usuario';
     this.balance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
     this.showBalance = localStorage.getItem('krt_show_balance') !== 'false';
     this.isUserAdmin = this.auth.isAdmin();
@@ -490,44 +454,23 @@ export class DashboardPageComponent implements OnInit {
     return 'Boa noite,';
   }
 
-  toggleDropdown() {
-    this.showDropdown = !this.showDropdown;
-  }
+  toggleDropdown() { this.showDropdown = !this.showDropdown; }
 
   toggleEye() {
     this.showBalance = !this.showBalance;
     localStorage.setItem('krt_show_balance', String(this.showBalance));
   }
 
-  logout() {
-    this.auth.logout();
-  }
+  logout() { this.auth.logout(); }
 
-  /** Busca saldo real da API */
   refreshBalanceFromApi(): void {
     const accountId = this.auth.getAccountId();
     if (accountId) {
       this.accountService.getBalance(accountId).subscribe({
-        next: (res) => {
-          this.balance = res.availableAmount;
-          this.auth.updateBalance(res.availableAmount);
-        },
-        error: (err) => {
-          console.warn('Falha ao buscar saldo da API, usando cache local', err);
-          this.balance = this.auth.getBalance();
-        }
+        next: (res) => { this.balance = res.availableAmount; this.auth.updateBalance(res.availableAmount); },
+        error: () => { this.balance = this.auth.getBalance(); }
       });
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
 
