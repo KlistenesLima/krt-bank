@@ -54,8 +54,39 @@ import { PaymentService } from '../../../core/services/payment.service';
         </div>
       </header>
 
+      <!-- SKELETON LOADING -->
+      <div class="skeleton-container" *ngIf="loading">
+        <section class="balance-section">
+          <div class="balance-card skeleton-card">
+            <div class="skel skel-text-sm"></div>
+            <div class="skel skel-text-lg"></div>
+            <div class="skel skel-text-xs"></div>
+          </div>
+        </section>
+        <section class="actions-section" style="padding: 24px 20px 0; max-width: 500px; margin: 0 auto;">
+          <div class="skel skel-text-sm" style="width: 80px; margin-bottom: 16px;"></div>
+          <div class="skel-grid">
+            <div class="skel skel-action"></div>
+            <div class="skel skel-action"></div>
+            <div class="skel skel-action"></div>
+            <div class="skel skel-action"></div>
+            <div class="skel skel-action"></div>
+            <div class="skel skel-action"></div>
+          </div>
+        </section>
+        <section style="padding: 16px 20px; max-width: 500px; margin: 0 auto;">
+          <div class="skel skel-bar"></div>
+        </section>
+        <section style="padding: 8px 20px; max-width: 500px; margin: 0 auto;">
+          <div class="skel skel-text-sm" style="width: 180px; margin-bottom: 12px;"></div>
+          <div class="skel skel-tx"></div>
+          <div class="skel skel-tx"></div>
+          <div class="skel skel-tx"></div>
+        </section>
+      </div>
+
       <!-- BALANCE CARD -->
-      <section class="balance-section fade-in">
+      <section class="balance-section slide-up" *ngIf="!loading">
         <div class="balance-card">
           <div class="balance-top">
             <span class="balance-label">Saldo disponível</span>
@@ -73,7 +104,7 @@ import { PaymentService } from '../../../core/services/payment.service';
       </section>
 
       <!-- QUICK ACTIONS -->
-      <section class="actions-section">
+      <section class="actions-section slide-up delay-1" *ngIf="!loading">
         <h3 class="section-title">Atalhos</h3>
         <div class="actions-grid">
           <button class="action-card" (click)="router.navigate(['/pix'])">
@@ -104,7 +135,7 @@ import { PaymentService } from '../../../core/services/payment.service';
       </section>
 
       <!-- PIX KEYS -->
-      <section class="pix-keys-section" (click)="router.navigate(['/pix/keys'])">
+      <section class="pix-keys-section slide-up delay-2" *ngIf="!loading" (click)="router.navigate(['/pix/keys'])">
         <div class="pix-keys-card">
           <div class="pix-keys-left">
             <mat-icon class="pix-icon">vpn_key</mat-icon>
@@ -118,7 +149,7 @@ import { PaymentService } from '../../../core/services/payment.service';
       </section>
 
       <!-- RECENT TRANSACTIONS -->
-      <section class="transactions-section">
+      <section class="transactions-section slide-up delay-3" *ngIf="!loading">
         <div class="section-header">
           <h3 class="section-title">Movimentações recentes</h3>
           <a class="see-all" (click)="router.navigate(['/extract'])">Ver tudo</a>
@@ -148,7 +179,7 @@ import { PaymentService } from '../../../core/services/payment.service';
     </div>
 
           <!-- ADMIN ACCESS -->
-      <div class="admin-access" *ngIf="isUserAdmin" (click)="router.navigate(['/admin'])">
+      <div class="admin-access slide-up delay-4" *ngIf="!loading && isUserAdmin" (click)="router.navigate(['/admin'])">
         <div class="admin-icon">🛡️</div>
         <div class="admin-text">
           <strong>Command Center</strong>
@@ -319,6 +350,41 @@ import { PaymentService } from '../../../core/services/payment.service';
     .tx-amount { font-weight: 700; font-size: 0.9rem; color: var(--krt-danger); }
     .tx-amount.credit { color: var(--krt-success); }
 
+    /* SKELETON LOADING */
+    .skeleton-container { margin-top: -40px; }
+    .skeleton-card { display: flex; flex-direction: column; gap: 12px; }
+    .skel {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+    .skel-text-xs { height: 12px; width: 40%; }
+    .skel-text-sm { height: 14px; width: 50%; }
+    .skel-text-lg { height: 32px; width: 65%; }
+    .skel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .skel-action { height: 80px; border-radius: 14px; }
+    .skel-bar { height: 60px; border-radius: 14px; }
+    .skel-tx { height: 64px; border-radius: 12px; margin-bottom: 8px; }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* SLIDE UP ANIMATIONS */
+    .slide-up {
+      animation: slideUp 0.5s ease forwards;
+      opacity: 0;
+    }
+    .delay-1 { animation-delay: 0.08s; }
+    .delay-2 { animation-delay: 0.16s; }
+    .delay-3 { animation-delay: 0.24s; }
+    .delay-4 { animation-delay: 0.32s; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* AVATAR DROPDOWN */
     .avatar { cursor: pointer; transition: all 0.2s; }
     .avatar:hover { background: rgba(255,255,255,0.35); }
@@ -454,6 +520,7 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 }
+
 
 
 
