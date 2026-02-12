@@ -1,4 +1,5 @@
-﻿using KRT.Onboarding.Infra.IoC;
+﻿using KRT.BuildingBlocks.Infrastructure.Observability;
+using KRT.Onboarding.Infra.IoC;
 using KRT.Onboarding.Application.Interfaces;
 using KRT.Onboarding.Api.Services;
 using KRT.Onboarding.Application.Commands;
@@ -66,6 +67,9 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddHealthChecks();
 
+// OpenTelemetry -> Grafana Cloud (Traces + Metrics + Logs)
+builder.Services.AddKrtOpenTelemetry(builder.Configuration);
+
 var app = builder.Build();
 
 // 8. AUTO-MIGRATION (Apenas DEV)
@@ -105,6 +109,7 @@ app.MapControllers();
 
 Log.Information("KRT.Onboarding starting on {Environment}", app.Environment.EnvironmentName);
 app.Run();
+
 
 
 

@@ -1,8 +1,10 @@
-﻿using KRT.Payments.Api.Data;
+﻿using KRT.BuildingBlocks.Infrastructure.Observability;
+using KRT.Payments.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using KRT.Payments.Api.Hubs;
 using KRT.Payments.Application.Interfaces;
 using KRT.Payments.Infra.IoC;
+using KRT.BuildingBlocks.MessageBus;
 using KRT.Payments.Application.Commands;
 using KRT.Payments.Api.Middlewares;
 using Serilog;
@@ -27,6 +29,12 @@ builder.Services.AddHttpContextAccessor();
 
 // 4. INFRASTRUCTURE (DB, Repos, UoW, Kafka, Outbox, HttpClient)
 builder.Services.AddPaymentsInfrastructure(builder.Configuration);
+
+// Kafka consumers (Fraud, Saga, Audit)
+builder.Services.AddKafkaConsumers(builder.Configuration);
+
+// RabbitMQ workers (Notifications + Receipts)
+builder.Services.AddRabbitMqFullWorkers(builder.Configuration);
 
 // 4.1 CorrelationId propagation em TODAS as chamadas HttpClient (service-to-service)
 builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
@@ -93,6 +101,9 @@ builder.Services.AddSingleton<KRT.Payments.Api.Services.PdfReceiptService>();
 builder.Services.AddDbContext<KRT.Payments.Api.Data.PaymentsDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// OpenTelemetry -> Grafana Cloud (Traces + Metrics + Logs)
+builder.Services.AddKrtOpenTelemetry(builder.Configuration);
+
 var app = builder.Build();
 
 // 8. AUTO-MIGRATION (Apenas DEV)
@@ -155,6 +166,8 @@ for (int attempt = 1; attempt <= 10; attempt++)
 }
 
 app.Run();
+
+
 
 
 
