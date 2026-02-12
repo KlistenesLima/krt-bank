@@ -6,6 +6,8 @@
     <RootNamespace>KRT.BuildingBlocks.MessageBus</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+        <PackageReference Include="QuestPDF" Version="2024.3.0" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.305.23" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
@@ -13,5 +15,11 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KRT.BuildingBlocks.Infrastructure\KRT.BuildingBlocks.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>
+
+
+
 
