@@ -1,4 +1,5 @@
-﻿using KRT.BuildingBlocks.EventBus;
+using System.Collections.Generic;
+using KRT.BuildingBlocks.EventBus;
 using KRT.BuildingBlocks.EventBus.Kafka;
 using KRT.BuildingBlocks.MessageBus;
 using KRT.BuildingBlocks.MessageBus.Notifications;
@@ -7,7 +8,9 @@ using KRT.Payments.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using KRT.BuildingBlocks.Infrastructure.Observability;
 
+using System.Diagnostics;
 namespace KRT.Payments.Application.Consumers;
 
 /// <summary>
@@ -38,6 +41,9 @@ public class FraudRejectedConsumer : KafkaConsumerBase<FraudAnalysisRejectedEven
         var eventBus = serviceProvider.GetRequiredService<IEventBus>();
         var messageBus = serviceProvider.GetRequiredService<IMessageBus>();
         var logger = serviceProvider.GetRequiredService<ILogger<FraudRejectedConsumer>>();
+
+        // ═══ OpenTelemetry Metrics ═══
+        var sw = Stopwatch.StartNew();
 
         logger.LogWarning(
             "Fraud REJECTED for TxId={TxId}. Score={Score}. Details={Details}",
@@ -88,8 +94,17 @@ public class FraudRejectedConsumer : KafkaConsumerBase<FraudAnalysisRejectedEven
                       "Se nao reconhece, ligue 0800-XXX-XXXX."
         }, "krt.notifications.sms", priority: 9);
 
+        // ═══ KRT Kafka Consumer Metrics ═══
+        sw.Stop();
+        KrtMetrics.KafkaMessagesConsumed.Add(1, new KeyValuePair<string, object?>("topic", "fraud.rejected"));
+        KrtMetrics.KafkaConsumerLatency.Record(sw.ElapsedMilliseconds, new KeyValuePair<string, object?>("topic", "fraud.rejected"));
+        KrtMetrics.PixTransactionsFailed.Add(1, new KeyValuePair<string, object?>("reason", "fraud_rejected"));
+        KrtMetrics.FraudDetected.Add(1, new KeyValuePair<string, object?>("action", "rejected"));
+
         logger.LogWarning(
-            "Fraud rejection fully processed. TxId={TxId}. Sent 3 urgent notifications.",
-            @event.TransactionId);
+            "Fraud rejection fully processed. TxId={TxId}. Sent 3 urgent notifications. Latency={Latency}ms",
+            @event.TransactionId, sw.ElapsedMilliseconds);
     }
 }
+
+
