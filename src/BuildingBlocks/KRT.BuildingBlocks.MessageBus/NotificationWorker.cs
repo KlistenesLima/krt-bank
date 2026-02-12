@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using KRT.BuildingBlocks.Infrastructure.Observability;
+using static KRT.BuildingBlocks.Infrastructure.Observability.OpenTelemetryExtensions;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -84,6 +86,9 @@ public class NotificationWorker : BackgroundService
             {
                 handler(body, ea.BasicProperties);
                 channel.BasicAck(ea.DeliveryTag, multiple: false);
+
+                // Métricas OpenTelemetry
+                KrtMetrics.RabbitMqMessagesPublished.Add(1, new KeyValuePair<string, object?>("queue", "krt.notifications"));
             }
             catch (Exception ex)
             {
@@ -154,4 +159,6 @@ public class NotificationWorker : BackgroundService
         return 0;
     }
 }
+
+
 

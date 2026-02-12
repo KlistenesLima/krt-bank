@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,6 +9,8 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using KRT.BuildingBlocks.MessageBus.Receipts;
 using KRT.BuildingBlocks.MessageBus.Storage;
+using KRT.BuildingBlocks.Infrastructure.Observability;
+using static KRT.BuildingBlocks.Infrastructure.Observability.OpenTelemetryExtensions;
 
 namespace KRT.BuildingBlocks.MessageBus;
 
@@ -145,46 +149,34 @@ public class ReceiptWorker : BackgroundService
                     "RECEIPT UPLOADED to B2: TxId={TxId}, File={File}, Size={Size}bytes, ETag={ETag}, Url={Url}",
                     message.TransactionId, result.FileName, result.SizeBytes, result.ETag, result.Url);
 
+                KrtMetrics.B2UploadsCompleted.Add(1);
+                KrtMetrics.RabbitMqMessagesPublished.Add(1, new KeyValuePair<string, object?>("queue", "krt.receipts.upload"));
                 channel.BasicAck(ea.DeliveryTag, multiple: false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to upload receipt (attempt {Attempt}/3)", retryCount + 1);
+                _logger.LogError(ex, "Failed to upload receipt (attempt {Attempt}/3)"
+                );
+                KrtMetrics.B2UploadsFailed.Add(1);
+                _logger.LogError(ex,
+                    "B2 upload metric recorded for failed attempt", retryCount + 1);
                 channel.BasicNack(ea.DeliveryTag, false, requeue: retryCount < 2);
             }
         };
         channel.BasicConsume(queue: "krt.receipts.upload", autoAck: false, consumer: consumer);
     }
 
-    /// <summary>
-    /// Gera PDF do comprovante PIX (simulado).
-    /// Em produção: usar QuestPDF ou iText7 para PDF profissional.
+        /// <summary>
+    /// Gera PDF profissional do comprovante PIX usando QuestPDF.
+    /// Design inspirado em comprovantes de bancos digitais brasileiros.
     /// </summary>
     private byte[] GeneratePixReceiptPdf(GenerateReceiptMessage msg)
     {
-        var content = $"""
-            ══════════════════════════════════════
-                  KRT BANK - COMPROVANTE PIX
-            ══════════════════════════════════════
-            
-            Data: {msg.CompletedAt:dd/MM/yyyy HH:mm:ss}
-            ID Transação: {msg.TransactionId}
-            
-            Tipo: {msg.TransactionType}
-            Valor: R$ {msg.Amount:N2}
-            Moeda: {msg.Currency}
-            
-            Origem: {msg.SourceAccountId}
-            Destino: {msg.DestinationAccountId}
-            Chave PIX: {msg.PixKey}
-            
-            ──────────────────────────────────────
-            Este é um comprovante válido.
-            Em caso de dúvidas: 0800-XXX-XXXX
-            ══════════════════════════════════════
-            """;
+        // Licença Community (gratuita para receita < $1M/ano)
+        QuestPDF.Settings.License = LicenseType.Community;
 
-        return Encoding.UTF8.GetBytes(content);
+        var document = new PixReceiptDocument(msg);
+        return document.GeneratePdf();
     }
 
     private int GetRetryCount(IBasicProperties props)
@@ -195,3 +187,6 @@ public class ReceiptWorker : BackgroundService
         return 0;
     }
 }
+
+
+
