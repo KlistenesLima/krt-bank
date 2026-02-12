@@ -9,9 +9,12 @@ public class RabbitMqBus : IMessageBus
 {
     private readonly RabbitMqConnection _connection;
     private readonly ILogger<RabbitMqBus> _logger;
-    private readonly JsonSerializerOptions _jsonOptions = new()
+    private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    private static readonly Dictionary<string, string> ExchangeMap = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        { "krt.notifications.", "krt.notifications" },
+        { "krt.receipts.", "krt.receipts" }
     };
 
     public RabbitMqBus(RabbitMqConnection connection, ILogger<RabbitMqBus> logger)
@@ -20,10 +23,7 @@ public class RabbitMqBus : IMessageBus
         _logger = logger;
     }
 
-    public void Publish<T>(T message, string queueName) where T : class
-    {
-        Publish(message, queueName, priority: 0);
-    }
+    public void Publish<T>(T message, string queueName) where T : class => Publish(message, queueName, 0);
 
     public void Publish<T>(T message, string queueName, byte priority) where T : class
     {
@@ -41,18 +41,12 @@ public class RabbitMqBus : IMessageBus
             props.Type = typeof(T).Name;
             props.MessageId = Guid.NewGuid().ToString();
 
-            // Roteamento: "krt.notifications.email" → routing key "email"
-            var routingKey = queueName.Replace("krt.notifications.", "");
+            var (exchange, routingKey) = ResolveRouting(queueName);
 
-            channel.BasicPublish(
-                exchange: "krt.notifications",
-                routingKey: routingKey,
-                basicProperties: props,
-                body: body);
+            channel.BasicPublish(exchange: exchange, routingKey: routingKey, basicProperties: props, body: body);
 
-            _logger.LogInformation(
-                "Published {Type} to {Queue} (priority={Priority}, id={Id})",
-                typeof(T).Name, queueName, priority, props.MessageId);
+            _logger.LogInformation("Published {Type} to {Exchange}/{RoutingKey} (priority={Priority}, id={Id})",
+                typeof(T).Name, exchange, routingKey, priority, props.MessageId);
         }
         catch (Exception ex)
         {
@@ -61,8 +55,13 @@ public class RabbitMqBus : IMessageBus
         }
     }
 
-    public void Dispose()
+    private static (string exchange, string routingKey) ResolveRouting(string queueName)
     {
-        // Conexão é gerenciada pelo RabbitMqConnection (singleton)
+        foreach (var (prefix, exchange) in ExchangeMap)
+            if (queueName.StartsWith(prefix))
+                return (exchange, queueName[prefix.Length..]);
+        return ("", queueName);
     }
+
+    public void Dispose() { }
 }
