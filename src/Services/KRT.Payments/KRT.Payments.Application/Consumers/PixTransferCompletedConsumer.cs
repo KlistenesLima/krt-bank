@@ -1,4 +1,5 @@
-﻿using KRT.BuildingBlocks.EventBus;
+using System.Collections.Generic;
+using KRT.BuildingBlocks.EventBus;
 using KRT.BuildingBlocks.EventBus.Kafka;
 using KRT.BuildingBlocks.MessageBus;
 using KRT.BuildingBlocks.MessageBus.Notifications;
@@ -7,7 +8,9 @@ using KRT.Payments.Application.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using KRT.BuildingBlocks.Infrastructure.Observability;
 
+using System.Diagnostics;
 namespace KRT.Payments.Application.Consumers;
 
 /// <summary>
@@ -38,6 +41,9 @@ public class PixTransferCompletedConsumer : KafkaConsumerBase<PixTransferComplet
     {
         var messageBus = serviceProvider.GetRequiredService<IMessageBus>();
         var logger = serviceProvider.GetRequiredService<ILogger<PixTransferCompletedConsumer>>();
+
+        // ═══ OpenTelemetry Metrics ═══
+        var sw = Stopwatch.StartNew();
 
         logger.LogInformation(
             "Processing PIX completed event. TxId={TxId}, Amount={Amount}, Key={Key}",
@@ -95,11 +101,16 @@ public class PixTransferCompletedConsumer : KafkaConsumerBase<PixTransferComplet
             CorrelationId = @event.CorrelationId
         }, "krt.receipts.generate", priority: 3);
 
-        logger.LogInformation(
-            "PIX completed fully processed. Dispatched: 1 email, 1 sms, 2 push, 1 receipt. TxId={TxId}",
-            @event.TransactionId);
+        // ═══ KRT Kafka Consumer Metrics ═══
+        sw.Stop();
+        KrtMetrics.KafkaMessagesConsumed.Add(1, new KeyValuePair<string, object?>("topic", "pix.transfer.completed"));
+        KrtMetrics.KafkaConsumerLatency.Record(sw.ElapsedMilliseconds, new KeyValuePair<string, object?>("topic", "pix.transfer.completed"));
+        KrtMetrics.PixTransactionsCompleted.Add(1, new KeyValuePair<string, object?>("status", "completed"));
+        KrtMetrics.RabbitMqMessagesPublished.Add(1, new KeyValuePair<string, object?>("queue", "krt.receipts.generate"));
 
-        await Task.CompletedTask;
+        logger.LogInformation(
+            "PIX completed fully processed. Dispatched: 1 email, 1 sms, 2 push, 1 receipt. TxId={TxId}, Latency={Latency}ms",
+            @event.TransactionId, sw.ElapsedMilliseconds);
     }
 
     private static string MaskPixKey(string pixKey)
@@ -108,3 +119,5 @@ public class PixTransferCompletedConsumer : KafkaConsumerBase<PixTransferComplet
         return $"{pixKey[..3]}****{pixKey[^4..]}";
     }
 }
+
+

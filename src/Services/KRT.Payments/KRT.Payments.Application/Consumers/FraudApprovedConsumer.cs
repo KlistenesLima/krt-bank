@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+using System.Collections.Generic;
+using System.Net.Http.Json;
 using KRT.BuildingBlocks.EventBus;
 using KRT.BuildingBlocks.EventBus.Kafka;
 using KRT.BuildingBlocks.MessageBus;
@@ -8,7 +9,9 @@ using KRT.Payments.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using KRT.BuildingBlocks.Infrastructure.Observability;
 
+using System.Diagnostics;
 namespace KRT.Payments.Application.Consumers;
 
 /// <summary>
@@ -128,11 +131,22 @@ public class FraudApprovedConsumer : KafkaConsumerBase<FraudAnalysisApprovedEven
     {
         try
         {
+                        // ═══ OpenTelemetry Metrics ═══
+                        var sw = Stopwatch.StartNew();
             var response = await client.PostAsJsonAsync(endpoint, payload, ct);
             return response.IsSuccessStatusCode;
-        }
+        
+                    // ═══ KRT Kafka Consumer Metrics ═══
+                    sw.Stop();
+                    KrtMetrics.KafkaMessagesConsumed.Add(1, new KeyValuePair<string, object?>("topic", "fraud.approved"));
+                    KrtMetrics.KafkaConsumerLatency.Record(sw.ElapsedMilliseconds, new KeyValuePair<string, object?>("topic", "fraud.approved"));
+                    KrtMetrics.PixTransactionsCompleted.Add(1, new KeyValuePair<string, object?>("status", "fraud_approved"));
+                    KrtMetrics.FraudAnalysisCompleted.Add(1, new KeyValuePair<string, object?>("result", "approved"));
+                }
         catch (Exception ex)
         {
+                    // Métrica de erro
+                    KrtMetrics.KafkaConsumerErrors.Add(1, new KeyValuePair<string, object?>("topic", "fraud.approved"));
             logger.LogError(ex, "HTTP error calling {Endpoint}", endpoint);
             return false;
         }
@@ -148,4 +162,5 @@ public class FraudApprovedConsumer : KafkaConsumerBase<FraudAnalysisApprovedEven
         ), ct);
     }
 }
+
 
