@@ -1,4 +1,5 @@
-﻿using System.Text;
+using System.Collections.Generic;
+using System.Text;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using System.Text.Json;
