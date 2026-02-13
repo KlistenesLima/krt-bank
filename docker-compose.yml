@@ -53,6 +53,9 @@
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      JAVA_OPTS_APPEND: "-Xms512m -Xmx1g"
+      KC_DB_POOL_MIN_SIZE: 10
+      KC_DB_POOL_MAX_SIZE: 50
     ports:
       - "8080:8080"
 
@@ -189,10 +192,4 @@ volumes:
   postgres-data:
   seq-data:
   keycloak-data:
-
-
-
-
-
-
 

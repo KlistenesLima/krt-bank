@@ -1,4 +1,13 @@
-﻿export const BASE_URL = __ENV.BASE_URL || 'http://localhost:5000';
+﻿// ============================================================
+// KRT Bank — k6 Test Configuration
+// Endpoints validados via Swagger JSON
+// ============================================================
+
+export const BASE_URL = __ENV.BASE_URL || 'http://localhost:5000';
+export const HEALTH_URL = 'http://localhost:5002/api/v1/health';
+
+// Pool size para setup de usuários
+export const USER_POOL_SIZE = parseInt(__ENV.POOL_SIZE || '50');
 
 export function getHeaders(token) {
     const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
@@ -25,3 +34,8 @@ export function generateEmail() {
 export function generatePhone() {
     return `+55119${Math.floor(Math.random() * 99999999).toString().padStart(8, '0')}`;
 }
+
+export function generatePixAmount() {
+    return parseFloat((Math.random() * 999 + 1).toFixed(2));
+}
+

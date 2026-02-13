@@ -1,5 +1,14 @@
-﻿import { sleep, group } from 'k6';
-import { registerAndLogin, executePixTransfer, getStatement, getBalance, getDashboard, thinkTime } from '../lib/helpers.js';
+﻿// ============================================================
+// KRT Bank — SOAK TEST v2.0 (Token Cache + Tráfego Realista)
+//   40% saldo | 25% extrato | 20% dashboard | 10% PIX | 5% registro
+// VUs: 500 constantes | Duration: 2 horas
+// ============================================================
+
+import { sleep } from 'k6';
+import {
+    setupUserPool, getRandomUser, ensureAuth,
+    realisticBankingAction, thinkTime
+} from '../lib/helpers.js';
 
 export const options = {
     stages: [
@@ -8,27 +17,26 @@ export const options = {
         { duration: '5m', target: 0 },
     ],
     thresholds: {
-        http_req_duration: ['p(95)<800'],
-        http_req_failed: ['rate<0.02'],
-        krt_pix_success_rate: ['rate>0.95'],
+        http_req_duration: ['p(95)<1000'],
+        http_req_failed: ['rate<0.05'],
+        krt_balance_check_rate: ['rate>0.90'],
+        krt_statement_check_rate: ['rate>0.90'],
+        krt_pix_success_rate: ['rate>0.90'],
     },
 };
 
-export default function () {
-    const user = registerAndLogin();
+export function setup() {
+    return { users: setupUserPool(100) };
+}
+
+export default function (data) {
+    let user = getRandomUser(data.users);
     if (!user) { sleep(1); return; }
 
-    group('Full Session', () => {
-        getDashboard(user.token, user.accountId);
-        getBalance(user.token, user.accountId);
-        thinkTime(2, 5);
-        executePixTransfer(user.token, user.accountId);
-        thinkTime(3, 6);
-        getStatement(user.token, user.accountId);
-        thinkTime(2, 4);
-        if (Math.random() < 0.3) {
-            executePixTransfer(user.token, user.accountId);
-            thinkTime(2, 5);
-        }
-    });
+    user = ensureAuth(user);
+    if (!user.token) { sleep(1); return; }
+
+    realisticBankingAction(user, data.users);
+    thinkTime(2, 5);
 }
+

@@ -1,95 +1,129 @@
-# KRT Bank - Performance Testing Suite (k6)
+﻿# KRT Bank — Testes de Performance (k6)
 
-Suite completa de testes de performance usando [Grafana k6](https://k6.io/).
+## Distribuição de Tráfego Realista
 
-## Instalacao do k6
+Os testes simulam o padrão de tráfego real de um banco digital, onde **~90% das operações são consultas** e apenas **~10% são escritas**:
 
-```powershell
-# Windows (via Chocolatey)
-choco install k6
-
-# Ou via Docker (sem instalacao)
-docker pull grafana/k6
+```
+┌─────────────────────────────────────────────────────────┐
+│              DISTRIBUIÇÃO DE TRÁFEGO                    │
+├──────────────────────────┬──────────────────────────────┤
+│  40%  Consulta Saldo     │  GET /accounts/{id}/balance  │
+│  25%  Extrato            │  GET /statement/{id}         │
+│  20%  Dashboard          │  GET /dashboard/summary/{id} │
+│  10%  PIX Transfer       │  POST /pix                   │
+│   5%  Registro/Login     │  POST /auth/register + login │
+├──────────────────────────┴──────────────────────────────┤
+│  85% LEITURA (read)  │  15% ESCRITA (write)             │
+└─────────────────────────────────────────────────────────┘
 ```
 
+### Por que essa distribuição?
 
-## O que sao VUs (Virtual Users)?
+Em sistemas bancários reais:
+- Usuários consultam saldo **dezenas de vezes** antes de fazer uma transferência
+- Extrato e dashboard são as telas mais acessadas do app
+- Registros de novas contas representam uma fração mínima do tráfego diário
+- A proporção **90/10 (read/write)** é padrão da indústria financeira
 
-Cada **VU (Virtual User)** simula um usuario real acessando o sistema simultaneamente. Quando o load test sobe para 1.000 VUs, significa **1.000 pessoas usando o KRT Bank ao mesmo tempo** — cada uma fazendo registro, login, PIX e consultando extrato.
+## Arquitetura dos Testes
 
-| Cenario | VUs | Equivalencia no Mundo Real |
-|---------|-----|---------------------------|
-| Smoke | 5 | Validacao basica |
-| Load | 1.000 | Banco digital em horario de pico |
-| Stress | 5.000 | Banco grande em dia de pagamento |
-| Spike | 10.000 | Black Friday / PIX viral |
-| Soak | 500 | Operacao continua por 2 horas |
-| Breakpoint | 20.000 | Teste de limite maximo do sistema |
-## Cenarios Disponiveis
-
-| Cenario | VUs | Duracao | Objetivo |
-|---------|-----|---------|----------|
-| **Smoke** | 5 | 1 min | Validacao basica — sistema responde? |
-| **Load** | 1.000 | 18 min | Carga normal de producao bancaria |
-| **Stress** | 5.000 | 25 min | Acima da capacidade planejada |
-| **Spike** | 10.000 | 7 min | Pico subito (Black Friday/PIX viral) |
-| **Soak** | 500 | 2 horas | Resistencia prolongada (memory leaks) |
-| **Breakpoint** | 20.000 | 30 min | Encontrar ponto de ruptura do sistema |
-
-## Execucao
-
-```powershell
-# Smoke test (rapido, validacao)
-.\tests\k6\run-tests.ps1 -Scenario smoke
-
-# Load test (1.000 usuarios simultaneos)
-.\tests\k6\run-tests.ps1 -Scenario load
-
-# Stress test (5.000 usuarios)
-.\tests\k6\run-tests.ps1 -Scenario stress
-
-# Spike test (10.000 usuarios)
-.\tests\k6\run-tests.ps1 -Scenario spike
-
-# Todos (exceto soak e breakpoint)
-.\tests\k6\run-tests.ps1 -Scenario all
-
-# Via Docker (sem instalar k6)
-.\tests\k6\run-tests.ps1 -Scenario load -UseDocker
+```
+tests/k6/
+├── lib/
+│   ├── config.js          # Configurações, geradores (CPF, email, phone)
+│   └── helpers.js         # Pool de usuários, distribuição de tráfego, metrics
+├── scenarios/
+│   ├── smoke.js           # Validação funcional (5 VUs, 1 min)
+│   ├── load.js            # Carga normal (até 1.000 VUs, 18 min)
+│   ├── stress.js          # Stress test (até 5.000 VUs, 21 min)
+│   ├── spike.js           # Pico súbito (100 → 10.000 VUs)
+│   ├── soak.js            # Endurance (500 VUs, 2 horas)
+│   └── breakpoint.js      # Encontrar limite (até 20.000 VUs)
+└── README.md
 ```
 
-## High-Load Docker Setup
+## Pool de Usuários Pré-Criados
 
-Para rodar com infraestrutura otimizada:
+Todos os cenários (exceto smoke) utilizam um **pool de usuários pré-criados** na fase `setup()`:
+
+1. **Setup**: Cria N usuários com register + login (sequencial, com delay)
+2. **Execução**: VUs reutilizam usuários do pool com re-autenticação
+3. **Distribuição**: Cada VU executa ações com probabilidade bancária real
+
+Isso evita que o teste gaste 95% do tempo criando contas e simula o padrão real onde milhares de usuários existentes fazem consultas simultâneas.
+
+## Como Executar
+
+### Pré-requisitos
+- [k6](https://k6.io/docs/getting-started/installation/) instalado
+- Docker containers rodando (`docker-compose up -d`)
+
+### Comandos
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.highload.yml up -d
+# 1. Smoke Test — validação rápida (sempre rodar primeiro)
+k6 run --env BASE_URL=http://localhost:5000 .\tests\k6\scenarios\smoke.js
+
+# 2. Load Test — carga normal (18 min)
+k6 run --env BASE_URL=http://localhost:5000 .\tests\k6\scenarios\load.js
+
+# 3. Stress Test — buscar limites (21 min)
+k6 run --env BASE_URL=http://localhost:5000 .\tests\k6\scenarios\stress.js
+
+# 4. Spike Test — pico súbito (~7 min)
+k6 run --env BASE_URL=http://localhost:5000 .\tests\k6\scenarios\spike.js
+
+# 5. Soak Test — endurance (2 horas)
+k6 run --env BASE_URL=http://localhost:5000 .\tests\k6\scenarios\soak.js
+
+# 6. Breakpoint Test — encontrar limite (30 min)
+k6 run --env BASE_URL=http://localhost:5000 .\tests\k6\scenarios\breakpoint.js
 ```
 
-Otimizacoes aplicadas:
-- PostgreSQL: 500 connections, 512MB shared_buffers, parallel workers
-- Redis: 256MB maxmemory, LRU eviction
-- Kafka: 12 partitions, IO/network threads otimizados
-- APIs: ThreadPool minimo 100-200, connection pool 200
-- Gateway: ThreadPool minimo 200
+### Configuração do Pool
 
-## Metricas Customizadas
+```bash
+# Pool padrão (20 usuários)
+k6 run --env BASE_URL=http://localhost:5000 .\tests\k6\scenarios\load.js
 
-| Metrica | Descricao |
-|---------|-----------|
-| `krt_pix_success_rate` | Taxa de sucesso das transacoes PIX |
-| `krt_pix_duration` | Latencia end-to-end do PIX (ms) |
-| `krt_accounts_created` | Total de contas criadas no teste |
-| `krt_pix_transactions` | Total de transacoes PIX executadas |
-| `krt_fraud_detected` | Total de fraudes detectadas |
-| `krt_login_success_rate` | Taxa de sucesso de login |
+# Pool customizado (50 usuários para mais concorrência)
+k6 run --env BASE_URL=http://localhost:5000 --env POOL_SIZE=50 .\tests\k6\scenarios\load.js
+```
 
-## SLAs Definidos
+## Cenários
 
-| Metrica | Load (1K VUs) | Stress (5K VUs) | Spike (10K VUs) |
-|---------|---------------|------------------|------------------|
-| p50 latency | < 300ms | < 500ms | < 1000ms |
-| p95 latency | < 800ms | < 2000ms | < 5000ms |
-| Error rate | < 1% | < 5% | < 10% |
-| PIX success | > 95% | > 90% | > 85% |
-| Throughput | > 100 req/s | > 50 req/s | N/A |
+| Cenário | VUs Max | Duração | Pool | Objetivo |
+|---------|---------|---------|------|----------|
+| **Smoke** | 5 | 1 min | — | Validar todos os endpoints funcionam |
+| **Load** | 1.000 | 18 min | 20 | Comportamento sob carga normal |
+| **Stress** | 5.000 | 21 min | 30 | Identificar ponto de degradação |
+| **Spike** | 10.000 | 7 min | 30 | Resiliência a picos súbitos |
+| **Soak** | 500 | 2h | 50 | Estabilidade e memory leaks |
+| **Breakpoint** | 20.000 | 30 min | 40 | Capacidade máxima do sistema |
+
+## Métricas Customizadas
+
+| Métrica | Tipo | Descrição |
+|---------|------|-----------|
+| `krt_pix_success_rate` | Rate | Taxa de sucesso de transferências PIX |
+| `krt_pix_duration` | Trend | Latência das transferências PIX |
+| `krt_pix_transactions` | Counter | Total de transações PIX executadas |
+| `krt_accounts_created` | Counter | Total de contas criadas |
+| `krt_fraud_detected` | Counter | Fraudes detectadas pelo anti-fraude |
+| `krt_login_success_rate` | Rate | Taxa de sucesso de autenticação |
+| `krt_balance_check_rate` | Rate | Taxa de sucesso de consulta de saldo |
+| `krt_statement_check_rate` | Rate | Taxa de sucesso de consulta de extrato |
+| `krt_dashboard_check_rate` | Rate | Taxa de sucesso de acesso ao dashboard |
+
+## Endpoints Testados
+
+| Operação | Método | Endpoint | Tráfego |
+|----------|--------|----------|---------|
+| Consulta Saldo | `GET` | `/api/v1/accounts/{id}/balance` | 40% |
+| Extrato | `GET` | `/api/v1/statement/{id}` | 25% |
+| Dashboard | `GET` | `/api/v1/dashboard/summary/{id}` | 20% |
+| PIX Transfer | `POST` | `/api/v1/pix` | 10% |
+| Registro | `POST` | `/api/v1/auth/register` | 5% |
+| Login | `POST` | `/api/v1/auth/login` | Sob demanda |
+| Health Check | `GET` | `/api/v1/health` | Smoke only |
