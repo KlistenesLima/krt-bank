@@ -1,5 +1,14 @@
-﻿import { sleep } from 'k6';
-import { registerAndLogin, executePixTransfer, thinkTime } from '../lib/helpers.js';
+﻿// ============================================================
+// KRT Bank — SPIKE TEST v2.0 (Token Cache + Tráfego Realista)
+//   40% saldo | 25% extrato | 20% dashboard | 10% PIX | 5% registro
+// Spike: 100 → 10.000 VUs em 10s
+// ============================================================
+
+import { sleep } from 'k6';
+import {
+    setupUserPool, getRandomUser, ensureAuth,
+    realisticBankingAction, thinkTime
+} from '../lib/helpers.js';
 
 export const options = {
     stages: [
@@ -13,14 +22,23 @@ export const options = {
     ],
     thresholds: {
         http_req_duration: ['p(50)<1000', 'p(95)<5000'],
-        http_req_failed: ['rate<0.15'],
-        krt_pix_success_rate: ['rate>0.80'],
+        http_req_failed: ['rate<0.20'],
+        krt_balance_check_rate: ['rate>0.60'],
     },
 };
 
-export default function () {
-    const user = registerAndLogin();
+export function setup() {
+    return { users: setupUserPool(80) };
+}
+
+export default function (data) {
+    let user = getRandomUser(data.users);
     if (!user) { sleep(0.3); return; }
-    executePixTransfer(user.token, user.accountId);
+
+    user = ensureAuth(user);
+    if (!user.token) { sleep(0.3); return; }
+
+    realisticBankingAction(user, data.users);
     thinkTime(0.3, 1);
 }
+

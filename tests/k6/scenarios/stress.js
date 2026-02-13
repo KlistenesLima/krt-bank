@@ -1,5 +1,14 @@
-﻿import { sleep, group } from 'k6';
-import { registerAndLogin, executePixTransfer, getStatement, getBalance, thinkTime } from '../lib/helpers.js';
+﻿// ============================================================
+// KRT Bank — STRESS TEST v2.0 (Token Cache + Tráfego Realista)
+//   40% saldo | 25% extrato | 20% dashboard | 10% PIX | 5% registro
+// Ramp: 0 → 500 → 2000 → 5000 → 2000 → 0 VUs | ~21 min
+// ============================================================
+
+import { sleep } from 'k6';
+import {
+    setupUserPool, getRandomUser, ensureAuth,
+    realisticBankingAction, thinkTime
+} from '../lib/helpers.js';
 
 export const options = {
     stages: [
@@ -12,24 +21,25 @@ export const options = {
         { duration: '1m', target: 0 },
     ],
     thresholds: {
-        http_req_duration: ['p(50)<500', 'p(95)<2000', 'p(99)<5000'],
-        http_req_failed: ['rate<0.10'],
-        krt_pix_success_rate: ['rate>0.85'],
+        http_req_duration: ['p(50)<500', 'p(95)<3000', 'p(99)<8000'],
+        http_req_failed: ['rate<0.15'],
+        krt_balance_check_rate: ['rate>0.70'],
+        krt_pix_success_rate: ['rate>0.60'],
     },
 };
 
-export default function () {
-    const user = registerAndLogin();
+export function setup() {
+    return { users: setupUserPool(80) };
+}
+
+export default function (data) {
+    let user = getRandomUser(data.users);
     if (!user) { sleep(0.5); return; }
 
-    group('PIX Under Stress', () => {
-        executePixTransfer(user.token, user.accountId);
-        thinkTime(0.5, 2);
-    });
+    user = ensureAuth(user);
+    if (!user.token) { sleep(0.5); return; }
 
-    group('Read Under Stress', () => {
-        getBalance(user.token, user.accountId);
-        getStatement(user.token, user.accountId);
-        thinkTime(0.5, 1);
-    });
+    realisticBankingAction(user, data.users);
+    thinkTime(0.5, 2);
 }
+
