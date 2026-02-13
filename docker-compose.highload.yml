@@ -2,12 +2,8 @@
 # KRT Bank - Docker Compose Override for High-Load Testing
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.highload.yml up -d
 # ============================================================
-
-version: '3.8'
-
 services:
-  # Escalar APIs para suportar alta carga
-  krt-payments-api:
+  payments-api:
     deploy:
       resources:
         limits:
@@ -17,12 +13,11 @@ services:
           cpus: '1.0'
           memory: 512M
     environment:
-      - DOTNET_ThreadPool_MinThreads=100
-      - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=REDACTED_DB_PASSWORD;Pooling=true;MinPoolSize=20;MaxPoolSize=200;Connection Idle Lifetime=300
-      - Redis__Configuration=redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000
+      DOTNET_ThreadPool_MinThreads: 100
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=REDACTED_DB_PASSWORD;Pooling=true;MinPoolSize=20;MaxPoolSize=200;Connection Idle Lifetime=300"
+      Redis__Configuration: "redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000"
 
-  krt-onboarding-api:
+  onboarding-api:
     deploy:
       resources:
         limits:
@@ -32,19 +27,18 @@ services:
           cpus: '0.5'
           memory: 256M
     environment:
-      - DOTNET_ThreadPool_MinThreads=50
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=REDACTED_DB_PASSWORD;Pooling=true;MinPoolSize=10;MaxPoolSize=100
+      DOTNET_ThreadPool_MinThreads: 50
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=REDACTED_DB_PASSWORD;Pooling=true;MinPoolSize=10;MaxPoolSize=100"
 
-  krt-gateway:
+  gateway:
     deploy:
       resources:
         limits:
           cpus: '1.5'
           memory: 512M
     environment:
-      - DOTNET_ThreadPool_MinThreads=200
+      DOTNET_ThreadPool_MinThreads: 200
 
-  # PostgreSQL otimizado para alta carga
   postgres:
     deploy:
       resources:
@@ -71,7 +65,6 @@ services:
         -c max_parallel_maintenance_workers=2
         -c log_min_duration_statement=200
 
-  # Redis otimizado
   redis:
     deploy:
       resources:
@@ -86,7 +79,6 @@ services:
         --timeout 0
         --tcp-keepalive 300
 
-  # Kafka otimizado para throughput
   kafka:
     deploy:
       resources:
@@ -101,32 +93,11 @@ services:
       KAFKA_SOCKET_SEND_BUFFER_BYTES: 102400
       KAFKA_SOCKET_RECEIVE_BUFFER_BYTES: 102400
       KAFKA_SOCKET_REQUEST_MAX_BYTES: 104857600
-      KAFKA_LOG_RETENTION_HOURS: 168
 
-  # RabbitMQ otimizado
   rabbitmq:
     deploy:
       resources:
         limits:
           cpus: '1.5'
           memory: 1G
-    environment:
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.7
-      RABBITMQ_DISK_FREE_LIMIT: 1073741824
 
-  # k6 como servico para rodar dentro do Docker network
-  k6:
-    image: grafana/k6:latest
-    profiles: ["testing"]
-    volumes:
-      - ./tests/k6:/scripts
-    environment:
-      - BASE_URL=http://krt-gateway:80
-    entrypoint: ["k6", "run", "--out", "json=/scripts/reports/results.json"]
-    command: ["/scripts/scenarios/load.js"]
-    depends_on:
-      - krt-gateway
-      - krt-payments-api
-      - krt-onboarding-api
-    networks:
-      - krt-network
