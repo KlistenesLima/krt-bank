@@ -497,8 +497,9 @@ export class CardsPageComponent implements OnInit {
   }
 
   formatCardNumber(n: string): string {
-    if (!n || n.length < 16) return n;
-    return `${n.slice(0,4)} ${n.slice(4,8)} ${n.slice(8,12)} ${n.slice(12)}`;
+    const digits = n.replace(/\D/g, '');
+    if (digits.length < 16) return n;
+    return `${digits.slice(0,4)} ${digits.slice(4,8)} ${digits.slice(8,12)} ${digits.slice(12,16)}`;
   }
 
   formatDate(d: string | undefined): string {
