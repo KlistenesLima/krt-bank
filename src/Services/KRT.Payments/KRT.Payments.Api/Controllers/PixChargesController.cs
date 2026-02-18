@@ -14,11 +14,13 @@ public class PixChargesController : ControllerBase
 {
     private readonly PaymentsDbContext _db;
     private readonly QrCodeService _qrCodeService;
+    private readonly ChargePaymentService _paymentService;
 
-    public PixChargesController(PaymentsDbContext db, QrCodeService qrCodeService)
+    public PixChargesController(PaymentsDbContext db, QrCodeService qrCodeService, ChargePaymentService paymentService)
     {
         _db = db;
         _qrCodeService = qrCodeService;
+        _paymentService = paymentService;
     }
 
     /// POST /api/v1/pix/charges — create a PIX charge for e-commerce
@@ -93,9 +95,9 @@ public class PixChargesController : ControllerBase
         });
     }
 
-    /// POST /api/v1/pix/charges/{id}/simulate-payment — simulate payment (for demo)
+    /// POST /api/v1/pix/charges/{id}/simulate-payment — real banking payment
     [HttpPost("{id:guid}/simulate-payment")]
-    public async Task<IActionResult> SimulatePayment(Guid id, CancellationToken ct)
+    public async Task<IActionResult> SimulatePayment(Guid id, [FromBody] SimulatePaymentRequest? request, CancellationToken ct)
     {
         var charge = await _db.PixCharges.FindAsync(new object[] { id }, ct);
         if (charge == null) return NotFound(new { error = "Cobranca nao encontrada" });
@@ -109,6 +111,13 @@ public class PixChargesController : ControllerBase
             await _db.SaveChangesAsync(ct);
             return BadRequest(new { error = "Cobranca expirada" });
         }
+
+        var result = await _paymentService.PreparePaymentAsync(
+            request?.PayerAccountId, charge.PayerCpf, charge.Amount,
+            "PIX", $"PIX cobranca - {charge.Description}", "AUREA Maison Joalheria", ct);
+
+        if (!result.Success)
+            return BadRequest(new { error = result.Error });
 
         charge.Status = PixChargeStatus.Confirmed;
         charge.PaidAt = DateTime.UtcNow;
@@ -140,7 +149,9 @@ public class PixChargesController : ControllerBase
             chargeId = charge.Id,
             status = "Confirmed",
             paidAt = charge.PaidAt,
-            amount = charge.Amount
+            amount = charge.Amount,
+            payerAccountId = result.PayerAccountId,
+            newBalance = result.NewBalance
         });
     }
 
@@ -190,3 +201,7 @@ public record FindByBrCodeRequest(
     string? PixKey = null,
     decimal Amount = 0,
     string? TxId = null);
+
+public record SimulatePaymentRequest(
+    Guid? PayerAccountId = null,
+    string? PayerDocument = null);
