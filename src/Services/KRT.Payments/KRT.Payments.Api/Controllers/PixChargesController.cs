@@ -143,6 +143,39 @@ public class PixChargesController : ControllerBase
             amount = charge.Amount
         });
     }
+
+    /// POST /api/v1/pix/charges/find-by-brcode — find pending charge by BRCode data
+    [HttpPost("find-by-brcode")]
+    public async Task<IActionResult> FindByBrCode([FromBody] FindByBrCodeRequest request, CancellationToken ct)
+    {
+        if (request.Amount <= 0)
+            return BadRequest(new { error = "Valor invalido" });
+
+        var query = _db.PixCharges
+            .Where(c => c.Status == PixChargeStatus.Pending && c.ExpiresAt > DateTime.UtcNow);
+
+        if (!string.IsNullOrEmpty(request.TxId))
+            query = query.Where(c => c.QrCode.Contains(request.TxId));
+        else
+            query = query.Where(c => c.Amount == request.Amount);
+
+        var charge = await query
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+        if (charge == null)
+            return NotFound(new { error = "Cobranca nao encontrada" });
+
+        return Ok(new
+        {
+            chargeId = charge.Id,
+            status = charge.Status.ToString(),
+            amount = charge.Amount,
+            description = charge.Description,
+            externalId = charge.ExternalId,
+            expiresAt = charge.ExpiresAt
+        });
+    }
 }
 
 public record CreatePixChargeRequest(
@@ -152,3 +185,8 @@ public record CreatePixChargeRequest(
     string? PayerCpf = null,
     string? MerchantId = null,
     string? WebhookUrl = null);
+
+public record FindByBrCodeRequest(
+    string? PixKey = null,
+    decimal Amount = 0,
+    string? TxId = null);

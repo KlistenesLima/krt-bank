@@ -12,17 +12,24 @@ public class QrCodeService
     /// </summary>
     public string GeneratePixPayload(string pixKey, string merchantName, string city, decimal amount, string txId)
     {
-        // Formato EMV simplificado para Pix
-        var payload = $"00020126" +
-            $"0014BR.GOV.BCB.PIX" +
-            $"01{pixKey.Length:D2}{pixKey}" +
-            $"52040000" +
-            $"5303986" +  // BRL
-            $"54{amount:F2}".Replace(",", ".").PadLeft(2 + amount.ToString("F2").Length, '0') +
-            $"5802BR" +
+        var amountStr = amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+        // Tag 26: Merchant Account Information (subtags)
+        var tag26Content = $"0014BR.GOV.BCB.PIX01{pixKey.Length:D2}{pixKey}";
+
+        // Tag 62: Additional Data (subtags)
+        var tag62Content = $"05{txId.Length:D2}{txId}";
+
+        // Formato EMV com TLV correto (tag 2 chars + length 2 chars + value)
+        var payload = "000201" +
+            $"26{tag26Content.Length:D2}{tag26Content}" +
+            "52040000" +
+            "5303986" +
+            $"54{amountStr.Length:D2}{amountStr}" +
+            "5802BR" +
             $"59{merchantName.Length:D2}{merchantName}" +
             $"60{city.Length:D2}{city}" +
-            $"62{(4 + txId.Length):D2}05{txId.Length:D2}{txId}" +
+            $"62{tag62Content.Length:D2}{tag62Content}" +
             "6304";
 
         // CRC16 simplificado (para demo)
