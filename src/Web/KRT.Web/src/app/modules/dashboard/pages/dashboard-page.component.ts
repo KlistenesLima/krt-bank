@@ -428,14 +428,14 @@ export class DashboardPageComponent implements OnInit {
     this.userEmail = localStorage.getItem('krt_account_email') || '';
     this.loading = false;
     if (this.accountId) {
-      this.paymentService.getHistory(this.accountId, 1, 5).subscribe({
-        next: (txs) => {
-          this.transactions = txs.map((tx: any) => ({
-            type: tx.destinationAccountId === this.accountId ? 'CREDIT' : 'DEBIT',
-            description: tx.description || (tx.destinationAccountId === this.accountId ? 'Pix Recebido' : 'Pix Enviado'),
-            amount: tx.amount,
-            createdAt: tx.createdAt,
-            status: tx.status
+      this.paymentService.getStatement(this.accountId, 1, 5).subscribe({
+        next: (res) => {
+          this.transactions = res.items.map((entry: any) => ({
+            type: entry.isCredit ? 'CREDIT' : 'DEBIT',
+            description: entry.description || entry.type,
+            amount: entry.amount,
+            createdAt: entry.date || entry.createdAt,
+            status: 'Completed'
           }));
         },
         error: () => { this.transactions = []; }

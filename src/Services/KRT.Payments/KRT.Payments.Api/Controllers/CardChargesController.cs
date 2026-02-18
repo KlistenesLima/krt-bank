@@ -86,6 +86,7 @@ public class CardChargesController : ControllerBase
 
         // Reduzir limite disponível — valor TOTAL reservado (mesmo parcelado)
         card.AddSpending(request.Amount);
+        _db.VirtualCards.Update(card);
 
         _db.CardCharges.Add(charge);
         await _db.SaveChangesAsync(ct);
@@ -119,7 +120,9 @@ public class CardChargesController : ControllerBase
             installments,
             installmentAmount,
             amount = charge.Amount,
-            cardLast4 = card.Last4Digits
+            cardLast4 = card.Last4Digits,
+            spentThisMonth = card.SpentThisMonth,
+            remainingLimit = card.AvailableLimit
         });
     }
 

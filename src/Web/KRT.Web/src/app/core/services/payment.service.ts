@@ -72,4 +72,36 @@ export class PaymentService {
       `${this.baseUrl}/account/${accountId}?page=${page}&pageSize=${pageSize}`
     );
   }
+
+  /** GET /api/v1/statement/{accountId} — Extrato completo (PIX, Boleto, Cartão) */
+  getStatement(accountId: string, page = 1, size = 20): Observable<StatementResponse> {
+    return this.http.get<StatementResponse>(
+      `${environment.apiUrl}/statement/${accountId}?page=${page}&size=${size}`
+    );
+  }
+}
+
+export interface StatementEntry {
+  id: string;
+  accountId: string;
+  date: string;
+  type: string;
+  category: string;
+  amount: number;
+  description: string;
+  counterpartyName: string;
+  counterpartyBank: string;
+  isCredit: boolean;
+  createdAt: string;
+}
+
+export interface StatementResponse {
+  items: StatementEntry[];
+  totalItems: number;
+  totalPages: number;
+  summary: {
+    totalIncome: number;
+    totalExpenses: number;
+    net: number;
+  };
 }
