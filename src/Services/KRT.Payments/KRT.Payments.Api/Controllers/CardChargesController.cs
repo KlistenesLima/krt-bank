@@ -28,7 +28,25 @@ public class CardChargesController : ControllerBase
         if (request.Amount <= 0)
             return BadRequest(new { error = "Valor deve ser maior que zero" });
 
-        var card = await _db.VirtualCards.FindAsync(new object[] { request.CardId }, ct);
+        VirtualCard? card = null;
+
+        if (request.CardId.HasValue && request.CardId.Value != Guid.Empty)
+        {
+            card = await _db.VirtualCards.FindAsync(new object[] { request.CardId.Value }, ct);
+        }
+        else if (request.AccountId.HasValue && request.AccountId.Value != Guid.Empty)
+        {
+            card = await _db.VirtualCards
+                .Where(c => c.AccountId == request.AccountId.Value && c.Status == CardStatus.Active)
+                .FirstOrDefaultAsync(ct);
+        }
+        else
+        {
+            card = await _db.VirtualCards
+                .Where(c => c.Status == CardStatus.Active)
+                .FirstOrDefaultAsync(ct);
+        }
+
         if (card == null) return NotFound(new { error = "Cartao nao encontrado" });
 
         var (allowed, reason) = card.ValidatePurchase(request.Amount, true, false);
@@ -41,7 +59,7 @@ public class CardChargesController : ControllerBase
             var declined = new CardCharge
             {
                 Id = Guid.NewGuid(),
-                CardId = request.CardId,
+                CardId = card.Id,
                 ExternalId = request.ExternalId ?? "",
                 Amount = request.Amount,
                 Description = request.Description ?? "",
@@ -71,7 +89,7 @@ public class CardChargesController : ControllerBase
         var charge = new CardCharge
         {
             Id = Guid.NewGuid(),
-            CardId = request.CardId,
+            CardId = card.Id,
             ExternalId = request.ExternalId ?? "",
             Amount = request.Amount,
             Description = request.Description ?? "",
@@ -233,8 +251,9 @@ public class CardChargesController : ControllerBase
 }
 
 public record CreateCardChargeRequest(
-    Guid CardId,
     decimal Amount,
+    Guid? CardId = null,
+    Guid? AccountId = null,
     string? Description = null,
     string? ExternalId = null,
     int? Installments = 1,
