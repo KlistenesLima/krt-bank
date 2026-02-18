@@ -19,6 +19,7 @@ public class PaymentsDbContext : DbContext
     public DbSet<PixLimit> PixLimits => Set<PixLimit>();
     public DbSet<ScheduledPix> ScheduledPixTransactions => Set<ScheduledPix>();
     public DbSet<VirtualCard> VirtualCards => Set<VirtualCard>();
+    public DbSet<PixCharge> PixCharges => Set<PixCharge>();
 
     // === Entidades migradas (antes ConcurrentDictionary) ===
     public DbSet<InsurancePolicy> InsurancePolicies => Set<InsurancePolicy>();
@@ -125,6 +126,15 @@ public class PaymentsDbContext : DbContext
             e.OwnsOne(x => x.Address);
             e.OwnsOne(x => x.Preferences);
             e.OwnsOne(x => x.Security);
+        });
+
+        // PixCharge
+        modelBuilder.Entity<PixCharge>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ExternalId);
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.Status).HasConversion<string>();
         });
     }
 }
