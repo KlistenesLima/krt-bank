@@ -154,6 +154,65 @@ for (int attempt = 1; attempt <= 10; attempt++)
         using var scope2 = app.Services.CreateScope();
         var apiDb = scope2.ServiceProvider.GetRequiredService<KRT.Payments.Api.Data.PaymentsDbContext>();
         try { apiDb.GetService<IRelationalDatabaseCreator>().CreateTables(); } catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07") { /* tabelas ja existem, OK */ }
+
+        // Garantir tabelas de charges com CREATE TABLE IF NOT EXISTS
+        var conn = apiDb.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS ""PixCharges"" (
+                ""Id"" uuid NOT NULL PRIMARY KEY,
+                ""ExternalId"" text NOT NULL DEFAULT '',
+                ""Amount"" numeric(18,2) NOT NULL,
+                ""Description"" text NOT NULL DEFAULT '',
+                ""QrCode"" text NOT NULL DEFAULT '',
+                ""QrCodeBase64"" text NOT NULL DEFAULT '',
+                ""Status"" text NOT NULL DEFAULT 'Pending',
+                ""PayerCpf"" text,
+                ""MerchantId"" text,
+                ""WebhookUrl"" text,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
+                ""PaidAt"" timestamp with time zone,
+                ""ExpiresAt"" timestamp with time zone NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_PixCharges_ExternalId"" ON ""PixCharges"" (""ExternalId"");
+
+            CREATE TABLE IF NOT EXISTS ""BoletoCharges"" (
+                ""Id"" uuid NOT NULL PRIMARY KEY,
+                ""ExternalId"" text NOT NULL DEFAULT '',
+                ""Amount"" numeric(18,2) NOT NULL,
+                ""Description"" text NOT NULL DEFAULT '',
+                ""Barcode"" text NOT NULL DEFAULT '',
+                ""DigitableLine"" text NOT NULL DEFAULT '',
+                ""Status"" text NOT NULL DEFAULT 'Pending',
+                ""PayerCpf"" text,
+                ""PayerName"" text,
+                ""MerchantId"" text,
+                ""WebhookUrl"" text,
+                ""DueDate"" timestamp with time zone NOT NULL DEFAULT now(),
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
+                ""PaidAt"" timestamp with time zone
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_BoletoCharges_ExternalId"" ON ""BoletoCharges"" (""ExternalId"");
+
+            CREATE TABLE IF NOT EXISTS ""CardCharges"" (
+                ""Id"" uuid NOT NULL PRIMARY KEY,
+                ""CardId"" uuid NOT NULL,
+                ""ExternalId"" text NOT NULL DEFAULT '',
+                ""Amount"" numeric(18,2) NOT NULL,
+                ""Description"" text NOT NULL DEFAULT '',
+                ""Status"" text NOT NULL DEFAULT 'Pending',
+                ""AuthorizationCode"" text NOT NULL DEFAULT '',
+                ""Installments"" integer NOT NULL DEFAULT 1,
+                ""InstallmentAmount"" numeric(18,2) NOT NULL DEFAULT 0,
+                ""MerchantId"" text,
+                ""WebhookUrl"" text,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_CardCharges_CardId"" ON ""CardCharges"" (""CardId"");
+            CREATE INDEX IF NOT EXISTS ""IX_CardCharges_ExternalId"" ON ""CardCharges"" (""ExternalId"");
+        ";
+        await cmd.ExecuteNonQueryAsync();
         Log.Information("Api.Data.PaymentsDbContext: tabelas criadas (tentativa {Attempt})", attempt);
         break;
     }
