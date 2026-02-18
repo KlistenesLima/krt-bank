@@ -138,6 +138,15 @@ public class VirtualCardsController : ControllerBase
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(ct);
 
+        // Buscar pagamentos de fatura do mês (registrados como StatementEntry)
+        var payments = await _db.StatementEntries
+            .Where(s => s.AccountId == card.AccountId
+                && s.Type == "Fatura Cartao"
+                && s.IsCredit == false
+                && s.Date >= startOfMonth)
+            .OrderByDescending(s => s.Date)
+            .ToListAsync(ct);
+
         var currentBill = card.SpentThisMonth;
         var dueDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 15, 0, 0, 0, DateTimeKind.Utc);
         if (dueDate <= DateTime.UtcNow)
@@ -157,6 +166,10 @@ public class VirtualCardsController : ControllerBase
             {
                 c.Id, c.Description, c.Amount, c.Installments, c.InstallmentAmount,
                 status = c.Status.ToString(), c.CreatedAt
+            }),
+            payments = payments.Select(p => new
+            {
+                p.Id, p.Description, p.Amount, p.Date
             })
         });
     }
