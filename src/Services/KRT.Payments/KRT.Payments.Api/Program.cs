@@ -223,6 +223,25 @@ for (int attempt = 1; attempt <= 10; attempt++)
         ";
         await seedCmd.ExecuteNonQueryAsync();
 
+        // Seed virtual card for main user (Klistenes Lima) if not exists
+        using var cardSeedCmd = conn.CreateCommand();
+        cardSeedCmd.CommandText = @"
+            INSERT INTO ""VirtualCards"" (""Id"", ""AccountId"", ""CardNumber"", ""CardholderName"",
+                ""ExpirationMonth"", ""ExpirationYear"", ""Cvv"", ""Last4Digits"", ""Brand"", ""Status"",
+                ""SpendingLimit"", ""SpentThisMonth"", ""IsContactless"", ""IsOnlinePurchase"", ""IsInternational"",
+                ""CvvExpiresAt"", ""CreatedAt"", ""UpdatedAt"")
+            VALUES (
+                'cccccccc-cccc-cccc-cccc-cccccccccccc',
+                'a1b2c3d4-0000-0000-0000-aabbccddeeff',
+                '4532789012347890', 'KLISTENES LIMA',
+                '12', '2031', '742', '7890', 0, 0,
+                5000.00, 0.00, true, true, false,
+                NOW() + INTERVAL '24 hours', NOW(), NOW()
+            )
+            ON CONFLICT (""Id"") DO NOTHING;
+        ";
+        await cardSeedCmd.ExecuteNonQueryAsync();
+
         Log.Information("Api.Data.PaymentsDbContext: tabelas criadas (tentativa {Attempt})", attempt);
         break;
     }

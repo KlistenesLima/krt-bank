@@ -84,6 +84,9 @@ public class CardChargesController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
+        // Reduzir limite disponível — valor TOTAL reservado (mesmo parcelado)
+        card.AddSpending(request.Amount);
+
         _db.CardCharges.Add(charge);
         await _db.SaveChangesAsync(ct);
 
@@ -176,7 +179,7 @@ public class CardChargesController : ControllerBase
         });
     }
 
-    /// POST /api/v1/cards/charges/{id}/simulate-payment — real banking payment for card charge
+    /// POST /api/v1/cards/charges/{id}/simulate-payment — settle card charge (credit merchant only, NO debit from checking)
     [HttpPost("{id:guid}/simulate-payment")]
     public async Task<IActionResult> SimulatePayment(Guid id, [FromBody] SimulatePaymentRequest? request, CancellationToken ct)
     {
@@ -186,12 +189,32 @@ public class CardChargesController : ControllerBase
         if (charge.Status != CardChargeStatus.Approved)
             return BadRequest(new { error = $"Cobranca em status {charge.Status}, nao pode ser paga" });
 
-        var result = await _paymentService.PreparePaymentAsync(
-            request?.PayerAccountId, null, charge.Amount,
-            "Cartao", $"Cartao credito - {charge.Description}", "AUREA Maison Joalheria", ct);
+        // Cartão de crédito: NÃO debita conta corrente do cliente.
+        // Apenas credita o merchant — o débito ocorre quando o cliente paga a fatura.
+        var merchantAccountId = ChargePaymentService.MerchantAccountId;
+        var merchant = await _db.BankAccounts.FindAsync([merchantAccountId], ct);
+        if (merchant == null)
+            return BadRequest(new { error = "Conta do recebedor nao encontrada" });
 
-        if (!result.Success)
-            return BadRequest(new { error = result.Error });
+        merchant.Balance += charge.Amount;
+        merchant.UpdatedAt = DateTime.UtcNow;
+        merchant.RowVersion = Guid.NewGuid().ToByteArray();
+
+        // Statement: merchant recebe crédito
+        _db.StatementEntries.Add(new StatementEntry
+        {
+            Id = Guid.NewGuid(),
+            AccountId = merchant.Id,
+            Date = DateTime.UtcNow,
+            Type = "Cartao",
+            Category = "Receivable",
+            Amount = charge.Amount,
+            Description = $"Cartao credito recebido - {charge.Description}",
+            CounterpartyName = "Cliente cartao credito",
+            CounterpartyBank = "KRT Bank",
+            IsCredit = true,
+            CreatedAt = DateTime.UtcNow
+        });
 
         charge.Status = CardChargeStatus.Settled;
         await _db.SaveChangesAsync(ct);
@@ -201,8 +224,7 @@ public class CardChargesController : ControllerBase
             chargeId = charge.Id,
             status = "Settled",
             amount = charge.Amount,
-            payerAccountId = result.PayerAccountId,
-            newBalance = result.NewBalance
+            merchantCredited = charge.Amount
         });
     }
 }
