@@ -20,6 +20,8 @@ public class PaymentsDbContext : DbContext
     public DbSet<ScheduledPix> ScheduledPixTransactions => Set<ScheduledPix>();
     public DbSet<VirtualCard> VirtualCards => Set<VirtualCard>();
     public DbSet<PixCharge> PixCharges => Set<PixCharge>();
+    public DbSet<BoletoCharge> BoletoCharges => Set<BoletoCharge>();
+    public DbSet<CardCharge> CardCharges => Set<CardCharge>();
 
     // === Entidades migradas (antes ConcurrentDictionary) ===
     public DbSet<InsurancePolicy> InsurancePolicies => Set<InsurancePolicy>();
@@ -134,6 +136,26 @@ public class PaymentsDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.ExternalId);
             e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.Status).HasConversion<string>();
+        });
+
+        // BoletoCharge
+        modelBuilder.Entity<BoletoCharge>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ExternalId);
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.Status).HasConversion<string>();
+        });
+
+        // CardCharge
+        modelBuilder.Entity<CardCharge>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.CardId);
+            e.HasIndex(x => x.ExternalId);
+            e.Property(x => x.Amount).HasPrecision(18, 2);
+            e.Property(x => x.InstallmentAmount).HasPrecision(18, 2);
             e.Property(x => x.Status).HasConversion<string>();
         });
     }
