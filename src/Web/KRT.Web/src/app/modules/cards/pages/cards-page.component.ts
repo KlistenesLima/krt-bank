@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription, interval } from 'rxjs';
 import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../core/services/card.service';
 
 @Component({
@@ -79,7 +80,7 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
             </div>
 
             <div class="action-buttons">
-              <button class="action-btn primary" (click)="goToStep('bill')" [disabled]="card.spentThisMonth === 0">
+              <button class="action-btn primary" (click)="goToStep('bill')">
                 <mat-icon>receipt_long</mat-icon>
                 Ver Fatura
               </button>
@@ -123,6 +124,17 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
               </div>
             </div>
 
+            <h3 *ngIf="bill && bill.payments && bill.payments.length > 0" style="padding:0 20px;margin:20px 0 8px">Pagamentos do mes</h3>
+            <div class="charges-list" *ngIf="bill && bill.payments && bill.payments.length > 0">
+              <div class="charge-item" *ngFor="let p of bill.payments">
+                <div class="charge-info">
+                  <span class="charge-desc">{{ p.description || 'Pagamento de fatura' }}</span>
+                  <span class="charge-date">{{ formatDate(p.date) }}</span>
+                </div>
+                <span class="charge-amount payment-amount">- R$ {{ p.amount | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
             <h3 *ngIf="bill && bill.charges.length > 0" style="padding:0 20px;margin:20px 0 8px">Compras do mes</h3>
             <div class="charges-list" *ngIf="bill">
               <div class="charge-item" *ngFor="let c of bill.charges">
@@ -137,7 +149,7 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
             </div>
 
             <div class="bill-actions">
-              <button class="btn-primary" (click)="goToStep('pay')">Pagar Fatura</button>
+              <button class="btn-primary" (click)="goToStep('pay')" [disabled]="!bill || bill.currentBill === 0">Pagar Fatura</button>
               <button class="btn-secondary" (click)="goToStep('main')">Voltar</button>
             </div>
           </div>
@@ -335,6 +347,7 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
     .charge-desc { font-size: 0.9rem; font-weight: 600; }
     .charge-date { font-size: 0.78rem; color: var(--krt-text-secondary); }
     .charge-amount { font-weight: 700; font-size: 0.95rem; color: var(--krt-danger); }
+    .payment-amount { color: var(--krt-success); }
 
     .bill-actions { padding: 24px 0; display: flex; flex-direction: column; gap: 10px; }
     .btn-primary {
@@ -384,7 +397,7 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   `]
 })
-export class CardsPageComponent implements OnInit {
+export class CardsPageComponent implements OnInit, OnDestroy {
   card: VirtualCard | null = null;
   bill: CardBill | null = null;
   loading = true;
@@ -400,6 +413,9 @@ export class CardsPageComponent implements OnInit {
   accountId = '';
   accountBalance = 0;
 
+  private pollSub: Subscription | null = null;
+  private visibilityHandler = () => this.onVisibilityChange();
+
   constructor(public router: Router, private cardService: CardService) {}
 
   ngOnInit(): void {
@@ -407,8 +423,52 @@ export class CardsPageComponent implements OnInit {
     this.accountBalance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
     if (this.accountId) {
       this.loadCard();
+      this.startPolling();
     } else {
       this.loading = false;
+    }
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+    document.removeEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  private startPolling(): void {
+    this.stopPolling();
+    this.pollSub = interval(30000).subscribe(() => {
+      if (document.hidden) return;
+      this.refreshData();
+    });
+  }
+
+  private stopPolling(): void {
+    if (this.pollSub) {
+      this.pollSub.unsubscribe();
+      this.pollSub = null;
+    }
+  }
+
+  private onVisibilityChange(): void {
+    if (!document.hidden && this.accountId) {
+      this.refreshData();
+    }
+  }
+
+  private refreshData(): void {
+    if (!this.card) return;
+    // Refresh card data silently (no loading spinner)
+    this.cardService.getCard(this.card.id).subscribe({
+      next: (c) => { this.card = c; },
+      error: () => {}
+    });
+    // Refresh bill if currently viewing it
+    if (this.step === 'bill' && this.card) {
+      this.cardService.getBill(this.card.id).subscribe({
+        next: (b) => { this.bill = b; },
+        error: () => {}
+      });
     }
   }
 
