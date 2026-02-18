@@ -126,9 +126,33 @@ public class VirtualCard
             return (false, "Compras online desabilitadas");
         if (isInternational && !IsInternational)
             return (false, "Compras internacionais desabilitadas");
-        if (SpentThisMonth + amount > SpendingLimit)
-            return (false, $"Limite mensal excedido. Usado: R$ {SpentThisMonth:N2} / Limite: R$ {SpendingLimit:N2}");
+        if (!HasAvailableLimit(amount))
+            return (false, $"Limite insuficiente. Disponivel: R$ {AvailableLimit:N2}");
         return (true, null);
+    }
+
+    public bool HasAvailableLimit(decimal amount) => AvailableLimit >= amount;
+
+    public decimal AvailableLimit => SpendingLimit - SpentThisMonth;
+
+    public void AddSpending(decimal amount)
+    {
+        if (!HasAvailableLimit(amount))
+            throw new InvalidOperationException($"Limite insuficiente. Disponivel: R$ {AvailableLimit:N2}");
+        SpentThisMonth += amount;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ReduceSpending(decimal amount)
+    {
+        SpentThisMonth = Math.Max(0, SpentThisMonth - amount);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ResetMonthlySpending()
+    {
+        SpentThisMonth = 0;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>Mascara numero: **** **** **** 1234</summary>
