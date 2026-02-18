@@ -47,9 +47,13 @@
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
     container_name: krt-keycloak
+    hostname: krt-keycloak
     command: start-dev
     volumes:
       - keycloak-data:/opt/keycloak/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
