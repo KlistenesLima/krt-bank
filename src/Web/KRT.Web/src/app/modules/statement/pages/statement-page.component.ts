@@ -1,7 +1,7 @@
-﻿import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { PaymentService, PixTransaction } from '../../../core/services/payment.service';
+import { PaymentService, StatementEntry } from '../../../core/services/payment.service';
 
 @Component({
   selector: 'app-statement-page',
@@ -24,7 +24,7 @@ import { PaymentService, PixTransaction } from '../../../core/services/payment.s
 
       <div class="tx-list" *ngIf="!loading && transactions.length > 0">
         <div class="tx-card" *ngFor="let tx of transactions"
-             [class.expanded]="expandedId === tx.transactionId">
+             [class.expanded]="expandedId === tx.id">
 
           <!-- Linha principal -->
           <div class="tx-row" (click)="toggleExpand(tx)">
@@ -33,30 +33,30 @@ import { PaymentService, PixTransaction } from '../../../core/services/payment.s
             </div>
             <div class="tx-info">
               <strong>{{ getTxLabel(tx) }}</strong>
-              <span class="tx-date">{{ tx.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span class="tx-date">{{ tx.date | date:'dd/MM/yyyy HH:mm' }}</span>
             </div>
             <div class="tx-right">
-              <span class="tx-amount" [ngClass]="isIncoming(tx) ? 'incoming' : 'outgoing'">
-                {{ isIncoming(tx) ? '+' : '-' }} R$ {{ tx.amount | number:'1.2-2' }}
+              <span class="tx-amount" [ngClass]="tx.isCredit ? 'incoming' : 'outgoing'">
+                {{ tx.isCredit ? '+' : '-' }} R$ {{ tx.amount | number:'1.2-2' }}
               </span>
-              <mat-icon class="expand-icon">{{ expandedId === tx.transactionId ? 'expand_less' : 'expand_more' }}</mat-icon>
+              <mat-icon class="expand-icon">{{ expandedId === tx.id ? 'expand_less' : 'expand_more' }}</mat-icon>
             </div>
           </div>
 
           <!-- Detalhes expandidos -->
-          <div class="tx-details" *ngIf="expandedId === tx.transactionId">
+          <div class="tx-details" *ngIf="expandedId === tx.id">
             <div class="detail-divider"></div>
 
             <div class="detail-row">
-              <span class="detail-label">Status</span>
-              <span class="detail-value status-badge" [ngClass]="'badge-' + tx.status.toLowerCase()">
-                {{ getStatusLabel(tx.status) }}
+              <span class="detail-label">Tipo</span>
+              <span class="detail-value status-badge" [ngClass]="'badge-' + tx.type.toLowerCase()">
+                {{ getTypeLabel(tx.type) }}
               </span>
             </div>
 
             <div class="detail-row">
-              <span class="detail-label">Tipo</span>
-              <span class="detail-value">{{ isIncoming(tx) ? 'Recebido' : 'Enviado' }}</span>
+              <span class="detail-label">Categoria</span>
+              <span class="detail-value">{{ tx.category }}</span>
             </div>
 
             <div class="detail-row">
@@ -69,31 +69,20 @@ import { PaymentService, PixTransaction } from '../../../core/services/payment.s
               <span class="detail-value">{{ tx.description }}</span>
             </div>
 
+            <div class="detail-row" *ngIf="tx.counterpartyName">
+              <span class="detail-label">Contraparte</span>
+              <span class="detail-value">{{ tx.counterpartyName }}</span>
+            </div>
+
             <div class="detail-row">
               <span class="detail-label">Data</span>
-              <span class="detail-value">{{ tx.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
-            </div>
-
-            <div class="detail-row" *ngIf="tx.completedAt">
-              <span class="detail-label">Concluido em</span>
-              <span class="detail-value">{{ tx.completedAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
-            </div>
-
-            <div class="detail-row" *ngIf="tx.fraudScore !== null && tx.fraudScore !== undefined">
-              <span class="detail-label">Score anti-fraude</span>
-              <span class="detail-value">{{ tx.fraudScore }}</span>
+              <span class="detail-value">{{ tx.date | date:'dd/MM/yyyy HH:mm:ss' }}</span>
             </div>
 
             <div class="detail-row">
               <span class="detail-label">ID</span>
-              <span class="detail-value tx-id">{{ tx.transactionId }}</span>
+              <span class="detail-value tx-id">{{ tx.id }}</span>
             </div>
-
-            <button class="btn-receipt" (click)="downloadReceipt(tx.transactionId); $event.stopPropagation()"
-                    [disabled]="downloadingId === tx.transactionId">
-              <mat-icon>{{ downloadingId === tx.transactionId ? 'hourglass_top' : 'download' }}</mat-icon>
-              {{ downloadingId === tx.transactionId ? 'Gerando...' : 'Baixar Comprovante' }}
-            </button>
           </div>
         </div>
 
@@ -141,6 +130,10 @@ import { PaymentService, PixTransaction } from '../../../core/services/payment.s
     }
     .tx-icon.sent { background: #ffe0e0; color: #e53935; }
     .tx-icon.received { background: #e0f7f0; color: #00c853; }
+    .tx-icon.pix { background: #e0f7f0; color: #00c853; }
+    .tx-icon.boleto { background: #fff3e0; color: #ff6d00; }
+    .tx-icon.cartao { background: #e3f2fd; color: #1565c0; }
+    .tx-icon.fatura { background: #fce4ec; color: #c62828; }
     .tx-icon mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
     .tx-info { flex: 1; display: flex; flex-direction: column; }
@@ -177,36 +170,24 @@ import { PaymentService, PixTransaction } from '../../../core/services/payment.s
     .detail-value.bold { font-weight: 700; font-size: 0.95rem; }
     .tx-id { font-size: 0.7rem; font-family: monospace; color: #6B7280; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
 
-    /* Badge de status */
+    /* Badge de tipo */
     .status-badge {
       padding: 3px 10px; border-radius: 20px;
       font-size: 0.75rem; font-weight: 700;
     }
-    .badge-completed { background: #E8F5E9; color: #2E7D32; }
-    .badge-pendinganalysis, .badge-pending, .badge-approved, .badge-sourcedebited { background: #FFF3E0; color: #E65100; }
-    .badge-rejected, .badge-failed { background: #FFEBEE; color: #C62828; }
-    .badge-compensated { background: #F3E5F5; color: #6A1B9A; }
-    .badge-underreview { background: #E3F2FD; color: #1565C0; }
-
-    /* Botao comprovante */
-    .btn-receipt {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%; height: 44px; margin-top: 14px;
-      border: 2px solid #0047BB; border-radius: 12px;
-      background: rgba(0,71,187,0.05); color: #0047BB;
-      font-size: 0.85rem; font-weight: 700; cursor: pointer;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      transition: all 0.2s;
-    }
-    .btn-receipt:hover { background: rgba(0,71,187,0.12); }
-    .btn-receipt:disabled { opacity: 0.6; cursor: wait; }
-    .btn-receipt mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .badge-pix { background: #E8F5E9; color: #2E7D32; }
+    .badge-boleto { background: #FFF3E0; color: #E65100; }
+    .badge-cartao { background: #E3F2FD; color: #1565C0; }
+    .badge-fatura\ cartao, .badge-fatura { background: #FCE4EC; color: #C62828; }
+    .badge-pix_sent, .badge-pix_received { background: #E8F5E9; color: #2E7D32; }
+    .badge-card_purchase { background: #E3F2FD; color: #1565C0; }
+    .badge-transfer_in, .badge-salary { background: #E8F5E9; color: #2E7D32; }
 
     .load-more-btn { margin-top: 12px; }
   `]
 })
 export class StatementPageComponent implements OnInit {
-  transactions: PixTransaction[] = [];
+  transactions: StatementEntry[] = [];
   loading = true;
   loadingMore = false;
   hasMore = true;
@@ -214,7 +195,6 @@ export class StatementPageComponent implements OnInit {
   pageSize = 20;
   accountId = '';
   expandedId: string | null = null;
-  downloadingId: string | null = null;
 
   constructor(
     private auth: AuthService,
@@ -235,14 +215,14 @@ export class StatementPageComponent implements OnInit {
     this.loading = this.page === 1;
     this.loadingMore = this.page > 1;
 
-    this.paymentService.getHistory(this.accountId, this.page, this.pageSize).subscribe({
-      next: (txs) => {
+    this.paymentService.getStatement(this.accountId, this.page, this.pageSize).subscribe({
+      next: (res) => {
         if (this.page === 1) {
-          this.transactions = txs;
+          this.transactions = res.items;
         } else {
-          this.transactions = [...this.transactions, ...txs];
+          this.transactions = [...this.transactions, ...res.items];
         }
-        this.hasMore = txs.length === this.pageSize;
+        this.hasMore = this.page < res.totalPages;
         this.loading = false;
         this.loadingMore = false;
       },
@@ -259,67 +239,48 @@ export class StatementPageComponent implements OnInit {
     this.loadTransactions();
   }
 
-  toggleExpand(tx: PixTransaction) {
-    if (this.expandedId === tx.transactionId) {
-      this.expandedId = null;
-    } else {
-      this.expandedId = tx.transactionId;
-    }
+  toggleExpand(tx: StatementEntry) {
+    this.expandedId = this.expandedId === tx.id ? null : tx.id;
   }
 
-  isIncoming(tx: PixTransaction): boolean {
-    return tx.destinationAccountId === this.accountId;
+  getTxClass(tx: StatementEntry): string {
+    const t = tx.type.toLowerCase();
+    if (t.includes('pix')) return 'pix';
+    if (t.includes('boleto')) return 'boleto';
+    if (t.includes('cartao') || t.includes('card')) return 'cartao';
+    if (t.includes('fatura')) return 'fatura';
+    return tx.isCredit ? 'received' : 'sent';
   }
 
-  getTxClass(tx: PixTransaction): string {
-    return this.isIncoming(tx) ? 'received' : 'sent';
+  getTxIcon(tx: StatementEntry): string {
+    const t = tx.type.toLowerCase();
+    if (t.includes('pix')) return 'flash_on';
+    if (t.includes('boleto')) return 'receipt_long';
+    if (t.includes('cartao') || t.includes('card')) return 'credit_card';
+    if (t.includes('fatura')) return 'payment';
+    return tx.isCredit ? 'call_received' : 'call_made';
   }
 
-  getTxIcon(tx: PixTransaction): string {
-    return this.isIncoming(tx) ? 'call_received' : 'call_made';
+  getTxLabel(tx: StatementEntry): string {
+    if (tx.description) return tx.description;
+    return tx.isCredit ? 'Credito' : 'Debito';
   }
 
-  getTxLabel(tx: PixTransaction): string {
-    if (this.isIncoming(tx)) return 'Pix Recebido';
-    return tx.description || 'Pix Enviado';
-  }
-
-  getStatusLabel(status: string): string {
+  getTypeLabel(type: string): string {
     const labels: Record<string, string> = {
-      'Completed': 'Concluido',
-      'PendingAnalysis': 'Em analise',
-      'Pending': 'Processando',
-      'Approved': 'Aprovado',
-      'Rejected': 'Rejeitado',
-      'Failed': 'Falhou',
-      'Compensated': 'Estornado',
-      'UnderReview': 'Em revisao',
-      'SourceDebited': 'Processando'
+      'PIX': 'Pix',
+      'Pix': 'Pix',
+      'Boleto': 'Boleto',
+      'Cartao': 'Cartao',
+      'Fatura Cartao': 'Fatura',
+      'PIX_SENT': 'Pix Enviado',
+      'PIX_RECEIVED': 'Pix Recebido',
+      'BOLETO': 'Boleto',
+      'CARD_PURCHASE': 'Cartao',
+      'TRANSFER_IN': 'Transferencia',
+      'SALARY': 'Salario'
     };
-    return labels[status] || status;
-  }
-
-  downloadReceipt(txId: string) {
-    this.downloadingId = txId;
-    const token = localStorage.getItem('krt_token');
-    const url = 'http://localhost:5000/api/v1/pix/receipt/' + txId;
-    fetch(url, { headers: { Authorization: 'Bearer ' + (token || '') } })
-      .then(r => {
-        if (!r.ok) throw new Error('Erro');
-        return r.blob();
-      })
-      .then(blob => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'comprovante-pix-' + txId.substring(0, 8) + '.pdf';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        this.downloadingId = null;
-      })
-      .catch(() => {
-        alert('Comprovante indisponivel para esta transacao.');
-        this.downloadingId = null;
-      });
+    return labels[type] || type;
   }
 
   goBack() {
