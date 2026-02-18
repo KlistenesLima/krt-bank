@@ -404,7 +404,7 @@ export class CardsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.accountId = localStorage.getItem('krt_account_id') || '';
-    this.accountBalance = parseFloat(localStorage.getItem('krt_balance') || '0');
+    this.accountBalance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
     if (this.accountId) {
       this.loadCard();
     } else {
@@ -475,7 +475,7 @@ export class CardsPageComponent implements OnInit {
         this.paying = false;
         this.lastPayResult = res;
         // Update localStorage balance
-        localStorage.setItem('krt_balance', res.accountBalance.toString());
+        localStorage.setItem('krt_account_balance', res.accountBalance.toString());
         this.accountBalance = res.accountBalance;
         this.step = 'success';
       },

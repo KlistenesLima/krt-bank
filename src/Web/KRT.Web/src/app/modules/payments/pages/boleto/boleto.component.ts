@@ -61,6 +61,10 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
             <span>Vencimento</span>
             <strong>{{ formatDate(chargeData?.dueDate) }}</strong>
           </div>
+          <div class="info-row digitable" *ngIf="chargeData?.digitableLine">
+            <span>Linha digitavel</span>
+            <strong style="font-size:0.72rem;word-break:break-all;text-align:right;max-width:60%">{{ chargeData?.digitableLine }}</strong>
+          </div>
           <div class="info-row">
             <span>Seu saldo</span>
             <strong>{{ formatCurrency(getBalance()) }}</strong>
