@@ -597,10 +597,17 @@ export class PixPageComponent {
 
     // Fluxo Copia e Cola com charge encontrada → simulate-payment
     if (this.isBrCode && this.chargeId) {
+      const accountId = localStorage.getItem('krt_account_id');
+      const body = accountId ? { payerAccountId: accountId } : {};
       this.http.post<any>(
-        `http://localhost:5000/api/v1/pix/charges/${this.chargeId}/simulate-payment`, {}, hdrs
+        `http://localhost:5000/api/v1/pix/charges/${this.chargeId}/simulate-payment`, body, hdrs
       ).subscribe({
-        next: () => { this.finishPix(); },
+        next: (res) => {
+          if (res.newBalance !== undefined && res.newBalance !== null) {
+            localStorage.setItem('krt_account_balance', String(res.newBalance));
+          }
+          this.finishPix();
+        },
         error: (err) => {
           this.errorMsg = err.error?.error || 'Erro ao processar pagamento';
           this.isLoading = false;

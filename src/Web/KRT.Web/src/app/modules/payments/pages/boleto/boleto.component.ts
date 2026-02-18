@@ -28,7 +28,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
                    (input)="maskBoleto($event)" maxlength="54" autocomplete="off">
             <mat-icon>qr_code</mat-icon>
           </div>
-          <span class="hint" *ngIf="code && code.length < 47">Digite os 47 dígitos do boleto</span>
+          <span class="hint" *ngIf="code && !isCodeValid()">Digite os dígitos do boleto (mínimo 36)</span>
         </div>
 
         <div class="error-msg" *ngIf="errorMsg">
@@ -216,7 +216,7 @@ export class BoletoComponent {
 
   maskBoleto(event: any) {
     let v = event.target.value.replace(/\D/g, '');
-    if (v.length > 47) v = v.slice(0, 47);
+    if (v.length > 48) v = v.slice(0, 48);
     let formatted = '';
     if (v.length > 0) formatted = v.slice(0, Math.min(5, v.length));
     if (v.length > 5) formatted += '.' + v.slice(5, Math.min(10, v.length));
@@ -241,7 +241,7 @@ export class BoletoComponent {
     return new Date(d).toLocaleDateString('pt-BR');
   }
 
-  isCodeValid(): boolean { return this.code.replace(/\D/g, '').length === 47; }
+  isCodeValid(): boolean { return this.code.replace(/\D/g, '').length >= 36; }
 
   searchBoleto() {
     this.isLoading = true;
