@@ -83,6 +83,14 @@ export interface CardBill {
   minimumPayment: number;
   dueDate: string;
   charges: CardBillCharge[];
+  payments: CardBillPayment[];
+}
+
+export interface CardBillPayment {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
 }
 
 export interface CardBillCharge {
