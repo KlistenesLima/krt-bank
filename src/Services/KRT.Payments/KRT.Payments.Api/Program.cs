@@ -93,9 +93,10 @@ builder.Services.AddSignalR(options =>
 });
 builder.Services.AddSingleton<ITransactionNotifier, SignalRTransactionNotifier>();
 
-// QR Code + PDF Receipt services
+// QR Code + PDF Receipt + Charge Payment services
 builder.Services.AddSingleton<KRT.Payments.Api.Services.QrCodeService>();
 builder.Services.AddSingleton<KRT.Payments.Api.Services.PdfReceiptService>();
+builder.Services.AddScoped<KRT.Payments.Api.Services.ChargePaymentService>();
 
 // Registrar PaymentsDbContext (Api.Data) para controllers novos
 builder.Services.AddDbContext<KRT.Payments.Api.Data.PaymentsDbContext>(options =>
@@ -213,6 +214,15 @@ for (int attempt = 1; attempt <= 10; attempt++)
             CREATE INDEX IF NOT EXISTS ""IX_CardCharges_ExternalId"" ON ""CardCharges"" (""ExternalId"");
         ";
         await cmd.ExecuteNonQueryAsync();
+        // Seed merchant account (AUREA Maison) if not exists
+        using var seedCmd = conn.CreateCommand();
+        seedCmd.CommandText = @"
+            INSERT INTO ""Accounts"" (""Id"", ""CustomerName"", ""Document"", ""Email"", ""Phone"", ""Balance"", ""Status"", ""Type"", ""Role"", ""RowVersion"", ""CreatedAt"")
+            VALUES ('11111111-1111-1111-1111-111111111111', 'AUREA Maison Joalheria', '12345678000199', 'financeiro@aureamaison.com.br', '', 0.00, 'Active', 'Checking', 'User', decode('00000000000000000000000000000001', 'hex'), NOW())
+            ON CONFLICT (""Id"") DO NOTHING;
+        ";
+        await seedCmd.ExecuteNonQueryAsync();
+
         Log.Information("Api.Data.PaymentsDbContext: tabelas criadas (tentativa {Attempt})", attempt);
         break;
     }

@@ -1,4 +1,5 @@
 using KRT.Payments.Api.Data;
+using KRT.Payments.Api.Services;
 using KRT.Payments.Domain.Entities;
 using KRT.Payments.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -13,8 +14,13 @@ namespace KRT.Payments.Api.Controllers;
 public class CardChargesController : ControllerBase
 {
     private readonly PaymentsDbContext _db;
+    private readonly ChargePaymentService _paymentService;
 
-    public CardChargesController(PaymentsDbContext db) => _db = db;
+    public CardChargesController(PaymentsDbContext db, ChargePaymentService paymentService)
+    {
+        _db = db;
+        _paymentService = paymentService;
+    }
 
     [HttpPost]
     public async Task<IActionResult> CreateCharge([FromBody] CreateCardChargeRequest request, CancellationToken ct)
@@ -167,6 +173,36 @@ public class CardChargesController : ControllerBase
                 c.AuthorizationCode,
                 c.CreatedAt
             })
+        });
+    }
+
+    /// POST /api/v1/cards/charges/{id}/simulate-payment — real banking payment for card charge
+    [HttpPost("{id:guid}/simulate-payment")]
+    public async Task<IActionResult> SimulatePayment(Guid id, [FromBody] SimulatePaymentRequest? request, CancellationToken ct)
+    {
+        var charge = await _db.CardCharges.FindAsync(new object[] { id }, ct);
+        if (charge == null) return NotFound(new { error = "Cobranca nao encontrada" });
+
+        if (charge.Status != CardChargeStatus.Approved)
+            return BadRequest(new { error = $"Cobranca em status {charge.Status}, nao pode ser paga" });
+
+        var result = await _paymentService.PreparePaymentAsync(
+            request?.PayerAccountId, null, charge.Amount,
+            "Cartao", $"Cartao credito - {charge.Description}", "AUREA Maison Joalheria", ct);
+
+        if (!result.Success)
+            return BadRequest(new { error = result.Error });
+
+        charge.Status = CardChargeStatus.Settled;
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new
+        {
+            chargeId = charge.Id,
+            status = "Settled",
+            amount = charge.Amount,
+            payerAccountId = result.PayerAccountId,
+            newBalance = result.NewBalance
         });
     }
 }
