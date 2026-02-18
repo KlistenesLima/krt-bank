@@ -63,4 +63,43 @@ export class CardService {
   updateSettings(cardId: string, settings: any): Observable<any> {
     return this.http.put(`${this.baseUrl}/${cardId}/settings`, settings);
   }
+
+  getBill(cardId: string): Observable<CardBill> {
+    return this.http.get<CardBill>(`${this.baseUrl}/${cardId}/bill`);
+  }
+
+  payBill(cardId: string, amount: number, earlyPayment: boolean = false): Observable<PayBillResult> {
+    return this.http.post<PayBillResult>(`${this.baseUrl}/${cardId}/pay-bill`, { amount, earlyPayment });
+  }
+}
+
+export interface CardBill {
+  cardId: string;
+  last4Digits: string;
+  brand: string;
+  spendingLimit: number;
+  availableLimit: number;
+  currentBill: number;
+  minimumPayment: number;
+  dueDate: string;
+  charges: CardBillCharge[];
+}
+
+export interface CardBillCharge {
+  id: string;
+  description: string;
+  amount: number;
+  installments: number;
+  installmentAmount: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface PayBillResult {
+  cardId: string;
+  amountPaid: number;
+  remainingBill: number;
+  availableLimit: number;
+  accountBalance: number;
+  description: string;
 }
