@@ -23,6 +23,9 @@ public class PaymentsDbContext : DbContext
     public DbSet<BoletoCharge> BoletoCharges => Set<BoletoCharge>();
     public DbSet<CardCharge> CardCharges => Set<CardCharge>();
 
+    // === Cross-service: Accounts table (owned by Onboarding) ===
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+
     // === Entidades migradas (antes ConcurrentDictionary) ===
     public DbSet<InsurancePolicy> InsurancePolicies => Set<InsurancePolicy>();
     public DbSet<KycProfile> KycProfiles => Set<KycProfile>();
@@ -128,6 +131,14 @@ public class PaymentsDbContext : DbContext
             e.OwnsOne(x => x.Address);
             e.OwnsOne(x => x.Preferences);
             e.OwnsOne(x => x.Security);
+        });
+
+        // BankAccount (maps to existing Accounts table)
+        modelBuilder.Entity<BankAccount>(e =>
+        {
+            e.ToTable("Accounts");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Balance).HasPrecision(18, 2);
         });
 
         // PixCharge

@@ -1,6 +1,6 @@
 namespace KRT.Payments.Domain.Entities;
 
-public enum CardChargeStatus { Approved, Declined, Pending, Refunded }
+public enum CardChargeStatus { Approved, Declined, Pending, Refunded, Settled }
 
 public class CardCharge
 {
