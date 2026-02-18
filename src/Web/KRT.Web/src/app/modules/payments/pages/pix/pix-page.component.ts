@@ -1,10 +1,11 @@
-﻿import { AuthService } from '../../../../core/services/auth.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { AccountService } from '../../../../core/services/account.service';
 import { PaymentService } from '../../../../core/services/payment.service';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
+import { parseBRCode, BRCodeData } from '../../../../shared/utils/brcode-parser';
 
 @Component({
   selector: 'app-pix-page',
@@ -47,20 +48,74 @@ import { HttpClient } from '@angular/common/http';
             <div class="key-icon"><mat-icon>shuffle</mat-icon></div>
             <span>Aleatória</span>
           </button>
+          <button class="key-type-btn" [class.selected]="keyType === 'copiacola'" (click)="selectKey('copiacola')">
+            <div class="key-icon"><mat-icon>content_paste</mat-icon></div>
+            <span>Copia e Cola</span>
+          </button>
         </div>
 
-        <div class="field">
-          <label>{{ getKeyLabel() }}</label>
-          <div class="input-wrap">
-            <input type="text" [(ngModel)]="pixKey" [placeholder]="getKeyPlaceholder()"
-                   (input)="maskKey($event)" [maxlength]="getKeyMaxLength()" autocomplete="off">
-            <mat-icon>{{ getKeyIcon() }}</mat-icon>
+        <!-- Input normal (CPF, Email, Celular, Aleatória) -->
+        <ng-container *ngIf="keyType !== 'copiacola'">
+          <div class="field">
+            <label>{{ getKeyLabel() }}</label>
+            <div class="input-wrap">
+              <input type="text" [(ngModel)]="pixKey" [placeholder]="getKeyPlaceholder()"
+                     (input)="maskKey($event)" [maxlength]="getKeyMaxLength()" autocomplete="off">
+              <mat-icon>{{ getKeyIcon() }}</mat-icon>
+            </div>
           </div>
-        </div>
 
-        <button class="btn-primary" [disabled]="!isKeyValid()" (click)="step = 2">
-          CONTINUAR
-        </button>
+          <button class="btn-primary" [disabled]="!isKeyValid()" (click)="step = 2">
+            CONTINUAR
+          </button>
+        </ng-container>
+
+        <!-- Copia e Cola: textarea -->
+        <ng-container *ngIf="keyType === 'copiacola' && !brCodeParsed">
+          <div class="field">
+            <label>Cole o código PIX</label>
+            <textarea class="brcode-textarea" [(ngModel)]="brCodePayload"
+                      placeholder="Cole o código PIX Copia e Cola aqui"
+                      rows="5" (paste)="onBrCodePaste($event)"></textarea>
+          </div>
+          <div *ngIf="brCodeError" class="error-msg">{{ brCodeError }}</div>
+          <button class="btn-primary" [disabled]="!brCodePayload.trim() || isLoading" (click)="readBRCode()">
+            <span *ngIf="!isLoading">LER CÓDIGO</span>
+            <mat-spinner diameter="22" *ngIf="isLoading"></mat-spinner>
+          </button>
+        </ng-container>
+
+        <!-- Copia e Cola: resumo dos dados extraídos -->
+        <ng-container *ngIf="keyType === 'copiacola' && brCodeParsed && brCodeData">
+          <div class="brcode-summary">
+            <div class="summary-header">
+              <mat-icon>check_circle</mat-icon>
+              <span>Código PIX lido com sucesso</span>
+            </div>
+            <div class="confirm-card">
+              <div class="confirm-item">
+                <span class="confirm-key">Destinatário</span>
+                <span class="confirm-val">{{ brCodeData.merchantName }}</span>
+              </div>
+              <div class="confirm-item">
+                <span class="confirm-key">Chave PIX</span>
+                <span class="confirm-val">{{ brCodeData.pixKey }}</span>
+              </div>
+              <div class="confirm-item">
+                <span class="confirm-key">Valor</span>
+                <span class="confirm-val highlight">{{ formatCurrency(brCodeData.amount) }}</span>
+              </div>
+              <div class="confirm-item" *ngIf="brCodeData.city">
+                <span class="confirm-key">Cidade</span>
+                <span class="confirm-val">{{ brCodeData.city }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn-secondary" (click)="resetBrCode()">VOLTAR</button>
+            <button class="btn-primary flex-btn" (click)="goToConfirmBrCode()">CONTINUAR</button>
+          </div>
+        </ng-container>
       </div>
 
       <!-- STEP 2: Valor -->
@@ -114,6 +169,10 @@ import { HttpClient } from '@angular/common/http';
         <div class="step-label">Confirme os dados</div>
 
         <div class="confirm-card">
+          <div class="confirm-item" *ngIf="isBrCode && brCodeData">
+            <span class="confirm-key">Destinatário</span>
+            <span class="confirm-val">{{ brCodeData.merchantName }}</span>
+          </div>
           <div class="confirm-item">
             <span class="confirm-key">Chave Pix</span>
             <span class="confirm-val">{{ pixKey }}</span>
@@ -130,12 +189,16 @@ import { HttpClient } from '@angular/common/http';
             <span class="confirm-key">Descrição</span>
             <span class="confirm-val">{{ description }}</span>
           </div>
+          <div class="confirm-item" *ngIf="isBrCode && brCodeData && brCodeData.city">
+            <span class="confirm-key">Cidade</span>
+            <span class="confirm-val">{{ brCodeData.city }}</span>
+          </div>
         </div>
 
         <div *ngIf="errorMsg" class="error-msg">{{ errorMsg }}</div>
 
         <div class="btn-row">
-          <button class="btn-secondary" (click)="step = 2" [disabled]="isLoading">VOLTAR</button>
+          <button class="btn-secondary" (click)="onConfirmBack()" [disabled]="isLoading">VOLTAR</button>
           <button class="btn-primary flex-btn" (click)="confirmPix()" [disabled]="isLoading">
             <span *ngIf="!isLoading">CONFIRMAR PIX</span>
             <mat-spinner diameter="22" *ngIf="isLoading"></mat-spinner>
@@ -150,7 +213,7 @@ import { HttpClient } from '@angular/common/http';
         </div>
         <h2>Pix enviado!</h2>
         <p class="success-amount">{{ formatCurrency(getAmount()) }}</p>
-        <p class="success-dest">Para {{ pixKey }}</p>
+        <p class="success-dest">Para {{ isBrCode && brCodeData ? brCodeData.merchantName : pixKey }}</p>
         <div class="success-details" *ngIf="description">
           <span>{{ description }}</span>
         </div>
@@ -201,13 +264,13 @@ import { HttpClient } from '@angular/common/http';
 
     /* Key types */
     .key-types {
-      display: grid; grid-template-columns: repeat(4, 1fr);
+      display: grid; grid-template-columns: repeat(5, 1fr);
       gap: 10px; margin-bottom: 28px;
     }
     .key-type-btn {
       background: var(--bg-card); border: 2px solid var(--border); border-radius: 16px;
-      padding: 16px 8px; display: flex; flex-direction: column;
-      align-items: center; gap: 8px; cursor: pointer;
+      padding: 14px 4px; display: flex; flex-direction: column;
+      align-items: center; gap: 6px; cursor: pointer;
       transition: all 0.2s;
       font-family: 'Plus Jakarta Sans', sans-serif;
     }
@@ -216,13 +279,13 @@ import { HttpClient } from '@angular/common/http';
       border-color: #0047BB; background: rgba(0,71,187,0.04);
     }
     .key-icon {
-      width: 44px; height: 44px; border-radius: 14px;
+      width: 40px; height: 40px; border-radius: 12px;
       background: #F0F4FF; display: flex; align-items: center;
       justify-content: center;
     }
     .key-type-btn.selected .key-icon { background: rgba(0,71,187,0.1); }
-    .key-icon mat-icon { color: #0047BB; font-size: 22px; width: 22px; height: 22px; }
-    .key-type-btn span { font-size: 0.75rem; font-weight: 600; color: #555; }
+    .key-icon mat-icon { color: #0047BB; font-size: 20px; width: 20px; height: 20px; }
+    .key-type-btn span { font-size: 0.68rem; font-weight: 600; color: #555; text-align: center; line-height: 1.2; }
 
     /* Custom fields */
     .field { margin-bottom: 20px; }
@@ -244,6 +307,26 @@ import { HttpClient } from '@angular/common/http';
     }
     .input-wrap input::placeholder { color: #B0B8C4; }
     .input-wrap mat-icon { color: #9CA3AF; font-size: 22px; width: 22px; height: 22px; }
+
+    /* BRCode textarea */
+    .brcode-textarea {
+      width: 100%; min-height: 120px; border: 2px solid #E5E7EB;
+      border-radius: 14px; padding: 16px; font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem; resize: vertical; outline: none;
+      background: var(--bg-secondary); color: #1A1A2E;
+      transition: border-color 0.2s; box-sizing: border-box;
+      word-break: break-all; line-height: 1.5;
+    }
+    .brcode-textarea:focus { border-color: #0047BB; background: #fff; }
+    .brcode-textarea::placeholder { color: #B0B8C4; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem; }
+
+    /* BRCode summary */
+    .brcode-summary { margin-bottom: 4px; }
+    .summary-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 16px; color: #00C853; font-weight: 600; font-size: 0.9rem;
+    }
+    .summary-header mat-icon { font-size: 22px; width: 22px; height: 22px; }
 
     /* Amount */
     .amount-box {
@@ -329,9 +412,6 @@ import { HttpClient } from '@angular/common/http';
     .btn-receipt { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 320px; margin: 0 auto; height: 50px; border: 2px solid #0047BB; border-radius: 14px; background: rgba(0,71,187,0.06); color: #0047BB; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; }
     .btn-receipt:hover { background: rgba(0,71,187,0.12); }
     .btn-receipt mat-icon { font-size: 20px; width: 20px; height: 20px; }
-    .btn-receipt { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 320px; margin: 0 auto; height: 50px; border: 2px solid #0047BB; border-radius: 14px; background: rgba(0,71,187,0.06); color: #0047BB; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; }
-    .btn-receipt:hover { background: rgba(0,71,187,0.12); }
-    .btn-receipt mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
     ::ng-deep .mat-mdc-progress-spinner circle { stroke: white !important; }
   `]
@@ -348,9 +428,26 @@ export class PixPageComponent {
   isLoading = false;
   errorMsg = '';
 
+  // Copia e Cola
+  brCodePayload = '';
+  brCodeData: BRCodeData | null = null;
+  brCodeParsed = false;
+  brCodeError = '';
+  chargeId = '';
+  isBrCode = false;
+
   constructor(public router: Router, private snackBar: MatSnackBar, private http: HttpClient) {}
 
-  selectKey(type: string) { this.keyType = type; this.pixKey = ''; }
+  selectKey(type: string) {
+    this.keyType = type;
+    this.pixKey = '';
+    this.brCodePayload = '';
+    this.brCodeData = null;
+    this.brCodeParsed = false;
+    this.brCodeError = '';
+    this.chargeId = '';
+    this.isBrCode = false;
+  }
 
   getKeyLabel(): string {
     const m: any = { cpf: 'CPF do destinatário', email: 'Email do destinatário', phone: 'Celular do destinatário', random: 'Chave aleatória' };
@@ -369,7 +466,7 @@ export class PixPageComponent {
     return m[this.keyType];
   }
   getKeyTypeLabel(): string {
-    const m: any = { cpf: 'CPF', email: 'Email', phone: 'Celular', random: 'Chave aleatória' };
+    const m: any = { cpf: 'CPF', email: 'Email', phone: 'Celular', random: 'Chave aleatória', copiacola: 'Copia e Cola' };
     return m[this.keyType];
   }
 
@@ -417,17 +514,112 @@ export class PixPageComponent {
     return false;
   }
 
-  confirmPix() {
-    this.isLoading = true; this.errorMsg = '';
-    const accountId = localStorage.getItem('krt_account_id');
-    const token = localStorage.getItem('krt_token');
+  // ── Copia e Cola ──
 
+  onBrCodePaste(event: ClipboardEvent) {
+    setTimeout(() => this.readBRCode(), 100);
+  }
+
+  readBRCode() {
+    this.brCodeError = '';
+    const data = parseBRCode(this.brCodePayload);
+
+    if (!data.isValid) {
+      this.brCodeError = 'Código PIX inválido. Verifique e tente novamente.';
+      return;
+    }
+
+    if (data.amount <= 0) {
+      this.brCodeError = 'Código PIX com valor inválido.';
+      return;
+    }
+
+    this.brCodeData = data;
+    this.isLoading = true;
+
+    // Buscar charge pendente no backend
+    const token = localStorage.getItem('krt_token');
+    const hdrs = { headers: { Authorization: 'Bearer ' + token } };
+
+    this.http.post<any>('http://localhost:5000/api/v1/pix/charges/find-by-brcode', {
+      pixKey: data.pixKey,
+      amount: data.amount,
+      txId: data.txId || null
+    }, hdrs).subscribe({
+      next: (res) => {
+        this.chargeId = res.chargeId;
+        this.isLoading = false;
+        this.brCodeParsed = true;
+      },
+      error: () => {
+        // Charge não encontrada — ainda exibe os dados para PIX P2P
+        this.chargeId = '';
+        this.isLoading = false;
+        this.brCodeParsed = true;
+      }
+    });
+  }
+
+  resetBrCode() {
+    this.brCodePayload = '';
+    this.brCodeData = null;
+    this.brCodeParsed = false;
+    this.brCodeError = '';
+    this.chargeId = '';
+    this.isBrCode = false;
+  }
+
+  goToConfirmBrCode() {
+    if (!this.brCodeData) return;
+    this.pixKey = this.brCodeData.pixKey;
+    this.amountDisplay = this.brCodeData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    this.description = this.brCodeData.merchantName ? ('Pagamento ' + this.brCodeData.merchantName) : '';
+    this.isBrCode = true;
+    this.errorMsg = '';
+    this.step = 3;
+  }
+
+  onConfirmBack() {
+    if (this.isBrCode) {
+      this.step = 1;
+    } else {
+      this.step = 2;
+    }
+  }
+
+  // ── Confirmação ──
+
+  confirmPix() {
+    this.isLoading = true;
+    this.errorMsg = '';
+    const token = localStorage.getItem('krt_token');
+    const hdrs = { headers: { Authorization: 'Bearer ' + token } };
+
+    // Fluxo Copia e Cola com charge encontrada → simulate-payment
+    if (this.isBrCode && this.chargeId) {
+      this.http.post<any>(
+        `http://localhost:5000/api/v1/pix/charges/${this.chargeId}/simulate-payment`, {}, hdrs
+      ).subscribe({
+        next: () => { this.finishPix(); },
+        error: (err) => {
+          this.errorMsg = err.error?.error || 'Erro ao processar pagamento';
+          this.isLoading = false;
+        }
+      });
+      return;
+    }
+
+    // Fluxo normal (inclui Copia e Cola sem charge → PIX P2P)
+    const accountId = localStorage.getItem('krt_account_id');
     let searchValue = this.pixKey;
     if (this.keyType === 'cpf' || this.keyType === 'phone') {
       searchValue = this.pixKey.replace(/\D/g, '');
     }
-    const hdrs = { headers: { Authorization: 'Bearer ' + token } };
-    const resolveUrl = 'http://localhost:5000/api/v1/pix-keys/resolve?type=' + this.keyType + '&value=' + encodeURIComponent(searchValue);
+
+    const resolveUrl = 'http://localhost:5000/api/v1/pix-keys/resolve?type='
+      + (this.isBrCode ? 'email' : this.keyType)
+      + '&value=' + encodeURIComponent(searchValue);
+
     this.http.get<any>(resolveUrl, hdrs).subscribe({
       next: (dest: any) => {
         if (dest.accountId === accountId) {
@@ -455,7 +647,8 @@ export class PixPageComponent {
     const newBal = Math.max(0, this.getBalance() - this.getAmount());
     localStorage.setItem('krt_account_balance', String(newBal));
     const txs = JSON.parse(localStorage.getItem('krt_transactions') || '[]');
-    txs.unshift({ id: Date.now().toString(), amount: this.getAmount(), type: 'DEBIT', description: 'Pix para ' + this.pixKey, createdAt: new Date().toISOString() });
+    const destLabel = this.isBrCode && this.brCodeData ? this.brCodeData.merchantName : this.pixKey;
+    txs.unshift({ id: Date.now().toString(), amount: this.getAmount(), type: 'DEBIT', description: 'Pix para ' + destLabel, createdAt: new Date().toISOString() });
     localStorage.setItem('krt_transactions', JSON.stringify(txs.slice(0, 20)));
     this.step = 4;
   }
@@ -463,7 +656,6 @@ export class PixPageComponent {
   downloadReceipt() {
     const token = localStorage.getItem('krt_token');
     if (this.lastTxId) {
-      // Usar GET com ID real da transacao
       const url = 'http://localhost:5000/api/v1/pix/receipt/' + this.lastTxId;
       fetch(url, { headers: { Authorization: 'Bearer ' + token } })
         .then(r => r.blob())
@@ -474,7 +666,6 @@ export class PixPageComponent {
           a.click(); URL.revokeObjectURL(a.href);
         });
     } else {
-      // Fallback: usar POST com dados da tela
       const body = {
         transactionId: Date.now().toString(),
         sourceName: localStorage.getItem('krt_account_name') || 'Remetente',
@@ -498,15 +689,17 @@ export class PixPageComponent {
     }
   }
 
-  newPix() { this.step = 1; this.pixKey = ''; this.amountDisplay = ''; this.description = ''; this.lastTxId = ''; }
+  newPix() {
+    this.step = 1;
+    this.pixKey = '';
+    this.amountDisplay = '';
+    this.description = '';
+    this.lastTxId = '';
+    this.brCodePayload = '';
+    this.brCodeData = null;
+    this.brCodeParsed = false;
+    this.brCodeError = '';
+    this.chargeId = '';
+    this.isBrCode = false;
+  }
 }
-
-
-
-
-
-
-
-
-
-
