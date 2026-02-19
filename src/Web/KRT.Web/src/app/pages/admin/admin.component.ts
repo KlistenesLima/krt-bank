@@ -2,6 +2,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { environment } from '../../../environments/environment';
 import { Chart, registerables } from 'chart.js';
 
@@ -10,7 +11,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
