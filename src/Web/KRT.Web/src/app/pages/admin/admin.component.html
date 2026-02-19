@@ -14,24 +14,24 @@
 
     <nav class="sidebar-nav">
       <button [class.active]="activeSection === 'dashboard'" (click)="setSection('dashboard')">
-        <span class="nav-icon">&#128202;</span>
+        <mat-icon class="nav-icon">dashboard</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard</span>
       </button>
       <button [class.active]="activeSection === 'transactions'" (click)="setSection('transactions')">
-        <span class="nav-icon">&#128184;</span>
+        <mat-icon class="nav-icon">receipt_long</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Transações</span>
       </button>
       <button [class.active]="activeSection === 'accounts'" (click)="setSection('accounts')">
-        <span class="nav-icon">&#128101;</span>
+        <mat-icon class="nav-icon">people</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Contas</span>
       </button>
       <button [class.active]="activeSection === 'fraud'" (click)="setSection('fraud')">
-        <span class="nav-icon">&#128737;&#65039;</span>
+        <mat-icon class="nav-icon">shield</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Fraude</span>
         <span class="nav-badge" *ngIf="!sidebarCollapsed && fraudAlerts.length">{{ fraudAlerts.length }}</span>
       </button>
       <button [class.active]="activeSection === 'system'" (click)="setSection('system')">
-        <span class="nav-icon">&#9881;&#65039;</span>
+        <mat-icon class="nav-icon">settings</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Sistema</span>
       </button>
     </nav>
