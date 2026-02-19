@@ -106,35 +106,16 @@ public class BoletoChargesController : ControllerBase
         if (!result.Success)
             return BadRequest(new { error = result.Error });
 
-        charge.Status = BoletoChargeStatus.Confirmed;
+        // Boleto entra em compensação — será confirmado após 2 minutos pelo worker
+        charge.Status = BoletoChargeStatus.Processing;
         charge.PaidAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
-
-        if (!string.IsNullOrEmpty(charge.WebhookUrl))
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                    await http.PostAsJsonAsync(charge.WebhookUrl, new
-                    {
-                        chargeId = charge.Id,
-                        externalId = charge.ExternalId,
-                        status = "Confirmed",
-                        paidAt = charge.PaidAt,
-                        amount = charge.Amount,
-                        method = "boleto"
-                    });
-                }
-                catch { }
-            });
-        }
 
         return Ok(new
         {
             chargeId = charge.Id,
-            status = "Confirmed",
+            status = "Processing",
+            message = "Pagamento recebido. Boleto em compensacao (prazo: ~2 minutos).",
             paidAt = charge.PaidAt,
             amount = charge.Amount,
             payerAccountId = result.PayerAccountId,

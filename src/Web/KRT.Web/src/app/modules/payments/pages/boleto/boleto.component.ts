@@ -88,9 +88,11 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
       <!-- Step 3: Success -->
       <div class="boleto-content success fade-in" *ngIf="step === 'success'">
         <div class="success-check">
-          <mat-icon>check</mat-icon>
+          <mat-icon>schedule</mat-icon>
         </div>
-        <h2>Boleto pago!</h2>
+        <h2>Pagamento recebido!</h2>
+        <p class="compensacao-msg">Boleto em compensacao bancaria</p>
+        <p class="compensacao-timer">Prazo estimado: ~2 minutos</p>
         <p class="success-amount">{{ formatCurrency(chargeData?.amount || 0) }}</p>
         <p class="success-dest">AUREA Maison Joalheria</p>
         <p class="success-balance" *ngIf="newBalance !== null">Novo saldo: {{ formatCurrency(newBalance!) }}</p>
@@ -180,15 +182,17 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
     .success { text-align: center; padding-top: 60px; }
     .success-check {
       width: 80px; height: 80px; border-radius: 50%;
-      background: linear-gradient(135deg, #00C853, #00B894);
+      background: linear-gradient(135deg, #FF9800, #F57C00);
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 20px; box-shadow: 0 8px 30px rgba(0,200,83,0.3);
+      margin: 0 auto 20px; box-shadow: 0 8px 30px rgba(255,152,0,0.3);
     }
     .success-check mat-icon { color: #fff; font-size: 40px; width: 40px; height: 40px; }
     .success h2 { font-size: 1.4rem; color: #1A1A2E; margin-bottom: 8px; }
     .success-amount { font-size: 2.2rem; font-weight: 800; color: #0047BB; margin: 4px 0; }
     .success-dest { color: #9CA3AF; font-size: 0.92rem; }
     .success-balance { color: #00C853; font-size: 0.95rem; font-weight: 600; margin-top: 8px; }
+    .compensacao-msg { color: #FF9800; font-size: 0.95rem; font-weight: 600; margin: 0; }
+    .compensacao-timer { color: #9CA3AF; font-size: 0.85rem; margin: 4px 0 12px; }
 
     ::ng-deep .mat-mdc-progress-spinner circle { stroke: white !important; }
   `]
