@@ -8,7 +8,7 @@ import { Router, NavigationEnd } from '@angular/router';
     <button class="chat-fab" *ngIf="showFab" (click)="chatOpen = !chatOpen">
       <mat-icon>{{ chatOpen ? 'close' : 'chat' }}</mat-icon>
     </button>
-    <app-chat-dialog *ngIf="chatOpen" class="chat-float"></app-chat-dialog>
+    <app-chat-dialog *ngIf="chatOpen" (closeChat)="chatOpen = false" class="chat-float"></app-chat-dialog>
   `,
   styles: [`
     .chat-fab {

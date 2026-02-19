@@ -1,4 +1,4 @@
-﻿import { Component, ElementRef, ViewChild, AfterViewChecked, OnInit } from '@angular/core';
+﻿import { Component, ElementRef, ViewChild, AfterViewChecked, OnInit, Output, EventEmitter } from '@angular/core';
 import { ChatService, Message } from '../../../core/services/chat.service';
 
 @Component({
@@ -107,8 +107,9 @@ import { ChatService, Message } from '../../../core/services/chat.service';
 export class ChatDialogComponent implements OnInit, AfterViewChecked {
   messages: Message[] = [];
   inputText = '';
+  @Output() closeChat = new EventEmitter<void>();
   @ViewChild('scrollMe') private myScrollContainer!: ElementRef;
-  constructor(private chatService: ChatService, private _elementRef: ElementRef) {}
+  constructor(private chatService: ChatService) {}
   ngOnInit() {
     this.chatService.messages$.subscribe(msgs => { this.messages = msgs; });
   }
@@ -122,6 +123,6 @@ export class ChatDialogComponent implements OnInit, AfterViewChecked {
     this.inputText = '';
   }
   close() {
-    this._elementRef.nativeElement.dispatchEvent(new CustomEvent('close-chat', { bubbles: true }));
+    this.closeChat.emit();
   }
 }
