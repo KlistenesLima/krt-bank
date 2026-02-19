@@ -71,11 +71,15 @@ docker-compose.override.yml
 # Environment Variables & Secrets (CRITICAL)
 .env
 .env.local
+.env.production
 appsettings.Local.json
 appsettings.Development.json
 appsettings.Production.json
+appsettings.*.local.json
 # Keep only the template or the base appsettings.json
 !appsettings.json
+# Keep .env.example (template para novos devs)
+!.env.example
 
 # Test results
 TestResults/
