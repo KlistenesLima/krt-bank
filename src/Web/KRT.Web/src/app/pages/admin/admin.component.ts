@@ -19,11 +19,18 @@ export class AdminComponent implements OnInit, OnDestroy {
   pendingAccounts: any[] = [];
   fraudAlerts: any[] = [];
   metrics: any[] = [];
+  systemServices: any[] = [];
+  systemMetrics: any = null;
   activeSection = 'dashboard';
   loading = true;
   currentTime = '';
   activityFeed: any[] = [];
   sidebarCollapsed = false;
+  transactionsData: any[] = [];
+  transactionsKpis: any = null;
+  transactionsPagination: any = null;
+  txFilterType = '';
+  txPage = 1;
   private charts: Chart[] = [];
   private intervals: any[] = [];
 
@@ -33,7 +40,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.loadAll();
     this.updateTime();
     this.intervals.push(setInterval(() => this.updateTime(), 1000));
-    this.intervals.push(setInterval(() => this.addActivity(), 4000));
+    this.intervals.push(setInterval(() => this.loadActivity(), 30000));
   }
 
   ngOnDestroy(): void {
@@ -66,6 +73,55 @@ export class AdminComponent implements OnInit, OnDestroy {
       },
       error: () => {}
     });
+    this.http.get<any>(`${environment.apiUrl}/admin/system`).subscribe({
+      next: d => {
+        this.systemServices = d.services || [];
+        this.systemMetrics = d.metrics || null;
+      },
+      error: () => {}
+    });
+    this.loadActivity();
+    this.loadTransactions();
+  }
+
+  loadActivity(): void {
+    this.http.get<any>(`${environment.apiUrl}/admin/activity`).subscribe({
+      next: d => {
+        this.activityFeed = (d.activities || []).map((a: any) => ({
+          ...a,
+          text: a.description,
+          timeFormatted: new Date(a.time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        }));
+      },
+      error: () => {}
+    });
+  }
+
+  loadTransactions(): void {
+    const params: any = { page: this.txPage, pageSize: 20 };
+    if (this.txFilterType) params.type = this.txFilterType;
+    this.http.get<any>(`${environment.apiUrl}/admin/transactions`, { params }).subscribe({
+      next: d => {
+        this.transactionsData = d.transactions || [];
+        this.transactionsKpis = d.kpis || null;
+        this.transactionsPagination = d.pagination || null;
+      },
+      error: () => {}
+    });
+  }
+
+  filterTx(type: string): void {
+    this.txFilterType = this.txFilterType === type ? '' : type;
+    this.txPage = 1;
+    this.loadTransactions();
+  }
+
+  changeTxPage(delta: number): void {
+    if (!this.transactionsPagination) return;
+    const newPage = this.txPage + delta;
+    if (newPage < 1 || newPage > this.transactionsPagination.totalPages) return;
+    this.txPage = newPage;
+    this.loadTransactions();
   }
 
   setSection(section: string): void {
@@ -103,7 +159,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       data: {
         labels: this.metrics.map(m => this.getDayLabel(m.date)),
         datasets: [{
-          label: 'Transacoes',
+          label: 'Transações',
           data: this.metrics.map(m => m.transactions),
           borderColor: '#3b82f6',
           backgroundColor: gradient,
@@ -150,14 +206,17 @@ export class AdminComponent implements OnInit, OnDestroy {
     const canvas = document.getElementById('chartRevenue') as HTMLCanvasElement;
     if (!canvas || !this.dashboard?.revenue) return;
     const rev = this.dashboard.revenue;
+    const breakdown = rev.revenueBreakdown || [];
+    const labels = breakdown.map((b: any) => b.label);
+    const data = breakdown.map((b: any) => b.value);
 
     this.charts.push(new Chart(canvas, {
       type: 'doughnut',
       data: {
-        labels: ['PIX', 'Cartao', 'Seguros', 'Emprestimos'],
+        labels,
         datasets: [{
-          data: [rev.pixFees, rev.cardFees, rev.insurance, rev.loanInterest],
-          backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'],
+          data,
+          backgroundColor: ['#0047BB', '#7c3aed', '#f59e0b'],
           borderColor: '#0f172a',
           borderWidth: 3,
           hoverOffset: 8
@@ -256,25 +315,14 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.currentTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
-  addActivity(): void {
-    const types = [
-      { icon: 'north_east', text: 'PIX enviado R$ {amount}', color: '#e53935' },
-      { icon: 'south_west', text: 'PIX recebido R$ {amount}', color: '#00c853' },
-      { icon: 'person_add', text: 'Nova conta criada', color: '#2196f3' },
-      { icon: 'shield', text: 'Fraude detectada - Score {score}', color: '#ff9800' },
-      { icon: 'check_circle', text: 'Transacao aprovada', color: '#4caf50' },
-      { icon: 'block', text: 'Transacao bloqueada', color: '#e53935' },
-    ];
-    const t = types[Math.floor(Math.random() * types.length)];
-    const amount = (Math.random() * 5000 + 50).toFixed(2);
-    const score = Math.floor(Math.random() * 100);
-    this.activityFeed.unshift({
-      icon: t.icon,
-      text: t.text.replace('{amount}', amount).replace('{score}', score.toString()),
-      color: t.color,
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    });
-    if (this.activityFeed.length > 20) this.activityFeed.pop();
+  formatTxDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' +
+           d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  formatCurrency(val: number): string {
+    return Math.abs(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   getBarHeight(val: number): number {
@@ -296,7 +344,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   reviewAccount(id: string, approved: boolean): void {
     this.http.post(`${environment.apiUrl}/admin/accounts/${id}/review`, {
-      approved, notes: approved ? 'Aprovado pelo admin' : 'Documentacao insuficiente'
+      approved, notes: approved ? 'Aprovado pelo admin' : 'Documentação insuficiente'
     }).subscribe(() => {
       this.pendingAccounts = this.pendingAccounts.filter(a => a.id !== id);
     });
@@ -320,7 +368,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   getSeverityLabel(s: string): string {
-    return ({ critical: 'CRITICO', high: 'ALTO', medium: 'MEDIO', low: 'BAIXO' } as any)[s] || s;
+    return ({ critical: 'CRÍTICO', high: 'ALTO', medium: 'MÉDIO', low: 'BAIXO' } as any)[s] || s;
   }
 
   getTotalVolume(): string {
@@ -329,6 +377,18 @@ export class AdminComponent implements OnInit, OnDestroy {
     if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
     if (v >= 1000) return (v / 1000).toFixed(0) + 'K';
     return v.toFixed(0);
+  }
+
+  getServiceStatusClass(status: string): string {
+    if (status === 'healthy') return 'online';
+    if (status === 'degraded') return 'degraded';
+    return 'offline';
+  }
+
+  getServiceStatusLabel(status: string): string {
+    if (status === 'healthy') return 'Online';
+    if (status === 'degraded') return 'Degraded';
+    return 'Offline';
   }
 
   logout(): void {
