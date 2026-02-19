@@ -110,4 +110,9 @@ public class MetricsController : ControllerBase
             timestamp = DateTime.UtcNow
         });
     }
+
+    public static long GetTotalRequests() => Interlocked.Read(ref _totalRequests);
+    public static long GetTotalErrors() => Interlocked.Read(ref _totalErrors);
+    public static double GetAverageLatency() =>
+        _requestDurations.IsEmpty ? 0 : Math.Round(_requestDurations.Values.Average(), 1);
 }
