@@ -1,6 +1,6 @@
 namespace KRT.Payments.Domain.Entities;
 
-public enum BoletoChargeStatus { Pending, Confirmed, Expired, Cancelled }
+public enum BoletoChargeStatus { Pending, Processing, Confirmed, Expired, Cancelled }
 
 public class BoletoCharge
 {

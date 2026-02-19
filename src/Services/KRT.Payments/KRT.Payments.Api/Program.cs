@@ -36,6 +36,9 @@ builder.Services.AddKafkaConsumers(builder.Configuration);
 // RabbitMQ workers (Notifications + Receipts)
 builder.Services.AddRabbitMqFullWorkers(builder.Configuration);
 
+// Boleto compensation worker (confirma boletos após 2 min)
+builder.Services.AddHostedService<KRT.Payments.Api.Workers.BoletoCompensationWorker>();
+
 // 4.1 CorrelationId propagation em TODAS as chamadas HttpClient (service-to-service)
 builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
 builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>

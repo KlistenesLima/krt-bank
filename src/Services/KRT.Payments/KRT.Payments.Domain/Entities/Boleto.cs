@@ -62,13 +62,19 @@ public class Boleto
 
     public (bool success, string message) Pay(decimal? paidAmount = null)
     {
-        if (Status == BoletoStatus.Paid) return (false, "Boleto ja pago");
+        if (Status == BoletoStatus.Paid || Status == BoletoStatus.Processing) return (false, "Boleto ja pago");
         if (Status == BoletoStatus.Cancelled) return (false, "Boleto cancelado");
 
         PaidAmount = paidAmount ?? Amount;
         PaidAt = DateTime.UtcNow;
+        Status = BoletoStatus.Processing;
+        return (true, "Pagamento recebido. Boleto em compensacao.");
+    }
+
+    public void Compensate()
+    {
+        if (Status != BoletoStatus.Processing) return;
         Status = BoletoStatus.Paid;
-        return (true, "Boleto pago com sucesso");
     }
 
     public void Cancel()
@@ -86,6 +92,7 @@ public class Boleto
     public string GetStatusLabel() => Status switch
     {
         BoletoStatus.Pending => "Pendente",
+        BoletoStatus.Processing => "Em compensacao",
         BoletoStatus.Paid => "Pago",
         BoletoStatus.Overdue => "Vencido",
         BoletoStatus.Cancelled => "Cancelado",
