@@ -59,11 +59,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // 7. CORS
-builder.Services.AddCors(options =>
+if (builder.Environment.IsProduction())
 {
-    options.AddPolicy("AllowAll",
-        b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-});
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins(
+                    "https://bank.klisteneslima.dev",
+                    "https://command.klisteneslima.dev",
+                    "https://store.klisteneslima.dev",
+                    "https://api-kll.klisteneslima.dev")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
+else
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    });
+}
 
 builder.Services.AddHealthChecks();
 
@@ -98,7 +116,7 @@ app.UseSerilogRequestLogging(options =>
     };
 });
 
-app.UseCors("AllowAll");
+app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

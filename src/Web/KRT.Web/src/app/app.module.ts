@@ -6,6 +6,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { AdminKeyInterceptor } from './core/interceptors/admin-key.interceptor';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -128,8 +129,8 @@ const routes: Routes = [
     MatBadgeModule
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
-    // REMOVIDO: APP_INITIALIZER + KeycloakService (agora usamos JWT puro)
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: AdminKeyInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]
 })
