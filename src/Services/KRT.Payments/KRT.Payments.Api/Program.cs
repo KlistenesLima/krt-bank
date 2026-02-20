@@ -36,6 +36,9 @@ builder.Services.AddKafkaConsumers(builder.Configuration);
 // RabbitMQ workers (Notifications + Receipts)
 builder.Services.AddRabbitMqFullWorkers(builder.Configuration);
 
+// Boleto compensation worker (confirma boletos após 2 min)
+builder.Services.AddHostedService<KRT.Payments.Api.Workers.BoletoCompensationWorker>();
+
 // 4.1 CorrelationId propagation em TODAS as chamadas HttpClient (service-to-service)
 builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
 builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
@@ -93,9 +96,10 @@ builder.Services.AddSignalR(options =>
 });
 builder.Services.AddSingleton<ITransactionNotifier, SignalRTransactionNotifier>();
 
-// QR Code + PDF Receipt services
+// QR Code + PDF Receipt + Charge Payment services
 builder.Services.AddSingleton<KRT.Payments.Api.Services.QrCodeService>();
 builder.Services.AddSingleton<KRT.Payments.Api.Services.PdfReceiptService>();
+builder.Services.AddScoped<KRT.Payments.Api.Services.ChargePaymentService>();
 
 // Registrar PaymentsDbContext (Api.Data) para controllers novos
 builder.Services.AddDbContext<KRT.Payments.Api.Data.PaymentsDbContext>(options =>
@@ -154,6 +158,93 @@ for (int attempt = 1; attempt <= 10; attempt++)
         using var scope2 = app.Services.CreateScope();
         var apiDb = scope2.ServiceProvider.GetRequiredService<KRT.Payments.Api.Data.PaymentsDbContext>();
         try { apiDb.GetService<IRelationalDatabaseCreator>().CreateTables(); } catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07") { /* tabelas ja existem, OK */ }
+
+        // Garantir tabelas de charges com CREATE TABLE IF NOT EXISTS
+        var conn = apiDb.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS ""PixCharges"" (
+                ""Id"" uuid NOT NULL PRIMARY KEY,
+                ""ExternalId"" text NOT NULL DEFAULT '',
+                ""Amount"" numeric(18,2) NOT NULL,
+                ""Description"" text NOT NULL DEFAULT '',
+                ""QrCode"" text NOT NULL DEFAULT '',
+                ""QrCodeBase64"" text NOT NULL DEFAULT '',
+                ""Status"" text NOT NULL DEFAULT 'Pending',
+                ""PayerCpf"" text,
+                ""MerchantId"" text,
+                ""WebhookUrl"" text,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
+                ""PaidAt"" timestamp with time zone,
+                ""ExpiresAt"" timestamp with time zone NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_PixCharges_ExternalId"" ON ""PixCharges"" (""ExternalId"");
+
+            CREATE TABLE IF NOT EXISTS ""BoletoCharges"" (
+                ""Id"" uuid NOT NULL PRIMARY KEY,
+                ""ExternalId"" text NOT NULL DEFAULT '',
+                ""Amount"" numeric(18,2) NOT NULL,
+                ""Description"" text NOT NULL DEFAULT '',
+                ""Barcode"" text NOT NULL DEFAULT '',
+                ""DigitableLine"" text NOT NULL DEFAULT '',
+                ""Status"" text NOT NULL DEFAULT 'Pending',
+                ""PayerCpf"" text,
+                ""PayerName"" text,
+                ""MerchantId"" text,
+                ""WebhookUrl"" text,
+                ""DueDate"" timestamp with time zone NOT NULL DEFAULT now(),
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
+                ""PaidAt"" timestamp with time zone
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_BoletoCharges_ExternalId"" ON ""BoletoCharges"" (""ExternalId"");
+
+            CREATE TABLE IF NOT EXISTS ""CardCharges"" (
+                ""Id"" uuid NOT NULL PRIMARY KEY,
+                ""CardId"" uuid NOT NULL,
+                ""ExternalId"" text NOT NULL DEFAULT '',
+                ""Amount"" numeric(18,2) NOT NULL,
+                ""Description"" text NOT NULL DEFAULT '',
+                ""Status"" text NOT NULL DEFAULT 'Pending',
+                ""AuthorizationCode"" text NOT NULL DEFAULT '',
+                ""Installments"" integer NOT NULL DEFAULT 1,
+                ""InstallmentAmount"" numeric(18,2) NOT NULL DEFAULT 0,
+                ""MerchantId"" text,
+                ""WebhookUrl"" text,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_CardCharges_CardId"" ON ""CardCharges"" (""CardId"");
+            CREATE INDEX IF NOT EXISTS ""IX_CardCharges_ExternalId"" ON ""CardCharges"" (""ExternalId"");
+        ";
+        await cmd.ExecuteNonQueryAsync();
+        // Seed merchant account (AUREA Maison) if not exists
+        using var seedCmd = conn.CreateCommand();
+        seedCmd.CommandText = @"
+            INSERT INTO ""Accounts"" (""Id"", ""CustomerName"", ""Document"", ""Email"", ""Phone"", ""Balance"", ""Status"", ""Type"", ""Role"", ""RowVersion"", ""CreatedAt"")
+            VALUES ('11111111-1111-1111-1111-111111111111', 'AUREA Maison Joalheria', '12345678000199', 'financeiro@aureamaison.com.br', '', 0.00, 'Active', 'Checking', 'User', decode('00000000000000000000000000000001', 'hex'), NOW())
+            ON CONFLICT (""Id"") DO NOTHING;
+        ";
+        await seedCmd.ExecuteNonQueryAsync();
+
+        // Seed virtual card for main user (Klistenes Lima) if not exists
+        using var cardSeedCmd = conn.CreateCommand();
+        cardSeedCmd.CommandText = @"
+            INSERT INTO ""VirtualCards"" (""Id"", ""AccountId"", ""CardNumber"", ""CardholderName"",
+                ""ExpirationMonth"", ""ExpirationYear"", ""Cvv"", ""Last4Digits"", ""Brand"", ""Status"",
+                ""SpendingLimit"", ""SpentThisMonth"", ""IsContactless"", ""IsOnlinePurchase"", ""IsInternational"",
+                ""CvvExpiresAt"", ""CreatedAt"", ""UpdatedAt"")
+            VALUES (
+                'cccccccc-cccc-cccc-cccc-cccccccccccc',
+                'a1b2c3d4-0000-0000-0000-aabbccddeeff',
+                '4532789012347890', 'KLISTENES LIMA',
+                '12', '2031', '742', '7890', 0, 0,
+                5000.00, 0.00, true, true, false,
+                NOW() + INTERVAL '24 hours', NOW(), NOW()
+            )
+            ON CONFLICT (""Id"") DO NOTHING;
+        ";
+        await cardSeedCmd.ExecuteNonQueryAsync();
+
         Log.Information("Api.Data.PaymentsDbContext: tabelas criadas (tentativa {Attempt})", attempt);
         break;
     }

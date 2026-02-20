@@ -14,24 +14,24 @@
 
     <nav class="sidebar-nav">
       <button [class.active]="activeSection === 'dashboard'" (click)="setSection('dashboard')">
-        <span class="nav-icon">&#128202;</span>
+        <mat-icon class="nav-icon">dashboard</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Dashboard</span>
       </button>
       <button [class.active]="activeSection === 'transactions'" (click)="setSection('transactions')">
-        <span class="nav-icon">&#128184;</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Transacoes</span>
+        <mat-icon class="nav-icon">receipt_long</mat-icon>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Transações</span>
       </button>
       <button [class.active]="activeSection === 'accounts'" (click)="setSection('accounts')">
-        <span class="nav-icon">&#128101;</span>
+        <mat-icon class="nav-icon">people</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Contas</span>
       </button>
       <button [class.active]="activeSection === 'fraud'" (click)="setSection('fraud')">
-        <span class="nav-icon">&#128737;&#65039;</span>
+        <mat-icon class="nav-icon">shield</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Fraude</span>
         <span class="nav-badge" *ngIf="!sidebarCollapsed && fraudAlerts.length">{{ fraudAlerts.length }}</span>
       </button>
       <button [class.active]="activeSection === 'system'" (click)="setSection('system')">
-        <span class="nav-icon">&#9881;&#65039;</span>
+        <mat-icon class="nav-icon">settings</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Sistema</span>
       </button>
     </nav>
@@ -46,7 +46,7 @@
     <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar-left">
-        <h1>{{ activeSection === 'dashboard' ? 'Command Center' : activeSection === 'transactions' ? 'Monitor de Transacoes' : activeSection === 'accounts' ? 'Gestao de Contas' : activeSection === 'fraud' ? 'Central de Fraude' : 'Status do Sistema' }}</h1>
+        <h1>{{ activeSection === 'dashboard' ? 'Command Center' : activeSection === 'transactions' ? 'Monitor de Transações' : activeSection === 'accounts' ? 'Gestão de Contas' : activeSection === 'fraud' ? 'Central de Fraude' : 'Status do Sistema' }}</h1>
       </div>
       <div class="topbar-right">
         <span class="live-indicator">
@@ -77,11 +77,11 @@
         </div>
         <div class="kpi-card accent-blue">
           <div class="kpi-header">
-            <span class="kpi-label">Transacoes Hoje</span>
+            <span class="kpi-label">Transações Hoje</span>
             <span class="kpi-trend up">&#8593; 8%</span>
           </div>
           <div class="kpi-value">{{ dashboard.transactions.today | number }}</div>
-          <div class="kpi-sub">Ticket medio: R$ {{ dashboard.transactions.avgTicket | number:'1.0-0' }}</div>
+          <div class="kpi-sub">Ticket médio: R$ {{ dashboard.transactions.avgTicket | number:'1.0-0' }}</div>
         </div>
         <div class="kpi-card accent-green">
           <div class="kpi-header">
@@ -89,7 +89,7 @@
             <span class="kpi-trend up">&#8593; 15%</span>
           </div>
           <div class="kpi-value">R$ {{ getTotalVolume() }}</div>
-          <div class="kpi-sub">{{ dashboard.transactions.thisMonth | number }} este mes</div>
+          <div class="kpi-sub">{{ dashboard.transactions.thisMonth | number }} este mês</div>
         </div>
         <div class="kpi-card accent-red">
           <div class="kpi-header">
@@ -105,8 +105,8 @@
       <div class="charts-row">
         <div class="chart-card chart-large">
           <div class="chart-header">
-            <h3>Volume de Transacoes</h3>
-            <span class="chart-period">Ultimos 14 dias</span>
+            <h3>Volume de Transações</h3>
+            <span class="chart-period">Últimos 14 dias</span>
           </div>
           <div class="chart-canvas-wrapper">
             <canvas id="chartTransactions"></canvas>
@@ -114,7 +114,7 @@
         </div>
         <div class="chart-card chart-small">
           <div class="chart-header">
-            <h3>Receita por Produto</h3>
+            <h3>Receita por Método</h3>
           </div>
           <div class="chart-canvas-wrapper donut-wrapper">
             <canvas id="chartRevenue"></canvas>
@@ -132,8 +132,8 @@
           <div class="activity-feed">
             <div class="feed-item" *ngFor="let item of activityFeed">
               <span class="feed-dot" [style.background]="item.color"></span>
-              <span class="feed-text">{{ item.text }}</span>
-              <span class="feed-time">{{ item.time }}</span>
+              <span class="feed-text">{{ item.text }} <small class="feed-detail" *ngIf="item.detail">— {{ item.detail }}</small></span>
+              <span class="feed-time">{{ item.timeFormatted }}</span>
             </div>
             <div class="feed-empty" *ngIf="activityFeed.length === 0">
               Aguardando atividade...
@@ -145,7 +145,7 @@
       <!-- SYSTEM HEALTH ROW -->
       <div class="charts-row">
         <div class="chart-card full-width">
-          <div class="chart-header"><h3>Saude do Sistema</h3></div>
+          <div class="chart-header"><h3>Saúde do Sistema</h3></div>
           <div class="health-grid">
             <div class="health-item">
               <span class="health-dot green"></span>
@@ -164,7 +164,7 @@
             </div>
             <div class="health-item">
               <span class="health-dot blue"></span>
-              <span class="health-label">Sessoes Ativas</span>
+              <span class="health-label">Sessões Ativas</span>
               <span class="health-val">{{ dashboard.systemHealth.activeSessions }}</span>
             </div>
           </div>
@@ -183,7 +183,7 @@
           <span class="col-email">Email</span>
           <span class="col-status">KYC Status</span>
           <span class="col-risk">Risco</span>
-          <span class="col-actions">Acoes</span>
+          <span class="col-actions">Ações</span>
         </div>
         <div class="table-row" *ngFor="let a of pendingAccounts">
           <span class="col-name">
@@ -248,88 +248,101 @@
 
     <!-- ========== TRANSACTIONS ========== -->
     <div class="content-area" *ngIf="!loading && activeSection === 'transactions'">
+      <!-- KPI CARDS -->
+      <div class="kpi-grid" *ngIf="transactionsKpis">
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Total Transações</span></div>
+          <div class="kpi-value">{{ transactionsKpis.totalTransactions | number }}</div>
+          <div class="kpi-sub">{{ transactionsKpis.todayTransactions }} hoje</div>
+        </div>
+        <div class="kpi-card accent-blue">
+          <div class="kpi-header"><span class="kpi-label">Volume PIX</span></div>
+          <div class="kpi-value">R$ {{ transactionsKpis.pixVolume | number:'1.0-0' }}</div>
+          <div class="kpi-sub">{{ transactionsKpis.weekTransactions }} esta semana</div>
+        </div>
+        <div class="kpi-card accent-green">
+          <div class="kpi-header"><span class="kpi-label">Volume Boleto</span></div>
+          <div class="kpi-value">R$ {{ transactionsKpis.boletoVolume | number:'1.0-0' }}</div>
+          <div class="kpi-sub">Ticket médio: R$ {{ transactionsKpis.avgTicket | number:'1.0-0' }}</div>
+        </div>
+        <div class="kpi-card accent-red">
+          <div class="kpi-header"><span class="kpi-label">Volume Cartão</span></div>
+          <div class="kpi-value">R$ {{ transactionsKpis.cardVolume | number:'1.0-0' }}</div>
+          <div class="kpi-sub">Total: R$ {{ transactionsKpis.totalVolume | number:'1.0-0' }}</div>
+        </div>
+      </div>
+
+      <!-- VOLUME CHART -->
       <div class="charts-row">
         <div class="chart-card full-width">
           <div class="chart-header">
-            <h3>Volume Diario (R$)</h3>
-            <span class="chart-period">Ultimos 14 dias</span>
+            <h3>Volume Diário (R$)</h3>
+            <span class="chart-period">Últimos 14 dias</span>
           </div>
           <div class="chart-canvas-wrapper chart-tall">
             <canvas id="chartVolume"></canvas>
           </div>
         </div>
       </div>
-      <div class="section-stats">
-        <span class="stat-chip blue">{{ dashboard?.transactions?.today | number }} hoje</span>
-        <span class="stat-chip">{{ dashboard?.transactions?.thisWeek | number }} esta semana</span>
-        <span class="stat-chip green">{{ dashboard?.transactions?.thisMonth | number }} este mes</span>
+
+      <!-- FILTERS -->
+      <div class="tx-filters">
+        <button class="tx-filter-btn" [class.active]="txFilterType === ''" (click)="filterTx('')">Todos</button>
+        <button class="tx-filter-btn pix" [class.active]="txFilterType === 'PIX'" (click)="filterTx('PIX')">PIX</button>
+        <button class="tx-filter-btn boleto" [class.active]="txFilterType === 'BOLETO'" (click)="filterTx('BOLETO')">Boleto</button>
+        <button class="tx-filter-btn card" [class.active]="txFilterType === 'CARD'" (click)="filterTx('CARD')">Cartão</button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="data-table" *ngIf="transactionsData.length > 0">
+        <div class="table-header tx-table-header">
+          <span>Data</span>
+          <span>Tipo</span>
+          <span>Descrição</span>
+          <span>Contraparte</span>
+          <span class="col-right">Valor</span>
+        </div>
+        <div class="table-row tx-table-row" *ngFor="let tx of transactionsData">
+          <span class="tx-date">{{ formatTxDate(tx.date) }}</span>
+          <span>
+            <span class="tx-type-badge" [ngClass]="'badge-' + tx.type.toLowerCase()">{{ tx.type }}</span>
+          </span>
+          <span class="tx-desc">{{ tx.description }}</span>
+          <span class="tx-counter">{{ tx.counterpartyName || '—' }}</span>
+          <span class="col-right" [class.tx-credit]="tx.isCredit" [class.tx-debit]="!tx.isCredit">
+            {{ tx.isCredit ? '+' : '-' }} R$ {{ formatCurrency(tx.amount) }}
+          </span>
+        </div>
+      </div>
+      <div class="feed-empty" *ngIf="transactionsData.length === 0" style="padding: 40px; text-align: center; color: #94a3b8;">
+        Nenhuma transação encontrada
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="tx-pagination" *ngIf="transactionsPagination && transactionsPagination.totalPages > 1">
+        <button class="tx-page-btn" [disabled]="txPage <= 1" (click)="changeTxPage(-1)">&#9664;</button>
+        <span class="tx-page-info">{{ txPage }} de {{ transactionsPagination.totalPages }}</span>
+        <button class="tx-page-btn" [disabled]="txPage >= transactionsPagination.totalPages" (click)="changeTxPage(1)">&#9654;</button>
       </div>
     </div>
 
     <!-- ========== SYSTEM ========== -->
-    <div class="content-area" *ngIf="!loading && activeSection === 'system' && dashboard">
+    <div class="content-area" *ngIf="!loading && activeSection === 'system'">
       <div class="services-grid">
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>API Gateway</h4>
-          <span class="service-detail">Porta 5000 &#183; {{ dashboard.systemHealth.apiLatency }}</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>Payments API</h4>
-          <span class="service-detail">Porta 5002 &#183; .NET 8</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>Onboarding API</h4>
-          <span class="service-detail">Porta 5001 &#183; .NET 8</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>PostgreSQL</h4>
-          <span class="service-detail">Porta 5432 &#183; v16</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>Apache Kafka</h4>
-          <span class="service-detail">Porta 9092 &#183; Mensageria</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>RabbitMQ</h4>
-          <span class="service-detail">Porta 5672 &#183; AMQP</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>Redis</h4>
-          <span class="service-detail">Porta 6379 &#183; Cache</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>Seq (Logs)</h4>
-          <span class="service-detail">Porta 8081 &#183; Observabilidade</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>Fraud Worker</h4>
-          <span class="service-detail">Background &#183; Saga Pattern</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>PIX Keys API</h4>
-          <span class="service-detail">Porta 5003 &#183; Registry</span>
-        </div>
-        <div class="service-card online">
-          <div class="service-status"><span class="status-dot"></span> Online</div>
-          <h4>Angular Web</h4>
-          <span class="service-detail">Porta 4200 &#183; Frontend</span>
+        <div class="service-card" *ngFor="let svc of systemServices"
+             [ngClass]="getServiceStatusClass(svc.status)">
+          <div class="service-status">
+            <span class="status-dot"></span> {{ getServiceStatusLabel(svc.status) }}
+          </div>
+          <h4>{{ svc.service }}</h4>
+          <span class="service-detail">{{ svc.port ? 'Porta ' + svc.port + ' &#183; ' : '' }}{{ svc.detail }}</span>
         </div>
       </div>
       <div class="system-summary">
-        <div class="summary-item"><span>Uptime</span><strong>{{ dashboard.systemHealth.uptime }}</strong></div>
-        <div class="summary-item"><span>Taxa de Erro</span><strong>{{ dashboard.systemHealth.errorRate }}</strong></div>
-        <div class="summary-item"><span>Sessoes Ativas</span><strong>{{ dashboard.systemHealth.activeSessions }}</strong></div>
-        <div class="summary-item"><span>Containers</span><strong>11</strong></div>
+        <div class="summary-item"><span>Uptime</span><strong>{{ systemMetrics?.uptime || '-' }}</strong></div>
+        <div class="summary-item"><span>Taxa de Erro</span><strong>{{ systemMetrics?.errorRate != null ? systemMetrics.errorRate + '%' : '-' }}</strong></div>
+        <div class="summary-item"><span>Memória</span><strong>{{ systemMetrics?.memoryMb ? systemMetrics.memoryMb + ' MB' : '-' }}</strong></div>
+        <div class="summary-item"><span>Serviços</span><strong>{{ systemServices.length }}</strong></div>
       </div>
     </div>
   </main>

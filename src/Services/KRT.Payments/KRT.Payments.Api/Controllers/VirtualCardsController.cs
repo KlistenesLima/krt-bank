@@ -1,4 +1,5 @@
 ﻿using KRT.Payments.Api.Data;
+using KRT.Payments.Api.Services;
 using KRT.Payments.Domain.Entities;
 using KRT.Payments.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -120,8 +121,132 @@ public class VirtualCardsController : ControllerBase
         settings = new { c.IsContactless, c.IsOnlinePurchase, c.IsInternational }
     };
 
+    /// GET /api/v1/cards/{cardId}/bill — consultar fatura atual do cartão
+    [HttpGet("{cardId}/bill")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetBill(Guid cardId, CancellationToken ct)
+    {
+        var card = await _db.VirtualCards.FindAsync([cardId], ct);
+        if (card == null) return NotFound(new { error = "Cartao nao encontrado" });
+
+        var startOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var charges = await _db.CardCharges
+            .Where(c => c.CardId == cardId
+                && (c.Status == CardChargeStatus.Approved || c.Status == CardChargeStatus.Settled)
+                && c.CreatedAt >= startOfMonth)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync(ct);
+
+        // Buscar pagamentos de fatura do mês (registrados como StatementEntry)
+        var payments = await _db.StatementEntries
+            .Where(s => s.AccountId == card.AccountId
+                && s.Type == "Fatura Cartao"
+                && s.IsCredit == false
+                && s.Date >= startOfMonth)
+            .OrderByDescending(s => s.Date)
+            .ToListAsync(ct);
+
+        var currentBill = card.SpentThisMonth;
+        var dueDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 15, 0, 0, 0, DateTimeKind.Utc);
+        if (dueDate <= DateTime.UtcNow)
+            dueDate = dueDate.AddMonths(1);
+
+        return Ok(new
+        {
+            cardId = card.Id,
+            last4Digits = card.Last4Digits,
+            brand = card.Brand.ToString(),
+            spendingLimit = card.SpendingLimit,
+            availableLimit = card.AvailableLimit,
+            currentBill,
+            minimumPayment = Math.Round(currentBill * 0.15m, 2),
+            dueDate = dueDate.ToString("yyyy-MM-dd"),
+            charges = charges.Select(c => new
+            {
+                c.Id, c.Description, c.Amount, c.Installments, c.InstallmentAmount,
+                status = c.Status.ToString(), c.CreatedAt
+            }),
+            payments = payments.Select(p => new
+            {
+                p.Id, p.Description, p.Amount, p.Date
+            })
+        });
+    }
+
+    /// POST /api/v1/cards/{cardId}/pay-bill — pagar fatura (total, parcial ou adiantamento)
+    [HttpPost("{cardId}/pay-bill")]
+    [AllowAnonymous]
+    public async Task<IActionResult> PayBill(Guid cardId, [FromBody] PayBillRequest request, CancellationToken ct)
+    {
+        var card = await _db.VirtualCards.FindAsync([cardId], ct);
+        if (card == null) return NotFound(new { error = "Cartao nao encontrado" });
+
+        if (card.SpentThisMonth == 0)
+            return BadRequest(new { error = "Sem fatura pendente" });
+
+        if (request.Amount <= 0)
+            return BadRequest(new { error = "Valor deve ser maior que zero" });
+
+        if (request.Amount > card.SpentThisMonth)
+            return BadRequest(new { error = $"Valor excede fatura pendente (R$ {card.SpentThisMonth:N2})" });
+
+        // Buscar conta do pagador
+        BankAccount? payer = null;
+        if (request.PayerAccountId.HasValue)
+            payer = await _db.BankAccounts.FindAsync([request.PayerAccountId.Value], ct);
+
+        if (payer == null)
+            payer = await _db.BankAccounts.FindAsync([card.AccountId], ct);
+
+        if (payer == null)
+            return BadRequest(new { error = "Conta pagadora nao encontrada" });
+
+        if (payer.Balance < request.Amount)
+            return BadRequest(new { error = $"Saldo insuficiente (disponivel: R$ {payer.Balance:N2})" });
+
+        // Transação atômica: debitar conta + restaurar limite
+        payer.Balance -= request.Amount;
+        payer.UpdatedAt = DateTime.UtcNow;
+        payer.RowVersion = Guid.NewGuid().ToByteArray();
+
+        card.ReduceSpending(request.Amount);
+
+        var description = request.EarlyPayment == true
+            ? $"Adiantamento fatura cartao final {card.Last4Digits}"
+            : $"Pagamento fatura cartao final {card.Last4Digits}";
+
+        _db.StatementEntries.Add(new StatementEntry
+        {
+            Id = Guid.NewGuid(),
+            AccountId = payer.Id,
+            Date = DateTime.UtcNow,
+            Type = "Fatura Cartao",
+            Category = "Payment",
+            Amount = request.Amount,
+            Description = description,
+            CounterpartyName = $"Cartao *{card.Last4Digits}",
+            CounterpartyBank = "KRT Bank",
+            IsCredit = false,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new
+        {
+            cardId = card.Id,
+            amountPaid = request.Amount,
+            remainingBill = card.SpentThisMonth,
+            availableLimit = card.AvailableLimit,
+            accountBalance = payer.Balance,
+            description
+        });
+    }
+
     private static string FormatCardNumber(string n) => $"{n[..4]} {n[4..8]} {n[8..12]} {n[12..]}";
 }
 
 public record CreateCardRequest(Guid AccountId, string HolderName, string? Brand = "Visa");
 public record UpdateCardSettingsRequest(decimal? SpendingLimit, bool? IsContactless, bool? IsOnlinePurchase, bool? IsInternational);
+public record PayBillRequest(decimal Amount, Guid? PayerAccountId = null, bool? EarlyPayment = false);
