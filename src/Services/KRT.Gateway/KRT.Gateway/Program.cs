@@ -13,17 +13,36 @@ builder.Host.UseSerilog((context, config) =>
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-// RATE LIMITING (Fixed Window: 100 requests/minuto por IP)
+// RATE LIMITING (Fixed Window por IP)
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
+    // Global: 100 requests/min
     options.AddFixedWindowLimiter("fixed", opt =>
     {
         opt.PermitLimit = 100;
         opt.Window = TimeSpan.FromMinutes(1);
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit = 10;
+    });
+
+    // Admin: 30 requests/min
+    options.AddFixedWindowLimiter("admin", opt =>
+    {
+        opt.PermitLimit = 30;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 5;
+    });
+
+    // Charges: 50 requests/min
+    options.AddFixedWindowLimiter("charges", opt =>
+    {
+        opt.PermitLimit = 50;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 5;
     });
 
     options.OnRejected = async (context, token) =>
@@ -49,18 +68,36 @@ builder.Services.AddHealthChecks()
         timeout: TimeSpan.FromSeconds(10));
 
 // CORS
-builder.Services.AddCors(options =>
+if (builder.Environment.IsProduction())
 {
-    options.AddPolicy("AllowAngular",
-        b => b.WithOrigins("http://localhost:4200")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials());
-});
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins(
+                    "https://bank.klisteneslima.dev",
+                    "https://command.klisteneslima.dev",
+                    "https://store.klisteneslima.dev",
+                    "https://api-kll.klisteneslima.dev")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
+else
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins("http://localhost:4200")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
 
 var app = builder.Build();
 
-app.UseCors("AllowAngular");
+app.UseCors("CorsPolicy");
 
 // Rate Limiting
 app.UseRateLimiter();
@@ -110,6 +147,17 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
         };
         await context.Response.WriteAsJsonAsync(result);
     }
+});
+
+// Security Headers
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    ctx.Response.Headers.Append("X-Frame-Options", "DENY");
+    ctx.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+    ctx.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    ctx.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    await next();
 });
 
 // WebSocket support para SignalR
