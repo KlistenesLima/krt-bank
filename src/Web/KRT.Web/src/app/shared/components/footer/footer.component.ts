@@ -48,7 +48,7 @@ import { RouterModule } from '@angular/router';
           <div class="footer-col">
             <h4>Contato</h4>
             <ul>
-              <li><a href="mailto:klisteneswar3@gmail.com">klisteneswar3&#64;gmail.com</a></li>
+              <li><a href="mailto:klisteneswar2@hotmail.com">klisteneswar2&#64;hotmail.com</a></li>
               <li><a href="https://www.linkedin.com/in/klistenes-de-lima-leite-257209194/" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
               <li><a href="https://github.com/KlistenesLima" target="_blank" rel="noopener noreferrer">GitHub</a></li>
             </ul>
