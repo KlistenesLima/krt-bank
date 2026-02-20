@@ -87,8 +87,8 @@ services:
     ports: !override []
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
-      Security__ApiKey: "${KRT_API_KEY}"
-      Security__AdminApiKey: "${KRT_ADMIN_API_KEY}"
+      Security__ApiKey: "${KRT_API_KEY:?Set KRT_API_KEY}"
+      Security__AdminApiKey: "${KRT_ADMIN_API_KEY:?Set KRT_ADMIN_API_KEY}"
     restart: unless-stopped
     logging:
       driver: "json-file"

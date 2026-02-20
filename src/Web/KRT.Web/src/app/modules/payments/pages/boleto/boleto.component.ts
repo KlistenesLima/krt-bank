@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-boleto',
@@ -224,7 +225,7 @@ export class BoletoComponent {
   chargeData: any = null;
   newBalance: number | null = null;
 
-  private readonly API = 'http://localhost:5000/api/v1/boletos/charges';
+  private readonly API = environment.apiUrl + '/boletos/charges';
 
   constructor(public router: Router, private http: HttpClient) {}
 

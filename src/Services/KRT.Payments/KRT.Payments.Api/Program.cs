@@ -49,17 +49,17 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblies(typeof(ProcessPixCommand).Assembly));
 
 // 6. SECURITY (JWT / KEYCLOAK)
+var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
+        options.Authority = keycloakAuthority;
         options.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidIssuer = "http://localhost:8080/realms/krt-bank",
+            ValidateIssuer = false, // Desabilitado para demo — Keycloak issuer varia entre Docker/localhost/produção
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true
@@ -75,33 +75,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// 7. CORS
-if (builder.Environment.IsProduction())
+// 7. CORS (configurável via appsettings ou default)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] {
+        "http://localhost:4200",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://bank.klisteneslima.dev",
+        "https://store.klisteneslima.dev",
+        "https://admin.klisteneslima.dev",
+        "https://command.klisteneslima.dev",
+        "https://api-kll.klisteneslima.dev"
+    };
+builder.Services.AddCors(options =>
 {
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("CorsPolicy",
-            b => b.WithOrigins(
-                    "https://bank.klisteneslima.dev",
-                    "https://command.klisteneslima.dev",
-                    "https://store.klisteneslima.dev",
-                    "https://api-kll.klisteneslima.dev")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials());
-    });
-}
-else
-{
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("CorsPolicy",
-            b => b.WithOrigins("http://localhost:4200")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials());
-    });
-}
+    options.AddPolicy("CorsPolicy",
+        b => b.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
+});
 
 builder.Services.AddHealthChecks();
 
@@ -247,6 +240,15 @@ for (int attempt = 1; attempt <= 10; attempt++)
             CREATE INDEX IF NOT EXISTS ""IX_CardCharges_ExternalId"" ON ""CardCharges"" (""ExternalId"");
         ";
         await cmd.ExecuteNonQueryAsync();
+        // Seed payer account (Klistenes Lima) if not exists
+        using var payerSeedCmd = conn.CreateCommand();
+        payerSeedCmd.CommandText = @"
+            INSERT INTO ""Accounts"" (""Id"", ""CustomerName"", ""Document"", ""Email"", ""Phone"", ""Balance"", ""Status"", ""Type"", ""Role"", ""RowVersion"", ""CreatedAt"")
+            VALUES ('a1b2c3d4-0000-0000-0000-aabbccddeeff', 'Klístenes Lima', '12345678901', 'klistenes@email.com', '', 50000.00, 'Active', 'Checking', 'User', decode('00000000000000000000000000000002', 'hex'), NOW())
+            ON CONFLICT (""Id"") DO NOTHING;
+        ";
+        await payerSeedCmd.ExecuteNonQueryAsync();
+
         // Seed merchant account (AUREA Maison) if not exists
         using var seedCmd = conn.CreateCommand();
         seedCmd.CommandText = @"
@@ -255,6 +257,15 @@ for (int attempt = 1; attempt <= 10; attempt++)
             ON CONFLICT (""Id"") DO NOTHING;
         ";
         await seedCmd.ExecuteNonQueryAsync();
+
+        // Seed PIX key for merchant (aurea@krtbank.com.br)
+        using var pixKeySeedCmd = conn.CreateCommand();
+        pixKeySeedCmd.CommandText = @"
+            INSERT INTO ""PixKeys"" (""Id"", ""AccountId"", ""KeyType"", ""KeyValue"", ""IsActive"", ""CreatedAt"")
+            VALUES ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '11111111-1111-1111-1111-111111111111', 1, 'aurea@krtbank.com.br', true, NOW())
+            ON CONFLICT (""Id"") DO NOTHING;
+        ";
+        await pixKeySeedCmd.ExecuteNonQueryAsync();
 
         // Seed virtual card for main user (Klistenes Lima) if not exists
         using var cardSeedCmd = conn.CreateCommand();

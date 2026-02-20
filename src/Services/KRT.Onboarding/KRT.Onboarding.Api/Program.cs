@@ -32,17 +32,17 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblies(typeof(CreateAccountCommand).Assembly));
 
 // 6. SECURITY (JWT / KEYCLOAK)
+var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
+        options.Authority = keycloakAuthority;
         options.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidIssuer = "http://localhost:8080/realms/krt-bank",
+            ValidateIssuer = false, // Desabilitado para demo — Keycloak issuer varia entre Docker/localhost/produção
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true
@@ -58,30 +58,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// 7. CORS
-if (builder.Environment.IsProduction())
+// 7. CORS (configurável via appsettings ou default)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] {
+        "http://localhost:4200",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://bank.klisteneslima.dev",
+        "https://store.klisteneslima.dev",
+        "https://admin.klisteneslima.dev",
+        "https://command.klisteneslima.dev",
+        "https://api-kll.klisteneslima.dev"
+    };
+builder.Services.AddCors(options =>
 {
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("CorsPolicy",
-            b => b.WithOrigins(
-                    "https://bank.klisteneslima.dev",
-                    "https://command.klisteneslima.dev",
-                    "https://store.klisteneslima.dev",
-                    "https://api-kll.klisteneslima.dev")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials());
-    });
-}
-else
-{
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("CorsPolicy",
-            b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-    });
-}
+    options.AddPolicy("CorsPolicy",
+        b => b.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
+});
 
 builder.Services.AddHealthChecks();
 
