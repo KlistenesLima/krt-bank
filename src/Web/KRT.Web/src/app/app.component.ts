@@ -4,6 +4,7 @@ import { Router, NavigationEnd } from '@angular/router';
 @Component({
   selector: 'app-root',
   template: `
+    <app-demo-banner></app-demo-banner>
     <router-outlet></router-outlet>
     <button class="chat-fab" *ngIf="showFab" (click)="chatOpen = !chatOpen">
       <mat-icon>{{ chatOpen ? 'close' : 'chat' }}</mat-icon>
