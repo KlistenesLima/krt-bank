@@ -1,4 +1,4 @@
-﻿import { Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 
 @Component({
@@ -6,6 +6,7 @@ import { Router, NavigationEnd } from '@angular/router';
   template: `
     <app-demo-banner></app-demo-banner>
     <router-outlet></router-outlet>
+    <app-footer *ngIf="showFooter"></app-footer>
     <button class="chat-fab" *ngIf="showFab" (click)="chatOpen = !chatOpen">
       <mat-icon>{{ chatOpen ? 'close' : 'chat' }}</mat-icon>
     </button>
@@ -26,11 +27,17 @@ import { Router, NavigationEnd } from '@angular/router';
 export class AppComponent {
   chatOpen = false;
   showFab = false;
+  showFooter = false;
+
+  private footerRoutes = ['/about', '/resume', '/docs', '/login', '/register', '/portfolio'];
+
   constructor(private router: Router) {
     this.router.events.subscribe(e => {
       if (e instanceof NavigationEnd) {
-        this.showFab = !['/login', '/register'].includes(e.urlAfterRedirects);
+        const url = e.urlAfterRedirects;
+        this.showFab = !['/login', '/register'].includes(url);
         if (!this.showFab) this.chatOpen = false;
+        this.showFooter = this.footerRoutes.includes(url);
       }
     });
   }
