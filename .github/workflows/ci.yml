@@ -16,7 +16,7 @@ jobs:
         image: postgres:16-alpine
         env:
           POSTGRES_USER: krt
-          POSTGRES_PASSWORD: REDACTED_DB_PASSWORD
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: krtbank_test
         ports:
           - 5432:5432
@@ -38,7 +38,7 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
         env:
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=krtbank_test;Username=krt;Password=REDACTED_DB_PASSWORD"
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=krtbank_test;Username=krt;Password=${{ secrets.POSTGRES_PASSWORD }}"
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         if: always()
