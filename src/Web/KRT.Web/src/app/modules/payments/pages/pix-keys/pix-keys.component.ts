@@ -141,6 +141,19 @@ import { HttpClient } from '@angular/common/http';
     .limit-info span { font-size: 0.82rem; color: #9CA3AF; }
     .limit-bar { height: 4px; background: #E5E7EB; border-radius: 2px; margin-top: 8px; overflow: hidden; }
     .limit-fill { height: 100%; background: #0047BB; border-radius: 2px; transition: width 0.3s; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .content { padding: 20px 16px 100px; }
+      .type-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .type-btn { padding: 12px 8px; }
+      .type-btn span { font-size: 0.75rem; }
+      .key-card { padding: 14px 12px; }
+      .info-banner { padding: 12px; font-size: 0.78rem; }
+    }
+    @media (max-width: 360px) {
+      .type-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   `]
 })
 export class PixKeysComponent implements OnInit {

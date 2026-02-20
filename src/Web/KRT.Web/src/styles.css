@@ -47,6 +47,7 @@
 
 html, body {
   height: 100%;
+  padding-top: 36px;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--krt-bg);
   color: var(--krt-text);
@@ -102,4 +103,26 @@ html, body {
 
 /* Bottom nav space */
 .page-with-nav { padding-bottom: 80px; }
+
+/* ============================================
+   RESPONSIVE — Mobile-first adjustments
+   ============================================ */
+@media (max-width: 768px) {
+  html, body { padding-top: 50px; }
+}
+@media (max-width: 480px) {
+  html, body { padding-top: 44px; }
+  .page-with-nav { padding-bottom: 90px; }
+}
+
+/* Prevent horizontal overflow globally */
+html { overflow-x: hidden; }
+
+/* Ensure minimum touch targets */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
 
