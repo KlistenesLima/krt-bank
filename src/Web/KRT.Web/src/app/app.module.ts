@@ -51,6 +51,7 @@ import { InboxPageComponent } from './modules/notifications/pages/inbox/inbox-pa
 import { ChatDialogComponent } from './shared/components/chat-dialog/chat-dialog.component';
 import { PixAreaComponent } from './modules/payments/components/pix-area.component';
 import { DemoBannerComponent } from './shared/components/demo-banner/demo-banner.component';
+import { PortfolioComponent } from './pages/portfolio/portfolio.component';
 
 // Guard
 import { AuthGuard } from './core/guards/auth.guard';
@@ -59,6 +60,7 @@ const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: CreateAccountComponent },
+  { path: 'portfolio', component: PortfolioComponent },
 
   // Rotas protegidas (AuthGuard verifica token JWT)
   { path: 'dashboard', component: DashboardPageComponent, canActivate: [AuthGuard] },
@@ -107,6 +109,7 @@ const routes: Routes = [
   ],
   imports: [
     DemoBannerComponent,
+    PortfolioComponent,
     ThemeToggleComponent,
     ToastComponent,
     ConnectionStatusComponent,
