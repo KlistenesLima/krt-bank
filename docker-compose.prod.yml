@@ -69,7 +69,7 @@ services:
     ports:
       - "5000:80"
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Docker
     restart: unless-stopped
     logging:
       driver: "json-file"
@@ -86,7 +86,7 @@ services:
   payments-api:
     ports: !override []
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Docker
       Security__ApiKey: "${KRT_API_KEY}"
       Security__AdminApiKey: "${KRT_ADMIN_API_KEY}"
     restart: unless-stopped
@@ -105,7 +105,7 @@ services:
   onboarding-api:
     ports: !override []
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Docker
     restart: unless-stopped
     logging:
       driver: "json-file"
