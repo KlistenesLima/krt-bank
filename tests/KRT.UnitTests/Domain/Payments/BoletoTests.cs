@@ -19,7 +19,7 @@ public class BoletoTests
         var b = Boleto.Generate(Guid.NewGuid(), "Empresa", "", 100m, DateTime.UtcNow.AddDays(10), "");
         var (ok, _) = b.Pay();
         Assert.True(ok);
-        Assert.Equal(BoletoStatus.Paid, b.Status);
+        Assert.Equal(BoletoStatus.Processing, b.Status);
         Assert.NotNull(b.PaidAt);
     }
 
@@ -37,6 +37,7 @@ public class BoletoTests
     {
         var b = Boleto.Generate(Guid.NewGuid(), "X", "", 50m, DateTime.UtcNow.AddDays(5), "");
         b.Pay();
+        b.Compensate();
         Assert.Throws<InvalidOperationException>(() => b.Cancel());
     }
 
