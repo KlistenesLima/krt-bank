@@ -1,0 +1,58 @@
+<div class="boletos-page">
+  <h2>Boletos</h2>
+
+  <div class="tabs">
+    <button [class.active]="activeTab === 'list'" (click)="activeTab = 'list'">Meus Boletos</button>
+    <button [class.active]="activeTab === 'generate'" (click)="activeTab = 'generate'">Gerar Boleto</button>
+    <button [class.active]="activeTab === 'pay'" (click)="activeTab = 'pay'">Pagar Boleto</button>
+  </div>
+
+  <!-- Lista -->
+  <div *ngIf="activeTab === 'list'" class="boleto-list">
+    <div class="boleto-card" *ngFor="let b of boletos">
+      <div class="card-top">
+        <div>
+          <span class="beneficiary">{{ b.beneficiaryName }}</span>
+          <span class="due">Vence: {{ b.dueDate | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <span class="status-badge" [ngClass]="getStatusClass(b.status)">{{ b.status }}</span>
+      </div>
+      <div class="amount">R$ {{ b.amount | number:'1.2-2' }}</div>
+      <div class="barcode-line" (click)="copyBarcode(b.digitableLine)">{{ b.digitableLine }} 📋</div>
+      <div class="card-actions" *ngIf="b.statusCode === 'Pending'">
+        <button class="btn-pay" (click)="payBoleto(b.id)">Pagar</button>
+        <button class="btn-cancel" (click)="cancelBoleto(b.id)">Cancelar</button>
+      </div>
+    </div>
+    <div *ngIf="!loading && boletos.length === 0" class="empty">Nenhum boleto</div>
+  </div>
+
+  <!-- Gerar -->
+  <div *ngIf="activeTab === 'generate'" class="form-panel">
+    <h3>Gerar Novo Boleto</h3>
+    <div class="form-grid">
+      <div class="field"><label>Beneficiario</label><input [(ngModel)]="genForm.beneficiaryName" placeholder="Nome"></div>
+      <div class="field"><label>CNPJ</label><input [(ngModel)]="genForm.beneficiaryCnpj" placeholder="00.000.000/0001-00"></div>
+      <div class="field"><label>Valor</label><input type="number" [(ngModel)]="genForm.amount" min="0.01"></div>
+      <div class="field"><label>Vencimento</label><input type="date" [(ngModel)]="genForm.dueDate"></div>
+      <div class="field full"><label>Descricao</label><input [(ngModel)]="genForm.description" placeholder="Referente a..."></div>
+    </div>
+    <button class="btn-submit" (click)="generate()">Gerar Boleto</button>
+    <div class="generated" *ngIf="generatedBoleto">
+      <h4>Boleto Gerado!</h4>
+      <p class="barcode-display" (click)="copyBarcode(generatedBoleto.digitableLine)">{{ generatedBoleto.digitableLine }} 📋</p>
+      <p>Valor: R$ {{ generatedBoleto.amount | number:'1.2-2' }}</p>
+    </div>
+  </div>
+
+  <!-- Pagar -->
+  <div *ngIf="activeTab === 'pay'" class="form-panel">
+    <h3>Pagar Boleto por Codigo de Barras</h3>
+    <div class="form-grid">
+      <div class="field full"><label>Codigo de barras</label><input [(ngModel)]="payForm.barcode" placeholder="Cole o codigo"></div>
+      <div class="field"><label>Valor</label><input type="number" [(ngModel)]="payForm.amount" min="0.01"></div>
+      <div class="field"><label>Beneficiario</label><input [(ngModel)]="payForm.beneficiaryName" placeholder="Nome"></div>
+    </div>
+    <button class="btn-submit" (click)="payByBarcode()">Pagar Boleto</button>
+  </div>
+</div>

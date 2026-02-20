@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using KRT.Onboarding.Application.Accounts.DTOs.Responses;
 using KRT.Onboarding.Domain.Entities;
 
@@ -10,11 +10,11 @@ public class MappingProfile : Profile
     {
         CreateMap<Account, AccountResponse>()
             .ForMember(dest => dest.AccountId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Number, opt => opt.MapFrom(src => src.AccountNumber))
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.CustomerName))
-            .ForMember(dest => dest.CustomerDocument, opt => opt.MapFrom(src => src.Cpf))
+            .ForMember(dest => dest.CustomerDocument, opt => opt.MapFrom(src => src.Document))
             .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Email))
             .ForMember(dest => dest.Balance, opt => opt.MapFrom(src => src.Balance))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => "Active")); // Mock status
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));
     }
 }

@@ -1,5 +1,10 @@
 ﻿export const environment = {
   production: false,
-  apiUrlOnboarding: 'http://localhost:5000/api',
-  apiUrlPayments: 'http://localhost:5001/api'
+  apiUrl: 'http://localhost:5000/api/v1',
+  adminApiKey: 'krt-admin-key-2026',
+  keycloak: {
+    url: 'http://localhost:8080',
+    realm: 'krt-bank',
+    clientId: 'krt-bank-app'
+  }
 };

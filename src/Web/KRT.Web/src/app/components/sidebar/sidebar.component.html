@@ -1,0 +1,25 @@
+<nav class="sidebar" [class.collapsed]="collapsed">
+  <div class="sidebar-header">
+    <div class="logo" *ngIf="!collapsed">
+      <span class="logo-icon">🏦</span>
+      <span class="logo-text">KRT Bank</span>
+    </div>
+    <button class="toggle-btn" (click)="toggle()">{{ collapsed ? '→' : '←' }}</button>
+  </div>
+
+  <div class="nav-content">
+    <div class="nav-group" *ngFor="let group of navGroups">
+      <span class="group-title" *ngIf="!collapsed">{{ group.title }}</span>
+      <a *ngFor="let item of group.items"
+        class="nav-item" [routerLink]="item.route" [class.active]="isActive(item.route)">
+        <span class="nav-icon">{{ item.icon }}</span>
+        <span class="nav-label" *ngIf="!collapsed">{{ item.label }}</span>
+        <span class="nav-badge" *ngIf="item.badge && item.badge > 0 && !collapsed">{{ item.badge }}</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="sidebar-footer" *ngIf="!collapsed">
+    <span class="version">v1.0 — Partes 1-24</span>
+  </div>
+</nav>

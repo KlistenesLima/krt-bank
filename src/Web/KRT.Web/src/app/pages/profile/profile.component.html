@@ -1,0 +1,91 @@
+<div class="profile-page" *ngIf="profile">
+  <div class="profile-header">
+    <div class="avatar-lg">{{ getInitials() }}</div>
+    <div class="header-info">
+      <h2>{{ profile.name }}</h2>
+      <span class="email">{{ profile.email }}</span>
+      <span class="since">Membro desde {{ profile.createdAt | date:'MMM yyyy' }}</span>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button [class.active]="activeSection === 'personal'" (click)="activeSection = 'personal'">Dados Pessoais</button>
+    <button [class.active]="activeSection === 'preferences'" (click)="activeSection = 'preferences'">Preferencias</button>
+    <button [class.active]="activeSection === 'security'" (click)="activeSection = 'security'">Seguranca</button>
+    <button [class.active]="activeSection === 'activity'" (click)="activeSection = 'activity'">Atividade</button>
+  </div>
+
+  <!-- Dados Pessoais -->
+  <div class="section" *ngIf="activeSection === 'personal'">
+    <div class="form-grid">
+      <div class="field"><label>Nome</label><input [(ngModel)]="profile.name"></div>
+      <div class="field"><label>Email</label><input [value]="profile.email" disabled></div>
+      <div class="field"><label>Telefone</label><input [(ngModel)]="profile.phone"></div>
+      <div class="field"><label>CPF</label><input [value]="profile.cpf" disabled></div>
+      <div class="field"><label>Rua</label><input [(ngModel)]="profile.address.street"></div>
+      <div class="field"><label>Cidade</label><input [(ngModel)]="profile.address.city"></div>
+      <div class="field"><label>Estado</label><input [(ngModel)]="profile.address.state"></div>
+      <div class="field"><label>CEP</label><input [(ngModel)]="profile.address.zipCode"></div>
+    </div>
+    <button class="btn-save" (click)="saveProfile()" [disabled]="saving">{{ saving ? 'Salvando...' : 'Salvar' }}</button>
+  </div>
+
+  <!-- Preferencias -->
+  <div class="section" *ngIf="activeSection === 'preferences'">
+    <div class="toggle-list">
+      <div class="toggle-item">
+        <div><span class="tl">Modo Escuro</span><span class="td">Ativar tema escuro</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.preferences.darkMode"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item">
+        <div><span class="tl">Notificacoes Email</span><span class="td">Receber emails</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.preferences.emailNotifications"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item">
+        <div><span class="tl">Notificacoes Push</span><span class="td">Notificacoes no navegador</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.preferences.pushNotifications"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item">
+        <div><span class="tl">Notificacoes SMS</span><span class="td">Receber SMS</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.preferences.smsNotifications"><span class="slider"></span></label>
+      </div>
+    </div>
+    <button class="btn-save" (click)="savePreferences()" [disabled]="saving">Salvar Preferencias</button>
+  </div>
+
+  <!-- Seguranca -->
+  <div class="section" *ngIf="activeSection === 'security'">
+    <div class="toggle-list">
+      <div class="toggle-item">
+        <div><span class="tl">Autenticacao 2 Fatores</span><span class="td">Seguranca extra no login</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.security.twoFactorEnabled"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item">
+        <div><span class="tl">Biometria</span><span class="td">Login por impressao digital</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.security.biometricEnabled"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item">
+        <div><span class="tl">Alertas de Transacao</span><span class="td">Notificar cada transacao</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.security.transactionNotifications"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item">
+        <div><span class="tl">Alertas de Login</span><span class="td">Notificar novos logins</span></div>
+        <label class="switch"><input type="checkbox" [(ngModel)]="profile.security.loginNotifications"><span class="slider"></span></label>
+      </div>
+    </div>
+    <button class="btn-save" (click)="saveSecurity()" [disabled]="saving">Salvar Seguranca</button>
+  </div>
+
+  <!-- Atividade -->
+  <div class="section" *ngIf="activeSection === 'activity'">
+    <div class="activity-list">
+      <div class="activity-item" *ngFor="let a of activities">
+        <div class="act-info">
+          <span class="act-action">{{ a.action }}</span>
+          <span class="act-detail">{{ a.device }} · {{ a.ip }}</span>
+        </div>
+        <span class="act-date">{{ a.date | date:'dd/MM HH:mm' }}</span>
+      </div>
+    </div>
+  </div>
+</div>

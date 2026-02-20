@@ -1,0 +1,93 @@
+﻿
+/* ============================
+   KRT Bank â€” Theme Variables
+   ============================ */
+:root,
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f0f0;
+  --bg-input: #ffffff;
+  --bg-toggle: rgba(0,0,0,0.05);
+  --bg-toggle-hover: rgba(0,0,0,0.1);
+  --text-primary: #1a1a2e;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --border: #e0e0e0;
+  --shadow: rgba(0,0,0,0.08);
+  --accent: #1a237e;
+  --accent-light: #e8eaf6;
+  --success: #2e7d32;
+  --error: #d32f2f;
+  --warning: #f57f17;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-card: #1e1e2d;
+  --bg-hover: #2a2a3d;
+  --bg-input: #252535;
+  --bg-toggle: rgba(255,255,255,0.08);
+  --bg-toggle-hover: rgba(255,255,255,0.15);
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaaaaa;
+  --text-muted: #777777;
+  --border: #333355;
+  --shadow: rgba(0,0,0,0.3);
+  --accent: #7c8aff;
+  --accent-light: #1a1a3e;
+  --success: #66bb6a;
+  --error: #ef5350;
+  --warning: #ffb74d;
+}
+
+/* Global dark mode overrides */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* KRT Design System Variables */
+:root,
+[data-theme="light"] {
+  --krt-bg: #f5f7fa;
+  --krt-gradient: linear-gradient(135deg, #0047BB 0%, #002a70 100%);
+  --krt-gradient-accent: linear-gradient(135deg, #00D4AA, #00B894);
+  --krt-text: #1a1a2e;
+  --krt-text-secondary: #666666;
+  --krt-text-muted: #999999;
+  --krt-primary: #0047BB;
+  --krt-accent-dark: #00B894;
+  --krt-radius: 16px;
+  --krt-radius-lg: 20px;
+}
+
+[data-theme="dark"] {
+  --krt-bg: #121212;
+  --krt-gradient: linear-gradient(135deg, #1a1a3e 0%, #0d1b2a 100%);
+  --krt-gradient-accent: linear-gradient(135deg, #00D4AA, #00B894);
+  --krt-text: #e0e0e0;
+  --krt-text-secondary: #aaaaaa;
+  --krt-text-muted: #777777;
+  --krt-primary: #7c8aff;
+  --krt-accent-dark: #4ECDC4;
+  --krt-radius: 16px;
+  --krt-radius-lg: 20px;
+}
+
+/* Dark mode transaction card overrides */
+[data-theme="dark"] .tx-card { background: var(--bg-card); border-color: var(--border); }
+[data-theme="dark"] .tx-card:hover { border-color: rgba(124,138,255,0.3); }
+[data-theme="dark"] .tx-card.expanded { box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+
+/* Global smooth transitions */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0s;
+}
+body.theme-transitioning, body.theme-transitioning * {
+  transition-duration: 0.3s !important;
+}

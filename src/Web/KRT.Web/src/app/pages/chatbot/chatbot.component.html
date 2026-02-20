@@ -1,0 +1,21 @@
+<div class="chat-page">
+  <div class="chat-container">
+    <div class="chat-header">
+      <span class="bot-avatar">🤖</span>
+      <div><span class="bot-name">KRT Assistant</span><span class="bot-status">Online</span></div>
+    </div>
+    <div class="chat-body" #chatBody>
+      <div *ngFor="let m of messages" class="msg" [class.user]="m.isUser" [class.bot]="!m.isUser">
+        <div class="msg-bubble">{{ m.text }}</div>
+        <div class="msg-suggestions" *ngIf="m.suggestions && !m.isUser">
+          <button *ngFor="let s of m.suggestions" (click)="sendSuggestion(s)">{{ s }}</button>
+        </div>
+      </div>
+      <div class="typing" *ngIf="isTyping"><span></span><span></span><span></span></div>
+    </div>
+    <div class="chat-input">
+      <input [(ngModel)]="inputText" placeholder="Digite sua mensagem..." (keyup.enter)="send()">
+      <button (click)="send()">➤</button>
+    </div>
+  </div>
+</div>

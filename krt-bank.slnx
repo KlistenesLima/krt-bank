@@ -4,8 +4,12 @@
     <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.Domain/KRT.BuildingBlocks.Domain.csproj" />
     <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.EventBus/KRT.BuildingBlocks.EventBus.csproj" />
     <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.Infrastructure/KRT.BuildingBlocks.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/KRT.BuildingBlocks.MessageBus/KRT.BuildingBlocks.MessageBus.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/KRT.Gateway/">
+    <Project Path="src/Services/KRT.Gateway/KRT.Gateway/KRT.Gateway.csproj" />
+  </Folder>
   <Folder Name="/src/Services/KRT.Onboarding/">
     <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Api/KRT.Onboarding.Api.csproj" />
     <Project Path="src/Services/KRT.Onboarding/KRT.Onboarding.Application/KRT.Onboarding.Application.csproj" />
@@ -20,6 +24,11 @@
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Application/KRT.Payments.Application.csproj" />
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Domain/KRT.Payments.Domain.csproj" />
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.Data/KRT.Payments.Infra.Data.csproj" />
+    <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.Http/KRT.Payments.Infra.Http.csproj" />
     <Project Path="src/Services/KRT.Payments/KRT.Payments.Infra.IoC/KRT.Payments.Infra.IoC.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KRT.IntegrationTests/KRT.IntegrationTests.csproj" />
+    <Project Path="tests/KRT.UnitTests/KRT.UnitTests.csproj" />
   </Folder>
 </Solution>

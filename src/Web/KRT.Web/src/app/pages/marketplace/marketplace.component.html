@@ -1,0 +1,38 @@
+<div class="mkt-page">
+  <h2>Marketplace</h2>
+
+  <div class="points-bar" *ngIf="points">
+    <div class="pts-item"><span class="pts-lbl">Saldo</span><span class="pts-val">{{ points.balance }} pts</span></div>
+    <div class="pts-item"><span class="pts-lbl">Ganhos</span><span class="pts-val green">{{ points.totalEarned }}</span></div>
+    <div class="pts-item"><span class="pts-lbl">Resgatados</span><span class="pts-val">{{ points.totalRedeemed }}</span></div>
+  </div>
+
+  <div class="tabs-row">
+    <button [class.active]="activeTab === 'offers'" (click)="activeTab = 'offers'">Ofertas</button>
+    <button [class.active]="activeTab === 'points'" (click)="activeTab = 'points'">Historico Pontos</button>
+  </div>
+
+  <div *ngIf="activeTab === 'offers'">
+    <div class="cat-filter">
+      <button [class.active]="!filterCategory" (click)="filterCategory = ''">Todas</button>
+      <button *ngFor="let c of categories" [class.active]="filterCategory === c" (click)="filterCategory = c">{{ c }}</button>
+    </div>
+    <div class="offers-grid">
+      <div class="offer-card" *ngFor="let o of filteredOffers">
+        <span class="offer-icon">{{ o.icon }}</span>
+        <span class="offer-partner">{{ o.partner }}</span>
+        <span class="offer-value">{{ o.value }}</span>
+        <p class="offer-desc">{{ o.description }}</p>
+        <button class="btn-redeem" (click)="redeemOffer(o)">Resgatar</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'points'" class="history-list">
+    <div class="hist-item" *ngFor="let h of history" [class.earned]="h.type === 'earned'" [class.redeemed]="h.type === 'redeemed'">
+      <span class="hist-action">{{ h.action }}</span>
+      <span class="hist-pts">{{ h.points > 0 ? '+' : '' }}{{ h.points }} pts</span>
+      <span class="hist-date">{{ h.date | date:'dd/MM' }}</span>
+    </div>
+  </div>
+</div>

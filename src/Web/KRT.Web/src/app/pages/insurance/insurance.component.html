@@ -1,0 +1,32 @@
+<div class="insurance-page">
+  <h2>Seguros</h2>
+  <div class="tabs">
+    <button [class.active]="activeTab === 'plans'" (click)="activeTab = 'plans'">Planos Disponiveis</button>
+    <button [class.active]="activeTab === 'my'" (click)="activeTab = 'my'">Meus Seguros ({{ policies.length }})</button>
+  </div>
+
+  <div class="plans-grid" *ngIf="activeTab === 'plans'">
+    <div class="plan-card" *ngFor="let p of plans">
+      <span class="plan-icon">{{ p.icon }}</span>
+      <h3>{{ p.name }}</h3>
+      <p class="desc">{{ p.description }}</p>
+      <div class="price">R$ {{ p.monthlyPrice | number:'1.2-2' }}<span>/mes</span></div>
+      <div class="coverage">Cobertura ate R$ {{ p.coverage | number:'1.0-0' }}</div>
+      <ul class="benefits"><li *ngFor="let b of p.benefits">✓ {{ b }}</li></ul>
+      <button class="btn-sub" (click)="subscribe(p)">Contratar</button>
+    </div>
+  </div>
+
+  <div class="my-policies" *ngIf="activeTab === 'my'">
+    <div class="policy-card" *ngFor="let p of policies">
+      <div class="pol-top">
+        <span class="pol-name">{{ p.planName }}</span>
+        <span class="pol-status" [class.active]="p.status === 'Ativo'">{{ p.status }}</span>
+      </div>
+      <div class="pol-info">R$ {{ p.monthlyPrice | number:'1.2-2' }}/mes · Cobertura: R$ {{ p.coverage | number:'1.0-0' }}</div>
+      <div class="pol-dates">Desde: {{ p.startDate | date:'dd/MM/yyyy' }} · Proximo pag: {{ p.nextPayment | date:'dd/MM/yyyy' }}</div>
+      <button class="btn-cancel" (click)="cancelPolicy(p.id)" *ngIf="p.status === 'Ativo'">Cancelar</button>
+    </div>
+    <div *ngIf="policies.length === 0" class="empty">Nenhum seguro contratado</div>
+  </div>
+</div>
