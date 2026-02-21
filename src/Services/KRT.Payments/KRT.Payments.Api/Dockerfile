@@ -2,7 +2,6 @@
 WORKDIR /app
 EXPOSE 80
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
     libfontconfig1 \
     fonts-dejavu-core \
     fonts-liberation \

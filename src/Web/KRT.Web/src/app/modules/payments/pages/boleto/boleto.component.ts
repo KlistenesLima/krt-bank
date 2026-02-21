@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-boleto',
@@ -196,25 +195,6 @@ import { environment } from '../../../../../environments/environment';
     .compensacao-timer { color: #9CA3AF; font-size: 0.85rem; margin: 4px 0 12px; }
 
     ::ng-deep .mat-mdc-progress-spinner circle { stroke: white !important; }
-
-    @media (max-width: 480px) {
-      .boleto-content { padding: 20px 14px; }
-      .barcode-area { padding: 24px 16px; border-radius: 14px; }
-      .barcode-area mat-icon { font-size: 36px; width: 36px; height: 36px; }
-      .input-wrap { padding: 0 12px; height: 48px; border-radius: 12px; }
-      .input-wrap input { font-size: 0.85rem; }
-      .info-row { padding: 14px 16px; }
-      .info-row span { font-size: 0.8rem; }
-      .info-row strong { font-size: 0.85rem; }
-      .btn-primary { height: 50px; font-size: 0.88rem; }
-      .success-amount { font-size: 1.8rem; }
-    }
-
-    @media (max-width: 360px) {
-      .boleto-content { padding: 16px 10px; }
-      .page-header { padding: 14px 12px; }
-      .page-header h1 { font-size: 0.95rem; }
-    }
   `]
 })
 export class BoletoComponent {
@@ -225,7 +205,7 @@ export class BoletoComponent {
   chargeData: any = null;
   newBalance: number | null = null;
 
-  private readonly API = environment.apiUrl + '/boletos/charges';
+  private readonly API = 'http://localhost:5000/api/v1/boletos/charges';
 
   constructor(public router: Router, private http: HttpClient) {}
 

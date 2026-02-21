@@ -14,7 +14,7 @@ services:
           memory: 512M
     environment:
       DOTNET_ThreadPool_MinThreads: 100
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=${POSTGRES_PASSWORD};Pooling=true;MinPoolSize=20;MaxPoolSize=200;Connection Idle Lifetime=300"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=KrtBank2026;Pooling=true;MinPoolSize=20;MaxPoolSize=200;Connection Idle Lifetime=300"
       Redis__Configuration: "redis:6379,abortConnect=false,connectTimeout=5000,syncTimeout=5000"
 
   onboarding-api:
@@ -28,7 +28,7 @@ services:
           memory: 256M
     environment:
       DOTNET_ThreadPool_MinThreads: 50
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=${POSTGRES_PASSWORD};Pooling=true;MinPoolSize=10;MaxPoolSize=100"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=krtbank;Username=krt;Password=KrtBank2026;Pooling=true;MinPoolSize=10;MaxPoolSize=100"
 
   gateway:
     deploy:

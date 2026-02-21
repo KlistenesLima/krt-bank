@@ -173,30 +173,3 @@ table {
   .filters-grid { grid-template-columns: 1fr 1fr; }
   .summary-bar { flex-direction: column; gap: 8px; }
 }
-
-@media (max-width: 480px) {
-  .statement-page { padding: 16px 12px; }
-  .header-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    h2 { font-size: 1.2rem; }
-  }
-  .export-buttons { width: 100%; }
-  .btn-export { flex: 1; text-align: center; }
-  .filters-grid { grid-template-columns: 1fr; }
-  .filter-actions { flex-direction: column; }
-  .filter-actions .btn-filter,
-  .filter-actions .btn-clear { width: 100%; text-align: center; }
-  table { font-size: 12px; min-width: 580px; }
-  .pagination {
-    flex-wrap: wrap;
-    .page-info { width: 100%; text-align: center; margin-left: 0; margin-top: 8px; }
-  }
-}
-
-@media (max-width: 360px) {
-  .statement-page { padding: 12px 8px; }
-  .summary-bar { font-size: 12px; padding: 10px 12px; }
-  .filters-panel { padding: 12px; }
-}

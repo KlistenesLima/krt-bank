@@ -67,26 +67,33 @@ builder.Services.AddHealthChecks()
         tags: new[] { "backend" },
         timeout: TimeSpan.FromSeconds(10));
 
-// CORS (configurável via appsettings ou default)
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? new[] {
-        "http://localhost:4200",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://bank.klisteneslima.dev",
-        "https://store.klisteneslima.dev",
-        "https://admin.klisteneslima.dev",
-        "https://command.klisteneslima.dev",
-        "https://api-kll.klisteneslima.dev"
-    };
-builder.Services.AddCors(options =>
+// CORS
+if (builder.Environment.IsProduction())
 {
-    options.AddPolicy("CorsPolicy",
-        b => b.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials());
-});
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins(
+                    "https://bank.klisteneslima.dev",
+                    "https://command.klisteneslima.dev",
+                    "https://store.klisteneslima.dev",
+                    "https://api-kll.klisteneslima.dev")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
+else
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins("http://localhost:4200")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
 
 var app = builder.Build();
 

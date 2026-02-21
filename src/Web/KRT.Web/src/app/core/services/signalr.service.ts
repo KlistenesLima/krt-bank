@@ -2,7 +2,6 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
-import { environment } from '../../../environments/environment';
 
 export interface BalanceUpdate {
   accountId: string;
@@ -61,7 +60,7 @@ export class SignalRService implements OnDestroy {
     const token = this.authService.getToken();
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(environment.apiUrl.replace('/api/v1', '') + '/hubs/transactions', {
+      .withUrl('http://localhost:5000/hubs/transactions', {
         accessTokenFactory: () => token || '',
         skipNegotiation: true,
         transport: signalR.HttpTransportType.WebSockets

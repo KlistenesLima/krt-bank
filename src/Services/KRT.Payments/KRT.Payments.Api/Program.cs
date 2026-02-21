@@ -75,26 +75,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// 7. CORS (configurável via appsettings ou default)
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? new[] {
-        "http://localhost:4200",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://bank.klisteneslima.dev",
-        "https://store.klisteneslima.dev",
-        "https://admin.klisteneslima.dev",
-        "https://command.klisteneslima.dev",
-        "https://api-kll.klisteneslima.dev"
-    };
-builder.Services.AddCors(options =>
+// 7. CORS
+if (builder.Environment.IsProduction())
 {
-    options.AddPolicy("CorsPolicy",
-        b => b.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials());
-});
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins(
+                    "https://bank.klisteneslima.dev",
+                    "https://command.klisteneslima.dev",
+                    "https://store.klisteneslima.dev",
+                    "https://api-kll.klisteneslima.dev")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
+else
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins("http://localhost:4200")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
 
 builder.Services.AddHealthChecks();
 
@@ -146,17 +153,6 @@ app.UseSerilogRequestLogging(options =>
         diagnosticContext.Set("CorrelationId",
             httpContext.Items["CorrelationId"]?.ToString() ?? "N/A");
     };
-});
-
-// Security Headers (defense-in-depth — Gateway also sets these)
-app.Use(async (ctx, next) =>
-{
-    ctx.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-    ctx.Response.Headers.Append("X-Frame-Options", "DENY");
-    ctx.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
-    ctx.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
-    ctx.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    await next();
 });
 
 app.UseCors("CorsPolicy");
@@ -240,15 +236,6 @@ for (int attempt = 1; attempt <= 10; attempt++)
             CREATE INDEX IF NOT EXISTS ""IX_CardCharges_ExternalId"" ON ""CardCharges"" (""ExternalId"");
         ";
         await cmd.ExecuteNonQueryAsync();
-        // Seed payer account (Klistenes Lima) if not exists
-        using var payerSeedCmd = conn.CreateCommand();
-        payerSeedCmd.CommandText = @"
-            INSERT INTO ""Accounts"" (""Id"", ""CustomerName"", ""Document"", ""Email"", ""Phone"", ""Balance"", ""Status"", ""Type"", ""Role"", ""RowVersion"", ""CreatedAt"")
-            VALUES ('a1b2c3d4-0000-0000-0000-aabbccddeeff', 'Klístenes Lima', '12345678901', 'klistenes@email.com', '', 50000.00, 'Active', 'Checking', 'User', decode('00000000000000000000000000000002', 'hex'), NOW())
-            ON CONFLICT (""Id"") DO NOTHING;
-        ";
-        await payerSeedCmd.ExecuteNonQueryAsync();
-
         // Seed merchant account (AUREA Maison) if not exists
         using var seedCmd = conn.CreateCommand();
         seedCmd.CommandText = @"
@@ -257,15 +244,6 @@ for (int attempt = 1; attempt <= 10; attempt++)
             ON CONFLICT (""Id"") DO NOTHING;
         ";
         await seedCmd.ExecuteNonQueryAsync();
-
-        // Seed PIX key for merchant (aurea@krtbank.com.br)
-        using var pixKeySeedCmd = conn.CreateCommand();
-        pixKeySeedCmd.CommandText = @"
-            INSERT INTO ""PixKeys"" (""Id"", ""AccountId"", ""KeyType"", ""KeyValue"", ""IsActive"", ""CreatedAt"")
-            VALUES ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '11111111-1111-1111-1111-111111111111', 1, 'aurea@krtbank.com.br', true, NOW())
-            ON CONFLICT (""Id"") DO NOTHING;
-        ";
-        await pixKeySeedCmd.ExecuteNonQueryAsync();
 
         // Seed virtual card for main user (Klistenes Lima) if not exists
         using var cardSeedCmd = conn.CreateCommand();

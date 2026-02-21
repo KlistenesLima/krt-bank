@@ -30,28 +30,3 @@
   .act-action { font-weight: 600; color: var(--text-primary, #333); display: block; }
   .act-detail { font-size: 12px; color: var(--text-secondary, #888); }
   .act-date { font-size: 12px; color: var(--text-secondary, #999); white-space: nowrap; } }
-
-@media (max-width: 768px) {
-  .nav-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 0;
-    button { white-space: nowrap; padding: 10px 12px; font-size: 13px; } }
-}
-
-@media (max-width: 480px) {
-  .profile-page { padding: 16px 12px; }
-  .profile-header { gap: 14px; }
-  .avatar-lg { width: 60px; height: 60px; font-size: 22px; }
-  .header-info {
-    h2 { font-size: 1.15rem; }
-    .email { font-size: 13px; }
-  }
-  .form-grid { grid-template-columns: 1fr; }
-  .section { padding: 16px; }
-  .activity-item { flex-direction: column; align-items: flex-start; gap: 4px;
-    .act-date { margin-top: 2px; } }
-}
-
-@media (max-width: 360px) {
-  .profile-page { padding: 12px 8px; }
-  .avatar-lg { width: 50px; height: 50px; font-size: 18px; }
-  .nav-tabs button { padding: 8px 10px; font-size: 12px; }
-}

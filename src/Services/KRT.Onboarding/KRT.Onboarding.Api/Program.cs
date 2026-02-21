@@ -1,4 +1,4 @@
-using KRT.BuildingBlocks.Infrastructure.Observability;
+﻿using KRT.BuildingBlocks.Infrastructure.Observability;
 using KRT.Onboarding.Infra.IoC;
 using KRT.Onboarding.Application.Interfaces;
 using KRT.Onboarding.Api.Services;
@@ -81,26 +81,30 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// 7. CORS (configurável via appsettings ou default)
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? new[] {
-        "http://localhost:4200",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://bank.klisteneslima.dev",
-        "https://store.klisteneslima.dev",
-        "https://admin.klisteneslima.dev",
-        "https://command.klisteneslima.dev",
-        "https://api-kll.klisteneslima.dev"
-    };
-builder.Services.AddCors(options =>
+// 7. CORS
+if (builder.Environment.IsProduction())
 {
-    options.AddPolicy("CorsPolicy",
-        b => b.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials());
-});
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.WithOrigins(
+                    "https://bank.klisteneslima.dev",
+                    "https://command.klisteneslima.dev",
+                    "https://store.klisteneslima.dev",
+                    "https://api-kll.klisteneslima.dev")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials());
+    });
+}
+else
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsPolicy",
+            b => b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+    });
+}
 
 builder.Services.AddHealthChecks();
 
@@ -149,17 +153,6 @@ app.UseSerilogRequestLogging(options =>
     };
 });
 
-// Security Headers (defense-in-depth — Gateway also sets these)
-app.Use(async (ctx, next) =>
-{
-    ctx.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-    ctx.Response.Headers.Append("X-Frame-Options", "DENY");
-    ctx.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
-    ctx.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
-    ctx.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    await next();
-});
-
 app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
@@ -171,3 +164,8 @@ app.MapControllers();
 
 Log.Information("KRT.Onboarding starting on {Environment}", app.Environment.EnvironmentName);
 app.Run();
+
+
+
+
+

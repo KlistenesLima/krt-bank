@@ -6,7 +6,6 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
 import { parseBRCode, BRCodeData } from '../../../../shared/utils/brcode-parser';
-import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-pix-page',
@@ -558,7 +557,7 @@ export class PixPageComponent {
     const token = localStorage.getItem('krt_token');
     const hdrs = { headers: { Authorization: 'Bearer ' + token } };
 
-    this.http.post<any>(environment.apiUrl + '/pix/charges/find-by-brcode', {
+    this.http.post<any>('http://localhost:5000/api/v1/pix/charges/find-by-brcode', {
       pixKey: data.pixKey,
       amount: data.amount,
       txId: data.txId || null
@@ -617,7 +616,7 @@ export class PixPageComponent {
       const accountId = localStorage.getItem('krt_account_id');
       const body = accountId ? { payerAccountId: accountId } : {};
       this.http.post<any>(
-        `${environment.apiUrl}/pix/charges/${this.chargeId}/simulate-payment`, body, hdrs
+        `http://localhost:5000/api/v1/pix/charges/${this.chargeId}/simulate-payment`, body, hdrs
       ).subscribe({
         next: (res) => {
           if (res.newBalance !== undefined && res.newBalance !== null) {
@@ -640,7 +639,7 @@ export class PixPageComponent {
       searchValue = this.pixKey.replace(/\D/g, '');
     }
 
-    const resolveUrl = environment.apiUrl + '/pix-keys/resolve?type='
+    const resolveUrl = 'http://localhost:5000/api/v1/pix-keys/resolve?type='
       + (this.isBrCode ? 'email' : this.keyType)
       + '&value=' + encodeURIComponent(searchValue);
 
@@ -650,7 +649,7 @@ export class PixPageComponent {
           this.errorMsg = 'Nao e possivel enviar PIX para sua propria conta.';
           this.isLoading = false; this.step = 1; return;
         }
-        this.http.post(environment.apiUrl + '/pix', {
+        this.http.post('http://localhost:5000/api/v1/pix', {
           sourceAccountId: accountId,
           destinationAccountId: dest.accountId,
           pixKey: searchValue,
@@ -680,7 +679,7 @@ export class PixPageComponent {
   downloadReceipt() {
     const token = localStorage.getItem('krt_token');
     if (this.lastTxId) {
-      const url = environment.apiUrl + '/pix/receipt/' + this.lastTxId;
+      const url = 'http://localhost:5000/api/v1/pix/receipt/' + this.lastTxId;
       fetch(url, { headers: { Authorization: 'Bearer ' + token } })
         .then(r => r.blob())
         .then(blob => {
@@ -700,7 +699,7 @@ export class PixPageComponent {
         status: 'Completed',
         timestamp: new Date().toISOString()
       };
-      fetch(environment.apiUrl + '/pix/receipt', {
+      fetch('http://localhost:5000/api/v1/pix/receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || '') },
         body: JSON.stringify(body)
