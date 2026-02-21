@@ -409,7 +409,7 @@ export class LoginComponent {
   constructor(private auth: AuthService, private router: Router) {}
 
   isIdentifierCpf(): boolean {
-    return /^\d/.test(this.identifier.replace(/\D/g, ''));
+    return /^\d/.test(this.identifier);
   }
 
   onIdentifierInput(event: any) {
