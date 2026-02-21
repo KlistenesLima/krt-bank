@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
 import { parseBRCode, BRCodeData } from '../../../../shared/utils/brcode-parser';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-pix-page',
@@ -553,22 +554,25 @@ export class PixPageComponent {
     this.brCodeData = data;
     this.isLoading = true;
 
-    // Buscar charge pendente no backend
+    // Enviar BRCode bruto para o backend parsear e buscar charge
     const token = localStorage.getItem('krt_token');
     const hdrs = { headers: { Authorization: 'Bearer ' + token } };
 
-    this.http.post<any>('http://localhost:5000/api/v1/pix/charges/find-by-brcode', {
-      pixKey: data.pixKey,
-      amount: data.amount,
-      txId: data.txId || null
+    this.http.post<any>(environment.apiUrl + '/pix/charges/find-by-brcode', {
+      brCode: this.brCodePayload.trim()
     }, hdrs).subscribe({
       next: (res) => {
-        this.chargeId = res.chargeId;
+        this.chargeId = res.chargeFound ? res.chargeId : '';
+        // Atualizar dados com resposta do backend
+        if (res.merchantName) this.brCodeData!.merchantName = res.merchantName;
+        if (res.pixKey) this.brCodeData!.pixKey = res.pixKey;
+        if (res.amount) this.brCodeData!.amount = res.amount;
+        if (res.merchantCity) this.brCodeData!.city = res.merchantCity;
         this.isLoading = false;
         this.brCodeParsed = true;
       },
       error: () => {
-        // Charge não encontrada — ainda exibe os dados para PIX P2P
+        // Erro no parse do backend — ainda exibe os dados do parse local
         this.chargeId = '';
         this.isLoading = false;
         this.brCodeParsed = true;
@@ -611,12 +615,13 @@ export class PixPageComponent {
     const token = localStorage.getItem('krt_token');
     const hdrs = { headers: { Authorization: 'Bearer ' + token } };
 
-    // Fluxo Copia e Cola com charge encontrada → simulate-payment
-    if (this.isBrCode && this.chargeId) {
+    // Fluxo Copia e Cola → pay-brcode (charge ou P2P)
+    if (this.isBrCode && this.brCodePayload) {
       const accountId = localStorage.getItem('krt_account_id');
-      const body = accountId ? { payerAccountId: accountId } : {};
       this.http.post<any>(
-        `http://localhost:5000/api/v1/pix/charges/${this.chargeId}/simulate-payment`, body, hdrs
+        `${environment.apiUrl}/pix/pay-brcode`,
+        { brCode: this.brCodePayload.trim(), payerAccountId: accountId },
+        hdrs
       ).subscribe({
         next: (res) => {
           if (res.newBalance !== undefined && res.newBalance !== null) {
@@ -639,7 +644,7 @@ export class PixPageComponent {
       searchValue = this.pixKey.replace(/\D/g, '');
     }
 
-    const resolveUrl = 'http://localhost:5000/api/v1/pix-keys/resolve?type='
+    const resolveUrl = environment.apiUrl + '/pix-keys/resolve?type='
       + (this.isBrCode ? 'email' : this.keyType)
       + '&value=' + encodeURIComponent(searchValue);
 
@@ -649,7 +654,7 @@ export class PixPageComponent {
           this.errorMsg = 'Nao e possivel enviar PIX para sua propria conta.';
           this.isLoading = false; this.step = 1; return;
         }
-        this.http.post('http://localhost:5000/api/v1/pix', {
+        this.http.post(environment.apiUrl + '/pix', {
           sourceAccountId: accountId,
           destinationAccountId: dest.accountId,
           pixKey: searchValue,
@@ -679,7 +684,7 @@ export class PixPageComponent {
   downloadReceipt() {
     const token = localStorage.getItem('krt_token');
     if (this.lastTxId) {
-      const url = 'http://localhost:5000/api/v1/pix/receipt/' + this.lastTxId;
+      const url = environment.apiUrl + '/pix/receipt/' + this.lastTxId;
       fetch(url, { headers: { Authorization: 'Bearer ' + token } })
         .then(r => r.blob())
         .then(blob => {
@@ -699,7 +704,7 @@ export class PixPageComponent {
         status: 'Completed',
         timestamp: new Date().toISOString()
       };
-      fetch('http://localhost:5000/api/v1/pix/receipt', {
+      fetch(environment.apiUrl + '/pix/receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (token || '') },
         body: JSON.stringify(body)

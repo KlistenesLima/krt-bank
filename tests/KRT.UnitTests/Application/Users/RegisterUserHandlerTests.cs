@@ -1,4 +1,5 @@
 using FluentAssertions;
+using KRT.BuildingBlocks.Domain;
 using KRT.Onboarding.Application.Commands.Users;
 using KRT.Onboarding.Application.Commands.Users.Handlers;
 using KRT.Onboarding.Application.Interfaces;
@@ -14,13 +15,22 @@ namespace KRT.UnitTests.Application.Users;
 public class RegisterUserHandlerTests
 {
     private readonly Mock<IAppUserRepository> _userRepoMock = new();
+    private readonly Mock<IAccountRepository> _accountRepoMock = new();
     private readonly Mock<IEmailService> _emailServiceMock = new();
     private readonly Mock<ILogger<RegisterUserHandler>> _loggerMock = new();
     private readonly RegisterUserHandler _handler;
 
     public RegisterUserHandlerTests()
     {
-        _handler = new RegisterUserHandler(_userRepoMock.Object, _emailServiceMock.Object, _loggerMock.Object);
+        var unitOfWorkMock = new Mock<IUnitOfWork>();
+        unitOfWorkMock.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        _accountRepoMock.Setup(r => r.UnitOfWork).Returns(unitOfWorkMock.Object);
+        _accountRepoMock.Setup(r => r.GetByCpfAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Account?)null);
+
+        _handler = new RegisterUserHandler(
+            _userRepoMock.Object, _accountRepoMock.Object,
+            _emailServiceMock.Object, _loggerMock.Object);
     }
 
     [Fact]
@@ -67,6 +77,21 @@ public class RegisterUserHandlerTests
         _userRepoMock.Verify(r => r.AddAsync(It.IsAny<AppUser>()), Times.Once);
         _emailServiceMock.Verify(e => e.SendEmailConfirmationAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenValid_ShouldCreateAccountWith300k()
+    {
+        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((AppUser?)null);
+        _userRepoMock.Setup(r => r.GetByDocumentAsync(It.IsAny<string>())).ReturnsAsync((AppUser?)null);
+
+        var command = new RegisterUserCommand("Test User", "test@email.com", "12345678900", "Senha123");
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.Success.Should().BeTrue();
+        _accountRepoMock.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Once);
+        _accountRepoMock.Verify(r => r.CreateVirtualCardForAccountAsync(
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

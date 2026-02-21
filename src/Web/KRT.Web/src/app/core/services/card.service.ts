@@ -81,6 +81,7 @@ export interface CardBill {
   availableLimit: number;
   currentBill: number;
   minimumPayment: number;
+  closingDate: string;
   dueDate: string;
   charges: CardBillCharge[];
   payments: CardBillPayment[];

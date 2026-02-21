@@ -2,61 +2,7 @@
 # Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 services:
-  postgres:
-    ports: !override []
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  rabbitmq:
-    ports: !override []
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  redis:
-    ports: !override []
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  keycloak:
-    ports: !override []
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   seq:
-    ports: !override []
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  zookeeper:
-    ports: !override []
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  kafka:
     ports: !override []
     restart: unless-stopped
     logging:
@@ -106,6 +52,7 @@ services:
     ports: !override []
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
+      Email__SmtpPassword: "${SMTP_PASSWORD:?Set SMTP_PASSWORD}"
     restart: unless-stopped
     logging:
       driver: "json-file"

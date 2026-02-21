@@ -1,106 +1,8 @@
-﻿services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: krt-postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-krt}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-KrtBank2026}
-      POSTGRES_DB: ${POSTGRES_DB:-krtbank}
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U krt -d krtbank"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
+networks:
+  kll-krt-network:
+    external: true
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: krt-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15680:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-krt}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-krt123}
-    healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
-  redis:
-    image: redis:7-alpine
-    container_name: krt-redis
-    ports:
-      - "6380:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:23.0
-    container_name: krt-keycloak
-    hostname: krt-keycloak
-    command: start-dev
-    volumes:
-      - keycloak-data:/opt/keycloak/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      JAVA_OPTS_APPEND: "-Xms512m -Xmx1g"
-      KC_DB_POOL_MIN_SIZE: 10
-      KC_DB_POOL_MAX_SIZE: 50
-    ports:
-      - "8080:8080"
-
-  seq:
-    image: datalust/seq:2024.1
-    container_name: krt-seq
-    environment:
-      ACCEPT_EULA: "Y"
-    ports:
-      - "5341:5341"
-      - "8081:80"
-    volumes:
-      - seq-data:/data
-    restart: unless-stopped
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: krt-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "32181:2181"
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: krt-kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-      - "29092:29092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-
+services:
   gateway:
     build:
       context: .
@@ -113,6 +15,8 @@
       - onboarding-api
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
+    networks:
+      - kll-krt-network
     restart: unless-stopped
 
   payments-api:
@@ -122,30 +26,23 @@
     container_name: krt-payments
     ports:
       - "5002:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Services__OnboardingUrl: "http://onboarding-api:80/"
       ASPNETCORE_URLS: "http://+:80"
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-krtbank};Username=${POSTGRES_USER:-krt};Password=${POSTGRES_PASSWORD:-KrtBank2026}"
-      Redis__ConnectionString: "redis:6379"
-      Redis__Configuration: "redis:6379"
-      RabbitMq__HostName: "rabbitmq"
-      RabbitMq__UserName: "${RABBITMQ_DEFAULT_USER:-krt}"
-      RabbitMq__Password: "${RABBITMQ_DEFAULT_PASS:-krt123}"
-      Kafka__BootstrapServers: "kafka:9092"
-      Keycloak__Authority: "http://keycloak:8080/realms/krt-bank"
-      Security__ApiKey: "${KRT_API_KEY:-krt-dev-key-2026}"
-      Security__AdminApiKey: "${KRT_ADMIN_API_KEY:-krt-admin-key-2026}"
-      Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
+      ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=krtbank;Username=krt;Password=krt"
+      Redis__ConnectionString: "shared-redis:6379,defaultDatabase=0"
+      Redis__Configuration: "shared-redis:6379,defaultDatabase=0"
+      RabbitMq__HostName: "shared-rabbitmq"
+      RabbitMq__UserName: "guest"
+      RabbitMq__Password: "guest"
+      Kafka__BootstrapServers: "shared-kafka:9092"
+      Keycloak__Authority: "http://shared-keycloak:8080/realms/krt-bank"
+      Security__ApiKey: "${KRT_API_KEY:?Set KRT_API_KEY in .env}"
+      Security__AdminApiKey: "${KRT_ADMIN_API_KEY:?Set KRT_ADMIN_API_KEY in .env}"
+      Serilog__WriteTo__1__Args__serverUrl: "http://krt-seq:5341"
+    networks:
+      - kll-krt-network
     restart: unless-stopped
 
   onboarding-api:
@@ -155,47 +52,55 @@
     container_name: krt-onboarding
     ports:
       - "5001:80"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:80"
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-krtbank};Username=${POSTGRES_USER:-krt};Password=${POSTGRES_PASSWORD:-KrtBank2026}"
-      Redis__ConnectionString: "redis:6379"
-      Redis__Configuration: "redis:6379"
-      RabbitMq__HostName: "rabbitmq"
-      RabbitMq__UserName: "${RABBITMQ_DEFAULT_USER:-krt}"
-      RabbitMq__Password: "${RABBITMQ_DEFAULT_PASS:-krt123}"
-      Kafka__BootstrapServers: "kafka:9092"
-      Keycloak__Authority: "http://keycloak:8080/realms/krt-bank"
-      Keycloak__BaseUrl: "http://keycloak:8080"
+      ConnectionStrings__DefaultConnection: "Host=shared-postgres;Port=5432;Database=krtbank;Username=krt;Password=krt"
+      Redis__ConnectionString: "shared-redis:6379,defaultDatabase=0"
+      Redis__Configuration: "shared-redis:6379,defaultDatabase=0"
+      RabbitMq__HostName: "shared-rabbitmq"
+      RabbitMq__UserName: "guest"
+      RabbitMq__Password: "guest"
+      Kafka__BootstrapServers: "shared-kafka:9092"
+      Keycloak__Authority: "http://shared-keycloak:8080/realms/krt-bank"
+      Keycloak__BaseUrl: "http://shared-keycloak:8080"
       Keycloak__Realm: "krt-bank"
       Keycloak__ClientId: "krt-bank-app"
       Keycloak__AdminUser: "${KEYCLOAK_ADMIN:-admin}"
-      Keycloak__AdminPassword: "${KEYCLOAK_ADMIN_PASSWORD:-admin}"
-      Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
+      Keycloak__AdminPassword: "${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}"
+      Email__SmtpPassword: "${SMTP_PASSWORD:-mdpg gyum rzqg czed}"
+      Email__FromAddress: "klisteneswar3@gmail.com"
+      Serilog__WriteTo__1__Args__serverUrl: "http://krt-seq:5341"
+    networks:
+      - kll-krt-network
     restart: unless-stopped
 
   web:
     build:
-      context: .
-      dockerfile: src/Web/KRT.Web/Dockerfile
+      context: ./src/Web/KRT.Web
+      dockerfile: Dockerfile
     container_name: krt-web
     ports:
       - "4200:80"
     depends_on:
       - gateway
+    networks:
+      - kll-krt-network
+    restart: unless-stopped
+
+  seq:
+    image: datalust/seq:2024.1
+    container_name: krt-seq
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "5341:5341"
+      - "8081:80"
+    volumes:
+      - seq-data:/data
+    networks:
+      - kll-krt-network
     restart: unless-stopped
 
 volumes:
-  postgres-data:
   seq-data:
-  keycloak-data:
-
