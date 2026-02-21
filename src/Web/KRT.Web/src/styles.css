@@ -47,15 +47,13 @@
 
 html, body {
   height: 100%;
-  padding-top: 0;
+  padding-top: 36px;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--krt-bg);
   color: var(--krt-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-body.has-banner { padding-top: 36px; }
 
 /* Material overrides */
 .mat-mdc-raised-button.mat-primary {
@@ -110,10 +108,10 @@ body.has-banner { padding-top: 36px; }
    RESPONSIVE — Mobile-first adjustments
    ============================================ */
 @media (max-width: 768px) {
-  body.has-banner { padding-top: 50px; }
+  html, body { padding-top: 50px; }
 }
 @media (max-width: 480px) {
-  body.has-banner { padding-top: 44px; }
+  html, body { padding-top: 44px; }
   .page-with-nav { padding-bottom: 90px; }
 }
 

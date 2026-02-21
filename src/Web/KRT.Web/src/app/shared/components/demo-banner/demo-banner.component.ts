@@ -1,8 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, NavigationEnd, RouterModule } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { RouterModule } from '@angular/router';
 
 interface BannerLink {
   href: string;
@@ -164,10 +162,8 @@ interface BannerLink {
     }
   `]
 })
-export class DemoBannerComponent implements OnInit, OnDestroy {
+export class DemoBannerComponent implements OnInit {
   visible = false;
-  private routerSub?: Subscription;
-  private portfolioRoutes = ['/portfolio', '/about', '/resume', '/docs', '/login', '/register', '/forgot-password'];
 
   links: BannerLink[] = [
     {
@@ -202,27 +198,7 @@ export class DemoBannerComponent implements OnInit, OnDestroy {
     }
   ];
 
-  constructor(private router: Router) {}
-
   ngOnInit() {
-    this.updateVisibility(this.router.url);
-    this.routerSub = this.router.events
-      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(e => this.updateVisibility(e.urlAfterRedirects));
-  }
-
-  private updateVisibility(url: string) {
-    const isPortfolioRoute = this.portfolioRoutes.some(r => url === r || url.startsWith(r + '/') || url.startsWith(r + '?'));
-    this.visible = isPortfolioRoute;
-
-    if (isPortfolioRoute) {
-      document.body.classList.add('has-banner');
-    } else {
-      document.body.classList.remove('has-banner');
-    }
-  }
-
-  ngOnDestroy() {
-    this.routerSub?.unsubscribe();
+    setTimeout(() => this.visible = true, 100);
   }
 }
