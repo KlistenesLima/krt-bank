@@ -2,6 +2,8 @@
   <h1>🏦 KRT Bank</h1>
   <p><strong>Plataforma Bancária Digital — PIX, Boleto, Cartão de Crédito</strong></p>
   <p>
+    <a href="https://github.com/KlistenesLima/krt-bank/actions/workflows/ci.yml"><img src="https://github.com/KlistenesLima/krt-bank/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <br/>
     <img src="https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 8" />
     <img src="https://img.shields.io/badge/Angular-17-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular 17" />
     <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
@@ -464,7 +466,7 @@ dotnet test --configuration Release    # 145 testes, 0 falhas
 - [ ] Cartão de Crédito — lógica completa de limite e fatura mensal
 - [ ] Autenticação Service-to-Service (OAuth2 Client Credentials)
 - [ ] Deploy cloud (Oracle Cloud Free Tier / AWS)
-- [ ] CI/CD completo com GitHub Actions
+- [x] CI/CD com GitHub Actions (build + testes)
 
 ---
 

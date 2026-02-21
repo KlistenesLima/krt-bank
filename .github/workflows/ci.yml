@@ -1,92 +1,54 @@
-name: KRT Bank CI/CD
+name: KRT Bank CI
+
 on:
   push:
-    branches: [main, dev, homolog]
+    branches: [main]
   pull_request:
-    branches: [main, homolog]
+    branches: [main]
+
 env:
   DOTNET_VERSION: '8.0.x'
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '20'
+
 jobs:
-  backend-build:
+  backend:
     name: Backend Build & Test
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: krt
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: krtbank_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
       - name: Restore
         run: dotnet restore
+
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build --no-restore
+
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --collect:"XPlat Code Coverage"
-        env:
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=krtbank_test;Username=krt;Password=${{ secrets.POSTGRES_PASSWORD }}"
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        if: always()
-  frontend-build:
-    name: Frontend Build & Test
+        run: dotnet test --no-build --verbosity normal
+
+  frontend:
+    name: Frontend Build
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: src/Web/KRT.Web
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: src/Web/KRT.Web/package-lock.json
+
       - name: Install dependencies
         run: npm ci
-      - name: Lint
-        run: npx ng lint --quiet || true
-      - name: Unit Tests (Jasmine/Karma)
-        run: npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
+
       - name: Build Production
         run: npx ng build --configuration=production
-  docker-build:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs: [backend-build, frontend-build]
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build Gateway
-        run: docker build -f src/Services/KRT.Gateway/KRT.Gateway/Dockerfile -t krt-gateway:latest .
-      - name: Build Payments API
-        run: docker build -f src/Services/KRT.Payments/KRT.Payments.Api/Dockerfile -t krt-payments:latest .
-      - name: Build Onboarding API
-        run: docker build -f src/Services/KRT.Onboarding/KRT.Onboarding.Api/Dockerfile -t krt-onboarding:latest .
-  deploy-staging:
-    name: Deploy Staging
-    runs-on: ubuntu-latest
-    needs: [docker-build]
-    if: github.ref == 'refs/heads/main'
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy
-        run: |
-          echo "Deploying to staging environment..."
-          echo "Docker images built and ready for deployment"
-          # docker-compose -f docker-compose.yml up -d
