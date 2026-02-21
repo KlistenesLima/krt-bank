@@ -1,85 +1,111 @@
 ﻿import { Component, OnInit } from '@angular/core';
-import { AccountService } from '../../../core/services/account.service';
 import { Router } from '@angular/router';
-import { Location } from '@angular/common';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-profile-page',
   template: `
-    <div class="app-layout" *ngIf="account">
+    <div class="profile-container page-with-nav">
       <header class="profile-header">
-        <button mat-icon-button (click)="goBack()" class="back-btn"><mat-icon>arrow_back</mat-icon></button>
-        <div class="avatar-circle">
-           <span>{{ getInitials() }}</span>
-        </div>
-        <h2>{{ account.customerName }}</h2>
-        <p>Agência 0001 • Conta {{ account.accountId.substring(0,8) }}</p>
+        <div class="profile-avatar">{{ getInitials() }}</div>
+        <h2>{{ userName }}</h2>
+        <p>{{ userDoc }}</p>
       </header>
 
-      <main class="container fade-in mt-minus">
-        <mat-card class="menu-card">
-          <mat-nav-list>
-            <mat-list-item>
-               <mat-icon matListItemIcon>person</mat-icon>
-               <div matListItemTitle>Meus Dados</div>
-            </mat-list-item>
-            <mat-divider></mat-divider>
-            <mat-list-item>
-               <mat-icon matListItemIcon>security</mat-icon>
-               <div matListItemTitle>Segurança</div>
-            </mat-list-item>
-            <mat-divider></mat-divider>
-            <mat-list-item>
-               <mat-icon matListItemIcon>notifications</mat-icon>
-               <div matListItemTitle>Notificações</div>
-            </mat-list-item>
-            <mat-divider></mat-divider>
-            <mat-list-item (click)="logout()">
-               <mat-icon matListItemIcon color="warn">logout</mat-icon>
-               <div matListItemTitle class="danger-text">Sair do App</div>
-            </mat-list-item>
-          </mat-nav-list>
-        </mat-card>
-      </main>
+      <div class="menu-section">
+        <button class="menu-item" (click)="router.navigate(['/profile/data'])">
+          <mat-icon>person_outline</mat-icon>
+          <span>Meus dados</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </button>
+        <button class="menu-item" (click)="router.navigate(['/pix/keys'])">
+          <mat-icon>vpn_key</mat-icon>
+          <span>Chaves Pix</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </button>
+        <button class="menu-item" (click)="router.navigate(['/profile/security'])">
+          <mat-icon>security</mat-icon>
+          <span>Segurança</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </button>
+        <button class="menu-item" (click)="router.navigate(['/profile/notifications'])">
+          <mat-icon>notifications_none</mat-icon>
+          <span>Notificações</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </button>
+      </div>
+
+      <div class="menu-section">
+        <button class="menu-item danger" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Sair da conta</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </button>
+      </div>
+
+      <p class="version">KRT Bank v2.0 · Ambiente de desenvolvimento</p>
     </div>
+
+    <app-bottom-nav></app-bottom-nav>
   `,
   styles: [`
+    .profile-container { min-height: 100vh; background: var(--krt-bg); }
     .profile-header {
-      background: var(--primary); color: white;
-      display: flex; flex-direction: column; align-items: center;
-      padding: 20px 20px 60px; border-radius: 0 0 30px 30px;
-      position: relative;
+      background: var(--krt-gradient); padding: 40px 20px 30px;
+      text-align: center; border-radius: 0 0 32px 32px;
     }
-    .back-btn { position: absolute; left: 10px; top: 10px; color: white; }
-    .avatar-circle {
-      width: 80px; height: 80px; background: rgba(255,255,255,0.2);
-      border-radius: 50%; display: flex; justify-content: center; align-items: center;
-      font-size: 2rem; font-weight: bold; margin-bottom: 15px; margin-top: 10px;
+    .profile-avatar {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: rgba(255,255,255,0.2); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.4rem; margin: 0 auto 12px;
+      backdrop-filter: blur(10px);
     }
-    .profile-header h2 { margin: 0; font-size: 1.4rem; }
-    .profile-header p { opacity: 0.8; font-size: 0.9rem; margin-top: 5px; }
-    
-    .mt-minus { margin-top: -40px; }
-    .menu-card { padding: 0; overflow: hidden; }
-    .danger-text { color: #f44336; font-weight: 500; }
+    .profile-header h2 { color: white; margin: 0; font-size: 1.2rem; }
+    .profile-header p { color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 4px; }
+
+    .menu-section {
+      margin: 16px 20px; background: white; border-radius: var(--krt-radius);
+      box-shadow: var(--krt-shadow-sm); overflow: hidden;
+    }
+    .menu-item {
+      width: 100%; display: flex; align-items: center; gap: 14px;
+      padding: 18px 20px; border: none; background: none;
+      cursor: pointer; text-align: left; transition: background 0.2s;
+      border-bottom: 1px solid var(--krt-divider);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:hover { background: var(--krt-bg); }
+    .menu-item mat-icon { color: var(--krt-text-secondary); }
+    .menu-item span { flex: 1; font-size: 0.92rem; font-weight: 500; color: var(--krt-text); }
+    .chevron { color: var(--krt-text-muted) !important; }
+    .menu-item.danger mat-icon { color: var(--krt-danger); }
+    .menu-item.danger span { color: var(--krt-danger); }
+
+    .version { text-align: center; color: var(--krt-text-muted); font-size: 0.75rem; margin-top: 24px; }
   `]
 })
 export class ProfilePageComponent implements OnInit {
-  account: any;
-  constructor(private accService: AccountService, private router: Router, private location: Location) {}
+  userName = '';
+  userDoc = '';
+
+  constructor(public router: Router, private auth: AuthService) {}
 
   ngOnInit() {
-    const id = localStorage.getItem('krt_account_id');
-    if(id) this.accService.getById(id).subscribe(res => this.account = res);
+    this.userName = localStorage.getItem('krt_account_name') || 'Usuário';
+    const doc = localStorage.getItem('krt_account_doc') || '';
+    if (doc.length === 11) {
+      this.userDoc = doc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else {
+      this.userDoc = doc;
+    }
   }
 
-  getInitials() {
-    return this.account?.customerName?.substring(0,2).toUpperCase() || 'US';
+  getInitials(): string {
+    return this.userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   }
 
-  logout() {
-    localStorage.removeItem('krt_account_id');
-    this.router.navigate(['/login']);
-  }
-  goBack() { this.location.back(); }
+  logout() { this.auth.logout(); }
 }
+

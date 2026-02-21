@@ -17,7 +17,7 @@ namespace KRT.Onboarding.Infra.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.12")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -29,20 +29,17 @@ namespace KRT.Onboarding.Infra.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CausationId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("CorrelationId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Error")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("OccurredOn")
                         .HasColumnType("timestamp with time zone");
@@ -60,9 +57,9 @@ namespace KRT.Onboarding.Infra.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProcessedOn");
+                    b.HasIndex("ProcessedOn", "RetryCount");
 
-                    b.ToTable("OutboxMessages", (string)null);
+                    b.ToTable("OutboxMessages");
                 });
 
             modelBuilder.Entity("KRT.Onboarding.Domain.Entities.Account", b =>
@@ -71,64 +68,35 @@ namespace KRT.Onboarding.Infra.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("AccountNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<decimal>("Balance")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Cpf")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CustomerName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Document")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Accounts");
-                });
-
-            modelBuilder.Entity("KRT.Onboarding.Domain.Entities.Transaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
+                    b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ReferenceId")
+                    b.Property<byte[]>("RowVersion")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("bytea");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -143,7 +111,56 @@ namespace KRT.Onboarding.Infra.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Transactions");
+                    b.HasIndex("Document")
+                        .IsUnique();
+
+                    b.ToTable("Accounts");
+                });
+
+            modelBuilder.Entity("KRT.Onboarding.Domain.Entities.PixKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("KeyType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("KeyValue")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.ToTable("PixKeys");
+                });
+
+            modelBuilder.Entity("KRT.Onboarding.Domain.Entities.PixKey", b =>
+                {
+                    b.HasOne("KRT.Onboarding.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
                 });
 #pragma warning restore 612, 618
         }

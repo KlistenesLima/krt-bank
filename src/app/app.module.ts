@@ -1,4 +1,8 @@
-﻿import { NgModule } from '@angular/core';
+﻿import { NgModule, LOCALE_ID } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
+
+registerLocaleData(localePt);
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
@@ -76,3 +80,5 @@ const routes: Routes = [
   bootstrap: [AppComponent]
 })
 export class AppModule { }
+
+

@@ -1,0 +1,104 @@
+<div class="card-page">
+  <h2>Cartao Virtual</h2>
+
+  <!-- Card 3D Visual -->
+  <div class="card-3d" *ngIf="selectedCard" [class.blocked]="selectedCard.status === 'Blocked'"
+       [class.cancelled]="selectedCard.status === 'Cancelled'"
+       [class.mastercard]="selectedCard.brand === 'Mastercard'">
+    <div class="card-chip"></div>
+    <div class="card-contactless" *ngIf="selectedCard.settings.isContactless">
+      <span>)))  </span>
+    </div>
+    <div class="card-brand">{{ selectedCard.brand }}</div>
+    <div class="card-number" (click)="showCardNumber = !showCardNumber">
+      {{ showCardNumber ? selectedCard.cardNumber : selectedCard.maskedNumber }}
+    </div>
+    <div class="card-bottom">
+      <div class="card-holder">
+        <small>TITULAR</small>
+        <span>{{ selectedCard.cardholderName }}</span>
+      </div>
+      <div class="card-expiry">
+        <small>VALIDADE</small>
+        <span>{{ selectedCard.expiration }}</span>
+      </div>
+      <div class="card-cvv" (click)="showCvv = !showCvv">
+        <small>CVV</small>
+        <span>{{ showCvv && selectedCard.cvvValid ? selectedCard.cvv : '***' }}</span>
+      </div>
+    </div>
+    <div class="card-status-badge" *ngIf="selectedCard.status !== 'Active'">
+      {{ selectedCard.status === 'Blocked' ? 'BLOQUEADO' : 'CANCELADO' }}
+    </div>
+  </div>
+
+  <!-- Acoes -->
+  <div class="card-actions" *ngIf="selectedCard && selectedCard.status !== 'Cancelled'">
+    <button class="action-btn" (click)="toggleBlock()"
+            [class.danger]="selectedCard.status === 'Active'">
+      {{ selectedCard.status === 'Active' ? 'Bloquear' : 'Desbloquear' }}
+    </button>
+    <button class="action-btn" (click)="rotateCvv()">Novo CVV</button>
+    <button class="action-btn" (click)="showCardNumber = !showCardNumber">
+      {{ showCardNumber ? 'Ocultar' : 'Ver Numero' }}
+    </button>
+    <button class="action-btn danger" (click)="cancelCard()">Cancelar</button>
+  </div>
+
+  <!-- Limites e Configuracoes -->
+  <div class="card-settings" *ngIf="selectedCard && selectedCard.status !== 'Cancelled'">
+    <h3>Configuracoes</h3>
+    <div class="setting-row">
+      <span>Compras online</span>
+      <label class="toggle">
+        <input type="checkbox" [checked]="selectedCard.settings.isOnlinePurchase"
+               (change)="updateSetting('isOnlinePurchase', !selectedCard.settings.isOnlinePurchase)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span>Contactless (NFC)</span>
+      <label class="toggle">
+        <input type="checkbox" [checked]="selectedCard.settings.isContactless"
+               (change)="updateSetting('isContactless', !selectedCard.settings.isContactless)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span>Compras internacionais</span>
+      <label class="toggle">
+        <input type="checkbox" [checked]="selectedCard.settings.isInternational"
+               (change)="updateSetting('isInternational', !selectedCard.settings.isInternational)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="limit-info">
+      <span>Limite mensal: <strong>R$ {{ selectedCard.spendingLimit | number:'1.2-2' }}</strong></span>
+      <span>Usado: <strong>R$ {{ selectedCard.spentThisMonth | number:'1.2-2' }}</strong></span>
+    </div>
+  </div>
+
+  <!-- Lista de cartoes -->
+  <div class="cards-list" *ngIf="cards.length > 1">
+    <h3>Meus Cartoes</h3>
+    <div class="card-mini" *ngFor="let card of cards" (click)="selectCard(card)"
+         [class.selected]="selectedCard?.id === card.id">
+      <span class="mini-brand">{{ card.brand }}</span>
+      <span>{{ card.maskedNumber }}</span>
+      <span class="mini-status" [class]="card.status.toLowerCase()">{{ card.status }}</span>
+    </div>
+  </div>
+
+  <!-- Criar novo cartao -->
+  <div class="create-card">
+    <h3>Novo Cartao Virtual</h3>
+    <input type="text" [(ngModel)]="holderName" placeholder="Nome do titular (como no cartao)">
+    <select [(ngModel)]="selectedBrand">
+      <option value="Visa">Visa</option>
+      <option value="Mastercard">Mastercard</option>
+    </select>
+    <button class="btn-primary" (click)="createCard()" [disabled]="creating || !holderName">
+      {{ creating ? 'Gerando...' : 'Gerar Cartao Virtual' }}
+    </button>
+  </div>
+</div>

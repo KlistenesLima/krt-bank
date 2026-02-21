@@ -1,23 +1,31 @@
-﻿export interface AccountResponse {
-    accountId: string;
-    customerName: string;
-    customerDocument: string;
-    balance: number;
-    accountNumber: string;
-    status: string;
+// account.model.ts - Modelos alinhados com o backend
+
+export interface AccountResponse {
+  id: string;
+  customerName: string;
+  document: string;
+  email: string;
+  balance: number;
+  status: string;
+  type: string;
 }
 
-export interface Transaction {
-    id: string;
-    amount: number;
-    type: 'DEBIT' | 'CREDIT';
-    description: string;
-    createdAt: Date;
+export interface BalanceResponse {
+  accountId: string;
+  availableAmount: number;
 }
 
 export interface CreateAccountRequest {
-    customerName: string;
-    customerDocument: string;
-    customerEmail: string;
-    branchCode: string; // <--- NOVO CAMPO OBRIGATÓRIO
+  customerName: string;
+  customerDocument: string;
+  customerEmail: string;
+  customerPhone: string;
+  password: string;
+  branchCode: string;
+}
+
+// DEPRECATED: ApiResponse wrapper removido na Parte 11
+// O backend retorna objetos diretamente, sem wrapper { success, data }
+export interface ApiResponse<T> {
+  data: T;
 }

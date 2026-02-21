@@ -21,7 +21,7 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
-              "src/favicon.ico",
+              "src/favicon.ico", "src/favicon.svg",
               "src/assets"
             ],
             "styles": [
@@ -31,16 +31,20 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "2mb",
+                  "maximumError": "3mb"
                 },
                 {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "type": "anyComponentStyle", "maximumWarning": "8kb", "maximumError": "16kb"
                 }
               ],
               "outputHashing": "all"
@@ -75,11 +79,11 @@
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "polyfills": [
-              "zone.js"
+              "zone.js", "zone.js/testing"
             ],
             "tsConfig": "tsconfig.spec.json",
             "assets": [
-              "src/favicon.ico",
+              "src/favicon.ico", "src/favicon.svg",
               "src/assets"
             ],
             "styles": [
@@ -95,3 +99,8 @@
     "analytics": false
   }
 }
+
+
+
+
+

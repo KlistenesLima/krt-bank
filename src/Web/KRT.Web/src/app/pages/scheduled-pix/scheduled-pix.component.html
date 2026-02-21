@@ -1,0 +1,98 @@
+<div class="scheduled-page">
+  <div class="header-row">
+    <h2>Pix Agendado & Recorrente</h2>
+    <button class="btn-new" (click)="showForm = !showForm">
+      {{ showForm ? '✕ Fechar' : '+ Novo Agendamento' }}
+    </button>
+  </div>
+
+  <!-- Formulario -->
+  <div class="form-panel" *ngIf="showForm">
+    <h3>{{ form.frequency === 'Once' ? 'Agendar Pix' : 'Pix Recorrente' }}</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Chave Pix destino</label>
+        <input [(ngModel)]="form.pixKey" placeholder="email@exemplo.com">
+      </div>
+      <div class="field">
+        <label>Nome favorecido</label>
+        <input [(ngModel)]="form.destinationName" placeholder="Maria Silva">
+      </div>
+      <div class="field">
+        <label>Valor (R$)</label>
+        <input type="number" [(ngModel)]="form.amount" min="0.01" step="0.01">
+      </div>
+      <div class="field">
+        <label>Data/Hora</label>
+        <input type="datetime-local" [(ngModel)]="form.scheduledDate">
+      </div>
+      <div class="field">
+        <label>Frequencia</label>
+        <select [(ngModel)]="form.frequency">
+          <option *ngFor="let f of frequencies" [value]="f.value">{{ f.label }}</option>
+        </select>
+      </div>
+      <div class="field" *ngIf="form.frequency !== 'Once'">
+        <label>Max execucoes</label>
+        <input type="number" [(ngModel)]="form.maxExecutions" min="1" max="120">
+      </div>
+      <div class="field full">
+        <label>Descricao</label>
+        <input [(ngModel)]="form.description" placeholder="Pagamento mensal aluguel">
+      </div>
+    </div>
+    <button class="btn-submit" (click)="createScheduled()">
+      {{ form.frequency === 'Once' ? 'Agendar Pix' : 'Criar Recorrencia' }}
+    </button>
+  </div>
+
+  <!-- Filtro de Status -->
+  <div class="status-filter">
+    <button [class.active]="statusFilter === ''" (click)="statusFilter = ''; loadScheduled()">Todos</button>
+    <button [class.active]="statusFilter === 'Pending'" (click)="statusFilter = 'Pending'; loadScheduled()">Agendados</button>
+    <button [class.active]="statusFilter === 'Executed'" (click)="statusFilter = 'Executed'; loadScheduled()">Executados</button>
+    <button [class.active]="statusFilter === 'Paused'" (click)="statusFilter = 'Paused'; loadScheduled()">Pausados</button>
+    <button [class.active]="statusFilter === 'Cancelled'" (click)="statusFilter = 'Cancelled'; loadScheduled()">Cancelados</button>
+  </div>
+
+  <!-- Lista -->
+  <div class="scheduled-list">
+    <div class="scheduled-card" *ngFor="let item of scheduledList">
+      <div class="card-header">
+        <div class="dest-info">
+          <span class="dest-name">{{ item.destinationName }}</span>
+          <span class="pix-key">{{ item.pixKey }}</span>
+        </div>
+        <span class="status-badge" [ngClass]="getStatusClass(item.status)">{{ item.status }}</span>
+      </div>
+
+      <div class="card-body">
+        <div class="amount">R$ {{ item.amount | number:'1.2-2' }}</div>
+        <div class="details">
+          <span>{{ item.frequency }}</span>
+          <span *ngIf="item.isRecurring">| Execucoes: {{ item.executionCount }}/{{ item.maxExecutions || '∞' }}</span>
+          <span *ngIf="item.nextExecutionDate">| Proxima: {{ item.nextExecutionDate | date:'dd/MM/yy HH:mm' }}</span>
+        </div>
+        <div class="schedule-date">
+          Agendado para: {{ item.scheduledDate | date:'dd/MM/yyyy HH:mm' }}
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-action execute" (click)="execute(item.id)"
+          *ngIf="item.statusCode === 'Pending'">▶ Executar</button>
+        <button class="btn-action pause" (click)="pause(item.id)"
+          *ngIf="item.statusCode === 'Pending' && item.isRecurring">⏸ Pausar</button>
+        <button class="btn-action resume" (click)="resume(item.id)"
+          *ngIf="item.statusCode === 'Paused'">▶ Retomar</button>
+        <button class="btn-action cancel" (click)="cancel(item.id)"
+          *ngIf="item.statusCode === 'Pending' || item.statusCode === 'Paused'">✕ Cancelar</button>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && scheduledList.length === 0" class="empty">
+      Nenhum agendamento encontrado
+    </div>
+    <div *ngIf="loading" class="loading">Carregando...</div>
+  </div>
+</div>

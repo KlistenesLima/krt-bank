@@ -5,45 +5,70 @@ import { Router } from '@angular/router';
   selector: 'app-bottom-nav',
   template: `
     <nav class="bottom-nav">
-      <div class="nav-item" (click)="nav('/dashboard')" [class.active]="isActive('/dashboard')">
-         <mat-icon>home</mat-icon><span>Início</span>
-      </div>
-      <div class="nav-item" (click)="nav('/extract')" [class.active]="isActive('/extract')">
-         <mat-icon>receipt_long</mat-icon><span>Extrato</span>
-      </div>
-      <div class="nav-item" (click)="nav('/pix')" [class.active]="isActive('/pix')">
-         <div class="pix-highlight"><mat-icon>pix</mat-icon></div><span>Pix</span>
-      </div>
-      <div class="nav-item" (click)="nav('/cards')" [class.active]="isActive('/cards')">
-         <mat-icon>credit_card</mat-icon><span>Cartões</span>
-      </div>
-      <div class="nav-item" (click)="nav('/profile')" [class.active]="isActive('/profile')">
-         <mat-icon>person</mat-icon><span>Perfil</span>
-      </div>
+      <button class="nav-item" [class.active]="isActive('/dashboard')" (click)="go('/dashboard')">
+        <mat-icon>home</mat-icon>
+        <span>Início</span>
+      </button>
+      <button class="nav-item" [class.active]="isActive('/extract')" (click)="go('/extract')">
+        <mat-icon>swap_vert</mat-icon>
+        <span>Extrato</span>
+      </button>
+      <button class="nav-pix" (click)="go('/pix')">
+        <div class="pix-circle">
+          <mat-icon>flash_on</mat-icon>
+        </div>
+      </button>
+      <button class="nav-item" [class.active]="isActive('/cards')" (click)="go('/cards')">
+        <mat-icon>credit_card</mat-icon>
+        <span>Cartões</span>
+      </button>
+      <button class="nav-item" [class.active]="isActive('/profile')" (click)="go('/profile')">
+        <mat-icon>person_outline</mat-icon>
+        <span>Perfil</span>
+      </button>
     </nav>
   `,
   styles: [`
     .bottom-nav {
-        position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
-        background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around;
-        align-items: center; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #ffffff; height: 68px; border-top: 1px solid #e5e7eb; z-index: 999;
+      display: flex; justify-content: space-around; align-items: center;
+      border-top: 1px solid var(--krt-divider);
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+      z-index: 1000;
+      padding: 0 8px;
+      max-width: 100%; /* Mobile-first */
     }
     .nav-item {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        color: var(--text-secondary); cursor: pointer; flex: 1; height: 100%;
+      background: none; border: none; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      color: var(--krt-text-muted); padding: 8px 12px;
+      transition: color 0.2s;
+      min-width: 56px;
     }
-    .nav-item mat-icon { font-size: 24px; margin-bottom: 2px; }
-    .nav-item span { font-size: 0.7rem; font-weight: 500; }
-    .nav-item.active { color: var(--primary); }
-    .pix-highlight {
-        background: #f0f2f5; color: var(--text-main); border-radius: 8px;
-        width: 40px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+    .nav-item.active { color: var(--krt-primary); }
+    .nav-item mat-icon { font-size: 24px; width: 24px; height: 24px; }
+    .nav-item span { font-size: 0.65rem; font-weight: 600; }
+
+    .nav-pix {
+      background: none; border: none; cursor: pointer;
+      margin-top: -24px; padding: 0;
     }
-    .nav-item.active .pix-highlight { background: var(--primary); color: white; }
+    .pix-circle {
+      width: 56px; height: 56px; border-radius: 18px;
+      background: var(--krt-gradient-accent);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 20px rgba(0,212,170,0.4);
+      transition: transform 0.2s;
+    }
+    .pix-circle:hover { transform: scale(1.05); }
+    .pix-circle mat-icon { color: white; font-size: 28px; width: 28px; height: 28px; }
   `]
 })
 export class BottomNavComponent {
   constructor(private router: Router) {}
-  nav(route: string) { this.router.navigate([route]); }
-  isActive(route: string) { return this.router.url.includes(route); }
+  go(path: string) { this.router.navigate([path]); }
+  isActive(path: string): boolean { return this.router.url === path; }
 }
+
+
