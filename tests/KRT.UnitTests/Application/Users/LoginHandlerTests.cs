@@ -118,4 +118,59 @@ public class LoginHandlerTests
         result.Success.Should().BeFalse();
         result.Message.Should().Contain("aguardando aprovação");
     }
+
+    [Fact]
+    public async Task Handle_WhenStatusInactive_ShouldReturnError()
+    {
+        var user = CreateActiveUser();
+        user.Deactivate();
+
+        _userRepoMock.Setup(r => r.GetByEmailAsync("test@email.com")).ReturnsAsync(user);
+
+        var result = await _handler.Handle(new LoginCommand("test@email.com", "Senha123"), CancellationToken.None);
+
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("desativada");
+    }
+
+    [Fact]
+    public async Task Handle_WhenStatusRejected_ShouldReturnError()
+    {
+        var user = AppUser.Create("Test", "test@email.com", "12345678900",
+            BCrypt.Net.BCrypt.HashPassword("Senha123"));
+        user.ConfirmEmail();
+        user.Reject("admin");
+
+        _userRepoMock.Setup(r => r.GetByEmailAsync("test@email.com")).ReturnsAsync(user);
+
+        var result = await _handler.Handle(new LoginCommand("test@email.com", "Senha123"), CancellationToken.None);
+
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("rejeitado");
+    }
+
+    [Fact]
+    public async Task Handle_WhenValid_ShouldIncludeRoleInResult()
+    {
+        var user = CreateActiveUser();
+        user.ChangeRole(UserRole.Administrador);
+        _userRepoMock.Setup(r => r.GetByEmailAsync("test@email.com")).ReturnsAsync(user);
+
+        var result = await _handler.Handle(new LoginCommand("test@email.com", "Senha123"), CancellationToken.None);
+
+        result.Success.Should().BeTrue();
+        result.Role.Should().Be(UserRole.Administrador);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldAcceptDocumentWithMask()
+    {
+        var user = CreateActiveUser();
+        _userRepoMock.Setup(r => r.GetByDocumentAsync("12345678900")).ReturnsAsync(user);
+
+        var result = await _handler.Handle(new LoginCommand("123.456.789-00", "Senha123"), CancellationToken.None);
+
+        result.Success.Should().BeTrue();
+        result.Token.Should().NotBeNullOrEmpty();
+    }
 }

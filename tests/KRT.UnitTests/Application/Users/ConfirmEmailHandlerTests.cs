@@ -62,4 +62,29 @@ public class ConfirmEmailHandlerTests
         result.Success.Should().BeFalse();
         result.Message.Should().Contain("não encontrado");
     }
+
+    [Fact]
+    public async Task Handle_WhenValid_ShouldSendPendingApprovalEmail()
+    {
+        var user = AppUser.Create("Test User", "test@email.com", "12345678900", "hash");
+        var code = user.EmailConfirmationCode!;
+        _userRepoMock.Setup(r => r.GetByEmailAsync("test@email.com")).ReturnsAsync(user);
+
+        await _handler.Handle(new ConfirmEmailCommand("test@email.com", code), CancellationToken.None);
+
+        _emailServiceMock.Verify(e => e.SendRegistrationPendingAsync("test@email.com", "Test User"), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenValid_ShouldClearConfirmationCode()
+    {
+        var user = AppUser.Create("Test", "test@email.com", "12345678900", "hash");
+        var code = user.EmailConfirmationCode!;
+        _userRepoMock.Setup(r => r.GetByEmailAsync("test@email.com")).ReturnsAsync(user);
+
+        await _handler.Handle(new ConfirmEmailCommand("test@email.com", code), CancellationToken.None);
+
+        user.EmailConfirmationCode.Should().BeNull();
+        user.EmailConfirmationExpiry.Should().BeNull();
+    }
 }

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using KRT.BuildingBlocks.Domain.Exceptions;
 using KRT.Onboarding.Application.Commands.Users;
 using KRT.Onboarding.Application.Commands.Users.Handlers;
 using KRT.Onboarding.Application.Interfaces;
@@ -59,5 +60,35 @@ public class ApproveUserHandlerTests
 
         result.Success.Should().BeFalse();
         result.Message.Should().Contain("não encontrado");
+    }
+
+    [Fact]
+    public async Task Handle_WhenNotPending_ShouldThrowDomainException()
+    {
+        var user = AppUser.Create("Test", "test@email.com", "12345678900", "hash");
+        // user is PendingEmailConfirmation, not PendingApproval
+        _userRepoMock.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+
+        var act = async () => await _handler.Handle(
+            new ApproveUserCommand(user.Id, Guid.NewGuid()), CancellationToken.None);
+
+        await act.Should().ThrowAsync<BusinessRuleException>();
+    }
+
+    [Fact]
+    public async Task Handle_WhenValid_ShouldSetApprovedAtAndApprovedBy()
+    {
+        var user = AppUser.Create("Test", "test@email.com", "12345678900", "hash");
+        user.ConfirmEmail();
+        var adminId = Guid.NewGuid();
+
+        _userRepoMock.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+
+        var before = DateTime.UtcNow;
+        await _handler.Handle(new ApproveUserCommand(user.Id, adminId), CancellationToken.None);
+
+        user.ApprovedAt.Should().NotBeNull();
+        user.ApprovedAt.Should().BeOnOrAfter(before);
+        user.ApprovedBy.Should().Be(adminId.ToString());
     }
 }
