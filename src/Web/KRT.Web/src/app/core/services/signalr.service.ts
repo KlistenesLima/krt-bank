@@ -76,10 +76,10 @@ export class SignalRService implements OnDestroy {
     try {
       await this.hubConnection.start();
       this.connectionState$.next('Connected');
-      console.log('[SignalR] Connected');
+      // connected
 
       await this.hubConnection.invoke('JoinAccountGroup', accountId);
-      console.log(`[SignalR] Joined group account_${accountId}`);
+      // joined group
     } catch (err) {
       console.error('[SignalR] Connection failed:', err);
       this.connectionState$.next('Error');
@@ -93,11 +93,11 @@ export class SignalRService implements OnDestroy {
     if (!this.hubConnection) return;
 
     this.hubConnection.on('Connected', (data: any) => {
-      console.log('[SignalR] Server confirmed connection:', data);
+      // server confirmed
     });
 
     this.hubConnection.on('BalanceUpdated', (data: BalanceUpdate) => {
-      console.log('[SignalR] BalanceUpdated:', data);
+      // balance updated
       this.balanceUpdate$.next(data);
       this.notifications$.next({
         type: 'info',
@@ -107,7 +107,7 @@ export class SignalRService implements OnDestroy {
     });
 
     this.hubConnection.on('TransactionStatus', (data: TransactionStatusUpdate) => {
-      console.log('[SignalR] TransactionStatus:', data);
+      // transaction status
       this.transactionStatus$.next(data);
 
       const typeMap: Record<string, string> = {
@@ -123,7 +123,7 @@ export class SignalRService implements OnDestroy {
     });
 
     this.hubConnection.on('Alert', (data: AlertNotification) => {
-      console.log('[SignalR] Alert:', data);
+      // alert received
       this.alert$.next(data);
       this.notifications$.next({
         type: data.alertType.includes('fraud') ? 'error' : 'warning',
@@ -145,7 +145,7 @@ export class SignalRService implements OnDestroy {
     });
 
     this.hubConnection.onreconnected(async (connectionId) => {
-      console.log('[SignalR] Reconnected:', connectionId);
+      // reconnected
       this.connectionState$.next('Connected');
       if (this.accountId) {
         await this.hubConnection!.invoke('JoinAccountGroup', this.accountId);

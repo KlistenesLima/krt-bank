@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { AccountService } from '../../../core/services/account.service';
 import { PaymentService } from '../../../core/services/payment.service';
+import { CardService, VirtualCard } from '../../../core/services/card.service';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -74,6 +75,10 @@ import { PaymentService } from '../../../core/services/payment.service';
               {{ showBalance ? (balance | currency:'BRL') : '•••••••' }}
             </div>
             <span class="account-tag" *ngIf="showBalance">Ag 0001 · Conta {{ accountId?.substring(0, 8) }}</span>
+            <div class="card-limit-row" *ngIf="showBalance && cardLimit > 0">
+              <mat-icon>credit_card</mat-icon>
+              <span>Limite disponivel: {{ cardAvailable | currency:'BRL' }} / {{ cardLimit | currency:'BRL' }}</span>
+            </div>
           </div>
         </div>
       </header>
@@ -242,6 +247,11 @@ import { PaymentService } from '../../../core/services/payment.service';
       background: rgba(255,255,255,0.12); padding: 4px 12px;
       border-radius: 20px; display: inline-block;
     }
+    .card-limit-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 8px; font-size: 0.78rem; color: rgba(255,255,255,0.7);
+    }
+    .card-limit-row mat-icon { font-size: 16px; width: 16px; height: 16px; }
 
     /* === DROPDOWN === */
     .avatar-menu-wrapper { position: relative; }
@@ -437,12 +447,15 @@ export class DashboardPageComponent implements OnInit {
   isUserAdmin = false;
   showDropdown = false;
   userEmail = '';
+  cardLimit = 0;
+  cardAvailable = 0;
 
   constructor(
     public router: Router,
     private auth: AuthService,
     private accountService: AccountService,
-    private paymentService: PaymentService
+    private paymentService: PaymentService,
+    private cardService: CardService
   ) {}
 
   ngOnInit() {
@@ -453,7 +466,12 @@ export class DashboardPageComponent implements OnInit {
     this.isUserAdmin = this.auth.isAdmin();
     this.userEmail = localStorage.getItem('krt_account_email') || '';
     this.loading = false;
+
     if (this.accountId) {
+      // Buscar saldo real da API
+      this.refreshBalanceFromApi();
+
+      // Buscar últimas transações da API
       this.paymentService.getStatement(this.accountId, 1, 5).subscribe({
         next: (res) => {
           this.transactions = res.items.map((entry: any) => ({
@@ -465,6 +483,18 @@ export class DashboardPageComponent implements OnInit {
           }));
         },
         error: () => { this.transactions = []; }
+      });
+
+      // Buscar limite do cartão da API
+      this.cardService.getCards(this.accountId).subscribe({
+        next: (cards) => {
+          if (cards && cards.length > 0) {
+            const activeCard = cards.find(c => c.status === 'Active') || cards[0];
+            this.cardLimit = activeCard.spendingLimit;
+            this.cardAvailable = activeCard.remainingLimit;
+          }
+        },
+        error: () => {}
       });
     }
   }
