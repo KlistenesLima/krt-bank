@@ -32,13 +32,14 @@ export class AuthService {
         if (res.success) {
           localStorage.setItem('krt_token', res.accessToken);
           localStorage.setItem('krt_refresh_token', res.refreshToken || '');
-          localStorage.setItem('krt_account_id', res.account.id);
-          localStorage.setItem('krt_account_name', res.account.name);
-          localStorage.setItem('krt_account_doc', res.account.document);
-          localStorage.setItem('krt_account_email', res.account.email);
-          localStorage.setItem('krt_account_balance', res.account.balance?.toString() || '0');
-          localStorage.setItem('krt_account_role', res.account?.role || 'User');
-          localStorage.setItem('krt_account_status', res.account.status || 'Active');
+          const acct = res.account || {};
+          localStorage.setItem('krt_account_id', acct.id || '');
+          localStorage.setItem('krt_account_name', acct.name || '');
+          localStorage.setItem('krt_account_doc', acct.document || '');
+          localStorage.setItem('krt_account_email', acct.email || '');
+          localStorage.setItem('krt_account_balance', acct.balance?.toString() || '0');
+          localStorage.setItem('krt_account_role', acct.role || res.role || 'User');
+          localStorage.setItem('krt_account_status', acct.status || 'Active');
         }
       })
     );
