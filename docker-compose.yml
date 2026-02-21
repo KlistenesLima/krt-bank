@@ -180,6 +180,7 @@
       Keycloak__ClientId: "krt-bank-app"
       Keycloak__AdminUser: "${KEYCLOAK_ADMIN:-admin}"
       Keycloak__AdminPassword: "${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}"
+      Email__SmtpPassword: "${SMTP_PASSWORD:-}"
       Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
     restart: unless-stopped
 

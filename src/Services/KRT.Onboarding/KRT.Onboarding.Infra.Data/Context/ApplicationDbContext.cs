@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
 
     public DbSet<PixKey> PixKeys => Set<PixKey>();
     public DbSet<Account> Accounts { get; set; } = null!;
+    public DbSet<AppUser> AppUsers { get; set; } = null!;
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -30,6 +31,8 @@ public class ApplicationDbContext : DbContext, IUnitOfWork
             entity.Property(e => e.Type).HasConversion<string>();
             entity.HasIndex(e => e.Document).IsUnique();
         });
+
+        modelBuilder.ApplyConfiguration(new AppUserMapping());
 
         modelBuilder.Entity<OutboxMessage>(entity =>
         {

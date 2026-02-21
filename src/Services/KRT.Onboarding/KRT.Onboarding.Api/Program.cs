@@ -1,12 +1,16 @@
-﻿using KRT.BuildingBlocks.Infrastructure.Observability;
+using KRT.BuildingBlocks.Infrastructure.Observability;
 using KRT.Onboarding.Infra.IoC;
 using KRT.Onboarding.Application.Interfaces;
 using KRT.Onboarding.Api.Services;
 using KRT.Onboarding.Application.Commands;
 using KRT.Onboarding.Api.Middlewares;
+using KRT.Onboarding.Domain.Entities;
+using KRT.Onboarding.Domain.Enums;
+using KRT.Onboarding.Domain.Interfaces;
 using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,12 +31,20 @@ builder.Services.AddHttpClient<KRT.Onboarding.Application.Interfaces.IKeycloakAd
 
 builder.Services.AddOnboardingInfrastructure(builder.Configuration);
 
+// 4.1 EMAIL SERVICE
+builder.Services.AddScoped<IEmailService, GmailEmailService>();
+
 // 5. MEDIATR
 builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssemblies(typeof(CreateAccountCommand).Assembly));
+    cfg.RegisterServicesFromAssemblies(
+        typeof(CreateAccountCommand).Assembly));
 
-// 6. SECURITY (JWT / KEYCLOAK)
+// 6. SECURITY (JWT — Dual: Keycloak + JWT próprio)
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "KRT-Bank-Super-Secret-Key-2026-Minimum-32-Chars!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "KRT.Onboarding";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "KRT.Bank";
 var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -42,10 +54,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false, // Desabilitado para demo — Keycloak issuer varia entre Docker/localhost/produção
-            ValidateAudience = true,
+            ValidateIssuer = false, // Aceita tokens do Keycloak e do JWT próprio
+            ValidateAudience = false, // Aceita ambos audiences
             ValidateLifetime = true,
-            ValidateIssuerSigningKey = true
+            ValidateIssuerSigningKey = false, // Keycloak usa RS256, JWT próprio usa HS256
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            // Mapeia claims de role corretamente
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+            NameClaimType = System.Security.Claims.ClaimTypes.Name
         };
 
         options.Events = new JwtBearerEvents
@@ -53,6 +69,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             OnAuthenticationFailed = context =>
             {
                 Log.Error("Onboarding Auth Failed: {Message}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                // Log para debug de claims
+                var claims = context.Principal?.Claims.Select(c => $"{c.Type}={c.Value}");
+                Log.Debug("Token validated. Claims: {Claims}", string.Join(", ", claims ?? Array.Empty<string>()));
                 return Task.CompletedTask;
             }
         };
@@ -91,6 +114,20 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<KRT.Onboarding.Infra.Data.Context.ApplicationDbContext>();
     db.Database.EnsureCreated();
+
+    // Seed admin user
+    var userRepo = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
+    var existingAdmin = await userRepo.GetByEmailAsync("admin@krtbank.com.br");
+    if (existingAdmin == null)
+    {
+        var admin = AppUser.Create("Administrador KRT", "admin@krtbank.com.br", "00000000000",
+            BCrypt.Net.BCrypt.HashPassword("Admin@KRT2026"));
+        admin.ConfirmEmail();
+        admin.Approve("SYSTEM_SEED");
+        admin.ChangeRole(UserRole.Administrador);
+        await userRepo.AddAsync(admin);
+        Log.Information("[KRT.Onboarding] Admin seed created: admin@krtbank.com.br / Admin@KRT2026");
+    }
 }
 
 // 9. PIPELINE (A ORDEM IMPORTA)
@@ -134,8 +171,3 @@ app.MapControllers();
 
 Log.Information("KRT.Onboarding starting on {Environment}", app.Environment.EnvironmentName);
 app.Run();
-
-
-
-
-
