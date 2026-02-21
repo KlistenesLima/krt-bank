@@ -111,6 +111,7 @@ builder.Services.AddSingleton<ITransactionNotifier, SignalRTransactionNotifier>(
 builder.Services.AddSingleton<KRT.Payments.Api.Services.QrCodeService>();
 builder.Services.AddSingleton<KRT.Payments.Api.Services.PdfReceiptService>();
 builder.Services.AddScoped<KRT.Payments.Api.Services.ChargePaymentService>();
+builder.Services.AddSingleton<KRT.Payments.Api.Services.BRCodeParser>();
 
 // Registrar PaymentsDbContext (Api.Data) para controllers novos
 builder.Services.AddDbContext<KRT.Payments.Api.Data.PaymentsDbContext>(options =>

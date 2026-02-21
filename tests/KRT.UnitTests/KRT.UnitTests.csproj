@@ -27,5 +27,6 @@
     <ProjectReference Include="..\..\src\Services\KRT.Onboarding\KRT.Onboarding.Application\KRT.Onboarding.Application.csproj" />
     <ProjectReference Include="..\..\src\Services\KRT.Payments\KRT.Payments.Domain\KRT.Payments.Domain.csproj" />
     <ProjectReference Include="..\..\src\Services\KRT.Payments\KRT.Payments.Application\KRT.Payments.Application.csproj" />
+    <ProjectReference Include="..\..\src\Services\KRT.Payments\KRT.Payments.Api\KRT.Payments.Api.csproj" />
   </ItemGroup>
 </Project>

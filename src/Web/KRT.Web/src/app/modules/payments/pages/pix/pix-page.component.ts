@@ -554,22 +554,25 @@ export class PixPageComponent {
     this.brCodeData = data;
     this.isLoading = true;
 
-    // Buscar charge pendente no backend
+    // Enviar BRCode bruto para o backend parsear e buscar charge
     const token = localStorage.getItem('krt_token');
     const hdrs = { headers: { Authorization: 'Bearer ' + token } };
 
     this.http.post<any>(environment.apiUrl + '/pix/charges/find-by-brcode', {
-      pixKey: data.pixKey,
-      amount: data.amount,
-      txId: data.txId || null
+      brCode: this.brCodePayload.trim()
     }, hdrs).subscribe({
       next: (res) => {
-        this.chargeId = res.chargeId;
+        this.chargeId = res.chargeFound ? res.chargeId : '';
+        // Atualizar dados com resposta do backend
+        if (res.merchantName) this.brCodeData!.merchantName = res.merchantName;
+        if (res.pixKey) this.brCodeData!.pixKey = res.pixKey;
+        if (res.amount) this.brCodeData!.amount = res.amount;
+        if (res.merchantCity) this.brCodeData!.city = res.merchantCity;
         this.isLoading = false;
         this.brCodeParsed = true;
       },
       error: () => {
-        // Charge não encontrada — ainda exibe os dados para PIX P2P
+        // Erro no parse do backend — ainda exibe os dados do parse local
         this.chargeId = '';
         this.isLoading = false;
         this.brCodeParsed = true;
@@ -612,12 +615,13 @@ export class PixPageComponent {
     const token = localStorage.getItem('krt_token');
     const hdrs = { headers: { Authorization: 'Bearer ' + token } };
 
-    // Fluxo Copia e Cola com charge encontrada → simulate-payment
-    if (this.isBrCode && this.chargeId) {
+    // Fluxo Copia e Cola → pay-brcode (charge ou P2P)
+    if (this.isBrCode && this.brCodePayload) {
       const accountId = localStorage.getItem('krt_account_id');
-      const body = accountId ? { payerAccountId: accountId } : {};
       this.http.post<any>(
-        `${environment.apiUrl}/pix/charges/${this.chargeId}/simulate-payment`, body, hdrs
+        `${environment.apiUrl}/pix/pay-brcode`,
+        { brCode: this.brCodePayload.trim(), payerAccountId: accountId },
+        hdrs
       ).subscribe({
         next: (res) => {
           if (res.newBalance !== undefined && res.newBalance !== null) {
