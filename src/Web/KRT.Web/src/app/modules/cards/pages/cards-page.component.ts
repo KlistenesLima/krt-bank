@@ -75,7 +75,7 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
               </div>
               <div class="info-row">
                 <span>Vencimento</span>
-                <strong>Dia 15</strong>
+                <strong>{{ bill ? formatDate(bill.dueDate) : '-' }}</strong>
               </div>
             </div>
 
@@ -108,11 +108,15 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
             <div class="bill-summary info-card">
               <div class="info-row">
                 <span>Total da fatura</span>
-                <strong class="danger">R$ {{ bill?.currentBill | number:'1.2-2' }}</strong>
+                <strong [class.danger]="bill && bill.currentBill > 0">R$ {{ bill?.currentBill | number:'1.2-2' }}</strong>
               </div>
               <div class="info-row">
-                <span>Pagamento minimo (15%)</span>
+                <span>Pagamento minimo (10%)</span>
                 <strong>R$ {{ bill?.minimumPayment | number:'1.2-2' }}</strong>
+              </div>
+              <div class="info-row">
+                <span>Fechamento</span>
+                <strong>{{ formatDate(bill?.closingDate) }}</strong>
               </div>
               <div class="info-row">
                 <span>Vencimento</span>
@@ -121,6 +125,17 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
               <div class="info-row">
                 <span>Limite disponivel</span>
                 <strong class="success">R$ {{ bill?.availableLimit | number:'1.2-2' }}</strong>
+              </div>
+            </div>
+
+            <!-- Barra de progresso: total pago / total da fatura -->
+            <div class="bill-progress" *ngIf="bill && bill.currentBill > 0">
+              <div class="progress-label">
+                <span>Pago</span>
+                <span>R$ {{ totalPaid | number:'1.2-2' }} de R$ {{ totalCharges | number:'1.2-2' }}</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="progressPercent"></div>
               </div>
             </div>
 
@@ -173,7 +188,7 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
               </button>
               <button class="pay-option" [class.selected]="payOption === 'minimum'" (click)="selectPayOption('minimum')">
                 <div>
-                  <strong>Pagamento minimo (15%)</strong>
+                  <strong>Pagamento minimo (10%)</strong>
                   <span>R$ {{ minimumPayment | number:'1.2-2' }}</span>
                 </div>
                 <mat-icon>{{ payOption === 'minimum' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
@@ -386,6 +401,20 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
     }
     .custom-amount input:focus { border-color: var(--krt-primary); outline: none; }
 
+    .bill-progress { padding: 16px 0; }
+    .progress-label {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px; font-size: 0.82rem; color: var(--krt-text-secondary);
+    }
+    .progress-bar {
+      width: 100%; height: 8px; background: var(--krt-divider);
+      border-radius: 4px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: var(--krt-success);
+      border-radius: 4px; transition: width 0.5s ease;
+    }
+
     .pay-summary { margin-top: 16px; }
 
     .success-container { text-align: center; padding-top: 40px; }
@@ -502,7 +531,15 @@ export class CardsPageComponent implements OnInit, OnDestroy {
       next: (cards) => {
         if (cards.length > 0) {
           this.cardService.getCard(cards[0].id).subscribe({
-            next: (c) => { this.card = c; this.loading = false; },
+            next: (c) => {
+              this.card = c;
+              this.loading = false;
+              // Carregar fatura para exibir vencimento na tela principal
+              this.cardService.getBill(c.id).subscribe({
+                next: (b) => this.bill = b,
+                error: () => {}
+              });
+            },
             error: () => { this.loading = false; }
           });
         } else {
@@ -536,8 +573,24 @@ export class CardsPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  get totalCharges(): number {
+    if (!this.bill) return 0;
+    return this.bill.charges.reduce((sum, c) => sum + c.amount, 0);
+  }
+
+  get totalPaid(): number {
+    if (!this.bill) return 0;
+    return this.bill.payments.reduce((sum, p) => sum + p.amount, 0);
+  }
+
+  get progressPercent(): number {
+    const total = this.totalCharges;
+    if (total === 0) return 0;
+    return Math.min(100, (this.totalPaid / total) * 100);
+  }
+
   get minimumPayment(): number {
-    return this.card ? Math.round(this.card.spentThisMonth * 0.15 * 100) / 100 : 0;
+    return this.card ? Math.round(this.card.spentThisMonth * 0.10 * 100) / 100 : 0;
   }
 
   get payAmount(): number {

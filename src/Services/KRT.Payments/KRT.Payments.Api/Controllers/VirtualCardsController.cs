@@ -141,16 +141,18 @@ public class VirtualCardsController : ControllerBase
         // Buscar pagamentos de fatura do mês (registrados como StatementEntry)
         var payments = await _db.StatementEntries
             .Where(s => s.AccountId == card.AccountId
-                && s.Type == "Fatura Cartao"
+                && s.Type == "PagamentoFatura"
                 && s.IsCredit == false
                 && s.Date >= startOfMonth)
             .OrderByDescending(s => s.Date)
             .ToListAsync(ct);
 
         var currentBill = card.SpentThisMonth;
-        var dueDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 15, 0, 0, 0, DateTimeKind.Utc);
-        if (dueDate <= DateTime.UtcNow)
-            dueDate = dueDate.AddMonths(1);
+        // Fechamento = último dia do mês atual
+        var now = DateTime.UtcNow;
+        var closingDate = new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month), 0, 0, 0, DateTimeKind.Utc);
+        // Vencimento = 10 dias após fechamento
+        var dueDate = closingDate.AddDays(10);
 
         return Ok(new
         {
@@ -160,7 +162,8 @@ public class VirtualCardsController : ControllerBase
             spendingLimit = card.SpendingLimit,
             availableLimit = card.AvailableLimit,
             currentBill,
-            minimumPayment = Math.Round(currentBill * 0.15m, 2),
+            minimumPayment = Math.Round(currentBill * 0.10m, 2),
+            closingDate = closingDate.ToString("yyyy-MM-dd"),
             dueDate = dueDate.ToString("yyyy-MM-dd"),
             charges = charges.Select(c => new
             {
@@ -190,6 +193,11 @@ public class VirtualCardsController : ControllerBase
 
         if (request.Amount > card.SpentThisMonth)
             return BadRequest(new { error = $"Valor excede fatura pendente (R$ {card.SpentThisMonth:N2})" });
+
+        // Validar pagamento mínimo (10%) — só valida se NÃO é pagamento total
+        var minimumPayment = Math.Round(card.SpentThisMonth * 0.10m, 2);
+        if (request.Amount < card.SpentThisMonth && request.Amount < minimumPayment)
+            return BadRequest(new { error = $"Valor minimo de pagamento: R$ {minimumPayment:N2} (10% da fatura)" });
 
         // Buscar conta do pagador
         BankAccount? payer = null;
@@ -221,7 +229,7 @@ public class VirtualCardsController : ControllerBase
             Id = Guid.NewGuid(),
             AccountId = payer.Id,
             Date = DateTime.UtcNow,
-            Type = "Fatura Cartao",
+            Type = "PagamentoFatura",
             Category = "Payment",
             Amount = request.Amount,
             Description = description,
