@@ -29,13 +29,14 @@ export class AppComponent {
   showFab = false;
   showFooter = false;
 
-  private footerRoutes = ['/about', '/resume', '/docs', '/login', '/register', '/portfolio'];
+  private footerRoutes = ['/about', '/resume', '/docs', '/login', '/register', '/forgot-password', '/portfolio'];
+  private noFabRoutes = ['/login', '/register', '/forgot-password'];
 
   constructor(private router: Router) {
     this.router.events.subscribe(e => {
       if (e instanceof NavigationEnd) {
         const url = e.urlAfterRedirects;
-        this.showFab = !['/login', '/register'].includes(url);
+        this.showFab = !this.noFabRoutes.includes(url);
         if (!this.showFab) this.chatOpen = false;
         this.showFooter = this.footerRoutes.includes(url);
       }

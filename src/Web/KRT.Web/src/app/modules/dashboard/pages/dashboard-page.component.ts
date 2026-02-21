@@ -49,6 +49,9 @@ import { PaymentService } from '../../../core/services/payment.service';
                     <button class="dd-item admin" *ngIf="isUserAdmin" (click)="router.navigate(['/admin']); showDropdown=false">
                       <mat-icon>admin_panel_settings</mat-icon> Command Center
                     </button>
+                    <button class="dd-item admin" *ngIf="isUserAdmin" (click)="router.navigate(['/admin/users']); showDropdown=false">
+                      <mat-icon>group</mat-icon> Gerenciar Usuarios
+                    </button>
                     <div class="dd-sep"></div>
                     <button class="dd-item logout" (click)="logout()">
                       <mat-icon>logout</mat-icon> Sair

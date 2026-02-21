@@ -14,8 +14,20 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/register`, data);
   }
 
-  login(cpf: string, password: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/login`, { cpf, password }).pipe(
+  confirmEmail(email: string, code: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/confirm-email`, { email, code });
+  }
+
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  resetPassword(email: string, code: string, newPassword: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password`, { email, code, newPassword });
+  }
+
+  login(identifier: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/login`, { identifier, password }).pipe(
       tap((res: any) => {
         if (res.success) {
           localStorage.setItem('krt_token', res.accessToken);
@@ -80,7 +92,8 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return this.getRole() === 'Admin';
+    const role = this.getRole();
+    return role === 'Admin' || role === 'Administrador';
   }
 
   get currentSession(): any {

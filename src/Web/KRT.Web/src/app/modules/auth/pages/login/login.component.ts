@@ -64,14 +64,23 @@ import { AuthService } from '../../../../core/services/auth.service';
             {{ errorMsg }}
           </div>
 
+          <!-- Status messages -->
+          <div *ngIf="statusMsg" class="status-msg slide-down" [class]="'status-' + statusType">
+            <mat-icon>{{ statusIcon }}</mat-icon>
+            <div>
+              <span>{{ statusMsg }}</span>
+              <a *ngIf="statusType === 'email'" class="status-link" (click)="goToRegister()">Reenviar codigo</a>
+            </div>
+          </div>
+
           <form (ngSubmit)="login()">
             <div class="field">
-              <label>CPF</label>
-              <div class="input-wrap" [class.focused]="cpfFocused" [class.filled]="cpf">
-                <mat-icon class="field-icon">badge</mat-icon>
-                <input type="text" [(ngModel)]="cpf" name="cpf" placeholder="000.000.000-00"
-                       maxlength="14" (input)="maskCpf($event)" [disabled]="isLoading"
-                       (focus)="cpfFocused=true" (blur)="cpfFocused=false" autocomplete="off">
+              <label>Email ou CPF</label>
+              <div class="input-wrap" [class.focused]="identifierFocused" [class.filled]="identifier">
+                <mat-icon class="field-icon">{{ isIdentifierCpf() ? 'badge' : 'email' }}</mat-icon>
+                <input type="text" [(ngModel)]="identifier" name="identifier" placeholder="Email ou CPF"
+                       [maxlength]="isIdentifierCpf() ? 14 : 100" (input)="onIdentifierInput($event)" [disabled]="isLoading"
+                       (focus)="identifierFocused=true" (blur)="identifierFocused=false" autocomplete="off">
               </div>
             </div>
 
@@ -88,7 +97,9 @@ import { AuthService } from '../../../../core/services/auth.service';
               </div>
             </div>
 
-            <button type="submit" class="btn-primary" [disabled]="isLoading || !cpf || !password"
+            <a class="forgot-link" (click)="goToForgotPassword()">Esqueci minha senha</a>
+
+            <button type="submit" class="btn-primary" [disabled]="isLoading || !identifier || !password"
                     [class.loading]="isLoading">
               <span *ngIf="!isLoading">Entrar</span>
               <div class="spinner" *ngIf="isLoading">
@@ -236,6 +247,14 @@ import { AuthService } from '../../../../core/services/auth.service';
       transition: color 0.2s; }
     .toggle-pass:hover { color: #6B7280; }
 
+    /* Forgot password link */
+    .forgot-link {
+      display: block; text-align: right; font-size: 0.82rem;
+      color: #0047BB; font-weight: 700; cursor: pointer;
+      margin: -12px 0 8px; text-decoration: none;
+    }
+    .forgot-link:hover { text-decoration: underline; }
+
     /* Primary button */
     .btn-primary {
       width: 100%; height: 54px; border: none; border-radius: 14px;
@@ -320,6 +339,22 @@ import { AuthService } from '../../../../core/services/auth.service';
     }
     .error-msg mat-icon { font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; }
 
+    /* Status messages */
+    .status-msg {
+      padding: 14px 16px; border-radius: 12px; margin-bottom: 20px;
+      font-size: 0.88rem; font-weight: 500;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .status-msg mat-icon { font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+    .status-email { background: #E3F2FD; color: #1565C0; border: 1px solid #BBDEFB; }
+    .status-pending { background: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2; }
+    .status-inactive { background: #F5F5F5; color: #616161; border: 1px solid #E0E0E0; }
+    .status-rejected { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+    .status-link {
+      display: block; margin-top: 6px; font-weight: 700; cursor: pointer;
+      text-decoration: underline; color: inherit;
+    }
+
     .slide-down {
       animation: slideDown 0.3s ease;
     }
@@ -360,44 +395,107 @@ import { AuthService } from '../../../../core/services/auth.service';
   `]
 })
 export class LoginComponent {
-  cpf = '';
+  identifier = '';
   password = '';
   isLoading = false;
   showPass = false;
   errorMsg = '';
-  cpfFocused = false;
+  statusMsg = '';
+  statusType = '';
+  statusIcon = '';
+  identifierFocused = false;
   passFocused = false;
 
   constructor(private auth: AuthService, private router: Router) {}
 
-  maskCpf(event: any) {
-    let v = event.target.value.replace(/\D/g, '');
-    if (v.length > 11) v = v.slice(0, 11);
-    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-    this.cpf = v;
-    event.target.value = v;
+  isIdentifierCpf(): boolean {
+    return /^\d/.test(this.identifier.replace(/\D/g, ''));
+  }
+
+  onIdentifierInput(event: any) {
+    const raw = event.target.value;
+    // Auto-detect: if starts with digits, apply CPF mask
+    if (/^\d/.test(raw.replace(/[.\-]/g, '')) && !raw.includes('@')) {
+      let v = raw.replace(/\D/g, '');
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+      this.identifier = v;
+      event.target.value = v;
+    }
   }
 
   login() {
     this.isLoading = true;
     this.errorMsg = '';
-    this.auth.login(this.cpf, this.password).subscribe({
+    this.statusMsg = '';
+    this.auth.login(this.identifier, this.password).subscribe({
       next: (res: any) => {
         this.isLoading = false;
         if (res.success) {
           this.router.navigate(['/dashboard']);
         } else {
-          this.errorMsg = res.error || 'Erro ao fazer login';
+          this.handleLoginResponse(res);
         }
       },
       error: (err: any) => {
         this.isLoading = false;
-        this.errorMsg = err.error?.error || 'CPF ou senha invalidos';
+        this.handleLoginError(err);
       }
     });
   }
 
+  private handleLoginResponse(res: any) {
+    const status = res.status || res.userStatus || '';
+    const error = res.error || res.message || '';
+
+    if (status === 'PendingEmailConfirmation') {
+      this.statusMsg = 'Confirme seu email antes de fazer login.';
+      this.statusType = 'email';
+      this.statusIcon = 'mark_email_unread';
+    } else if (status === 'PendingApproval') {
+      this.statusMsg = 'Seu cadastro esta em analise. Aguarde aprovacao.';
+      this.statusType = 'pending';
+      this.statusIcon = 'hourglass_empty';
+    } else if (status === 'Inactive') {
+      this.statusMsg = 'Sua conta foi desativada. Entre em contato com o administrador.';
+      this.statusType = 'inactive';
+      this.statusIcon = 'block';
+    } else if (status === 'Rejected') {
+      this.statusMsg = 'Seu cadastro nao foi aprovado.';
+      this.statusType = 'rejected';
+      this.statusIcon = 'cancel';
+    } else {
+      this.errorMsg = error || 'Erro ao fazer login';
+    }
+  }
+
+  private handleLoginError(err: any) {
+    const status = err.error?.status || err.error?.userStatus || '';
+    const error = err.error?.error || err.error?.message || '';
+
+    if (status === 'PendingEmailConfirmation') {
+      this.statusMsg = 'Confirme seu email antes de fazer login.';
+      this.statusType = 'email';
+      this.statusIcon = 'mark_email_unread';
+    } else if (status === 'PendingApproval') {
+      this.statusMsg = 'Seu cadastro esta em analise. Aguarde aprovacao.';
+      this.statusType = 'pending';
+      this.statusIcon = 'hourglass_empty';
+    } else if (status === 'Inactive') {
+      this.statusMsg = 'Sua conta foi desativada. Entre em contato com o administrador.';
+      this.statusType = 'inactive';
+      this.statusIcon = 'block';
+    } else if (status === 'Rejected') {
+      this.statusMsg = 'Seu cadastro nao foi aprovado.';
+      this.statusType = 'rejected';
+      this.statusIcon = 'cancel';
+    } else {
+      this.errorMsg = error || 'Email/CPF ou senha incorretos.';
+    }
+  }
+
   goToRegister() { this.router.navigate(['/register']); }
+  goToForgotPassword() { this.router.navigate(['/forgot-password']); }
 }
