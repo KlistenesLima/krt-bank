@@ -414,6 +414,22 @@ import { parseBRCode, BRCodeData } from '../../../../shared/utils/brcode-parser'
     .btn-receipt mat-icon { font-size: 20px; width: 20px; height: 20px; }
 
     ::ng-deep .mat-mdc-progress-spinner circle { stroke: white !important; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .pix-content { padding: 20px 16px; }
+      .key-types { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+      .key-type-btn { padding: 10px 2px; border-radius: 12px; }
+      .key-icon { width: 36px; height: 36px; }
+      .key-type-btn span { font-size: 0.62rem; }
+      .amount-input { font-size: 2.2rem; }
+      .step-label { font-size: 1rem; }
+    }
+    @media (max-width: 360px) {
+      .key-types { grid-template-columns: repeat(3, 1fr); }
+      .amount-input { font-size: 1.8rem; }
+      .currency-sign { font-size: 1.1rem; }
+    }
   `]
 })
 export class PixPageComponent {

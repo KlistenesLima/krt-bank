@@ -82,7 +82,7 @@
       "name": "KRT Bank Service-to-Service",
       "enabled": true,
       "publicClient": false,
-      "secret": "krt-bank-service-secret",
+      "secret": "CHANGE_ME_SERVICE_SECRET",
       "serviceAccountsEnabled": true,
       "directAccessGrantsEnabled": false,
       "standardFlowEnabled": false,
@@ -100,7 +100,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "demo123",
+          "value": "CHANGE_ME_DEMO_PASSWORD",
           "temporary": false
         }
       ],
@@ -122,7 +122,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin123",
+          "value": "CHANGE_ME_ADMIN_PASSWORD",
           "temporary": false
         }
       ],

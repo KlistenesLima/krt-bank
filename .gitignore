@@ -68,7 +68,7 @@ ScaffoldingReadMe.txt
 docker-compose.override.yml
 .dockerignore
 
-# Environment Variables & Secrets (CRITICAL)
+# ===== SECRETS =====
 .env
 .env.local
 .env.production
@@ -81,10 +81,34 @@ appsettings.*.local.json
 # Keep .env.example (template para novos devs)
 !.env.example
 
-# Test results
+# ===== .NET Config =====
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Secret.json
+appsettings.Production.json
+appsettings.*.local.json
+!appsettings.json
+launchSettings.json
+
+# ===== Node =====
+node_modules/
+dist/
+.angular/
+.vite/
+*.tsbuildinfo
+
+# ===== IDE =====
+.idea/
+*.swp
+*.swo
+
+# ===== Test results =====
 TestResults/
 *.tr*
 
-# OS Generated
+# ===== OS =====
 .DS_Store
 Thumbs.db
+
+# ===== Logs =====
+*.log

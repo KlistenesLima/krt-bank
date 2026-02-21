@@ -399,5 +399,56 @@ export class LoginComponent {
     });
   }
 
+  private handleLoginResponse(res: any) {
+    const status = res.status || res.userStatus || '';
+    const error = res.error || res.message || '';
+
+    if (status === 'PendingEmailConfirmation') {
+      this.statusMsg = 'Confirme seu email antes de fazer login.';
+      this.statusType = 'email';
+      this.statusIcon = 'mark_email_unread';
+    } else if (status === 'PendingApproval') {
+      this.statusMsg = 'Seu cadastro esta em analise. Aguarde aprovacao.';
+      this.statusType = 'pending';
+      this.statusIcon = 'hourglass_empty';
+    } else if (status === 'Inactive') {
+      this.statusMsg = 'Sua conta foi desativada. Entre em contato com o administrador.';
+      this.statusType = 'inactive';
+      this.statusIcon = 'block';
+    } else if (status === 'Rejected') {
+      this.statusMsg = 'Seu cadastro nao foi aprovado.';
+      this.statusType = 'rejected';
+      this.statusIcon = 'cancel';
+    } else {
+      this.errorMsg = error || 'Erro ao fazer login';
+    }
+  }
+
+  private handleLoginError(err: any) {
+    const status = err.error?.status || err.error?.userStatus || '';
+    const error = err.error?.error || err.error?.message || '';
+
+    if (status === 'PendingEmailConfirmation') {
+      this.statusMsg = 'Confirme seu email antes de fazer login.';
+      this.statusType = 'email';
+      this.statusIcon = 'mark_email_unread';
+    } else if (status === 'PendingApproval') {
+      this.statusMsg = 'Seu cadastro esta em analise. Aguarde aprovacao.';
+      this.statusType = 'pending';
+      this.statusIcon = 'hourglass_empty';
+    } else if (status === 'Inactive') {
+      this.statusMsg = 'Sua conta foi desativada. Entre em contato com o administrador.';
+      this.statusType = 'inactive';
+      this.statusIcon = 'block';
+    } else if (status === 'Rejected') {
+      this.statusMsg = 'Seu cadastro nao foi aprovado.';
+      this.statusType = 'rejected';
+      this.statusIcon = 'cancel';
+    } else {
+      this.errorMsg = error || 'Email/CPF ou senha incorretos.';
+    }
+  }
+
   goToRegister() { this.router.navigate(['/register']); }
+  goToForgotPassword() { this.router.navigate(['/forgot-password']); }
 }

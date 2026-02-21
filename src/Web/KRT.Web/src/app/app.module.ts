@@ -50,6 +50,15 @@ import { RechargeComponent } from './modules/payments/pages/recharge/recharge.co
 import { InboxPageComponent } from './modules/notifications/pages/inbox/inbox-page.component';
 import { ChatDialogComponent } from './shared/components/chat-dialog/chat-dialog.component';
 import { PixAreaComponent } from './modules/payments/components/pix-area.component';
+import { DemoBannerComponent } from './shared/components/demo-banner/demo-banner.component';
+import { PortfolioComponent } from './pages/portfolio/portfolio.component';
+import { AboutComponent } from './pages/about/about.component';
+import { ResumeComponent } from './pages/resume/resume.component';
+import { DocsComponent } from './pages/docs/docs.component';
+import { FooterComponent } from './shared/components/footer/footer.component';
+import { RegisterComponent } from './pages/register/register.component';
+import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password.component';
+import { AdminUsersComponent } from './pages/admin/users/admin-users.component';
 
 // Guard
 import { AuthGuard } from './core/guards/auth.guard';

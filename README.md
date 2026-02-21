@@ -363,7 +363,19 @@ krt-bank/
 
 ---
 
-## Quick Start
+| Container | Imagem | Porta | Função |
+|-----------|--------|-------|--------|
+| `krt-web` | Angular 17 (custom build) | **4200** | Frontend SPA — interface bancária |
+| `krt-gateway` | .NET 8 (YARP) | **5000** | API Gateway — roteamento, rate limiting |
+| `krt-onboarding-api` | .NET 8 | **5001** | Microsserviço de Onboarding (Contas, Auth, KYC) |
+| `krt-payments-api` | .NET 8 | **5002** | Microsserviço de Pagamentos (PIX, Boleto, Cartão) |
+| `krt-postgres` | postgres:16-alpine | **5433** | Banco de dados principal (15 tabelas) |
+| `krt-redis` | redis:7-alpine | **6380** | Cache de contas e sessões |
+| `krt-kafka` | confluentinc/cp-kafka:7.5.0 | **9092** | Event log — domain events imutáveis |
+| `krt-zookeeper` | confluentinc/cp-zookeeper:7.5.0 | **32181** | Coordenação do Kafka |
+| `krt-rabbitmq` | rabbitmq:3-management | **5672 / 15680** | Task queue — email, SMS, PDF |
+| `krt-keycloak` | keycloak:23.0 | **8080** | Identity Provider (OAuth2 / OIDC) |
+| `krt-seq` | datalust/seq:2024.1 | **8081** | Dashboard de logs estruturados |
 
 ```bash
 # 1. Clone

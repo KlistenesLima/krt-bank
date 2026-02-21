@@ -49,17 +49,17 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblies(typeof(ProcessPixCommand).Assembly));
 
 // 6. SECURITY (JWT / KEYCLOAK)
+var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
+        options.Authority = keycloakAuthority;
         options.Audience = builder.Configuration["Keycloak:Audience"] ?? "account";
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidIssuer = "http://localhost:8080/realms/krt-bank",
+            ValidateIssuer = false, // Desabilitado para demo — Keycloak issuer varia entre Docker/localhost/produção
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true
