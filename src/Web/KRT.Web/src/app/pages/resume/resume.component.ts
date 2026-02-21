@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 interface StackCategory {
   title: string;
@@ -25,9 +26,16 @@ interface Project {
 @Component({
   selector: 'app-resume',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   template: `
     <div class="resume-page" [class.visible]="visible">
+      <!-- Back to KRT Bank Bar -->
+      <div class="krt-back-bar">
+        <a routerLink="/dashboard" class="krt-back-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <span>Voltar ao KRT Bank</span>
+        </a>
+      </div>
       <!-- Header -->
       <section class="hero">
         <div class="hero-bg"></div>
@@ -142,7 +150,11 @@ interface Project {
     .resume-page { opacity: 0; transition: opacity 0.7s ease; padding-bottom: 60px; }
     .resume-page.visible { opacity: 1; }
 
-    .hero { position: relative; padding: 80px 16px 60px; text-align: center; overflow: hidden; }
+    .krt-back-bar { position: fixed; top: 36px; left: 0; right: 0; z-index: 9998; background: #0047BB; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .krt-back-link { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; color: #fff; text-decoration: none; font-size: 0.88rem; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s; }
+    .krt-back-link:hover { background: rgba(255,255,255,0.1); }
+
+    .hero { position: relative; padding: 128px 16px 60px; text-align: center; overflow: hidden; }
     .hero-bg { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,47,98,0.3) 0%, transparent 100%); pointer-events: none; }
     .hero-content { position: relative; max-width: 700px; margin: 0 auto; }
     h1 { font-size: 42px; font-weight: 800; color: #fff; margin: 0 0 8px; font-family: 'Plus Jakarta Sans', sans-serif; }
