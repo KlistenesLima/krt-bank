@@ -106,6 +106,7 @@ services:
     ports: !override []
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
+      Email__SmtpPassword: "${SMTP_PASSWORD:?Set SMTP_PASSWORD}"
     restart: unless-stopped
     logging:
       driver: "json-file"

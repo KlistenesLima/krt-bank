@@ -63,20 +63,40 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.EmailOrDocument) || string.IsNullOrWhiteSpace(request.Password))
+        var login = request.ResolvedLogin;
+        if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new { success = false, message = "Email/CPF e senha são obrigatórios" });
 
-        var command = new LoginCommand(request.EmailOrDocument, request.Password);
+        var command = new LoginCommand(login, request.Password);
         var result = await _mediator.Send(command);
 
         if (!result.Success)
             return Unauthorized(new { success = false, message = result.Message });
 
+        // Fetch account info for the frontend
+        var cleanLogin = login.Contains('@')
+            ? login.Trim().ToLowerInvariant()
+            : login.Replace(".", "").Replace("-", "").Trim();
+        var account = login.Contains('@')
+            ? await _repository.GetByEmailAsync(cleanLogin, CancellationToken.None)
+            : await _repository.GetByCpfAsync(cleanLogin, CancellationToken.None);
+
         return Ok(new
         {
             success = true,
             token = result.Token,
-            role = result.Role?.ToString()
+            accessToken = result.Token,
+            role = result.Role?.ToString(),
+            account = account != null ? new
+            {
+                id = account.Id,
+                name = account.CustomerName,
+                document = account.Document,
+                email = account.Email,
+                balance = account.Balance,
+                status = account.Status.ToString(),
+                role = account.Role ?? "User"
+            } : null
         });
     }
 
@@ -169,7 +189,13 @@ public class AuthController : ControllerBase
 // Request DTOs
 public record RegisterRequest(string FullName, string Email, string Document, string Password);
 public record ConfirmEmailRequest(string Email, string Code);
-public record LoginRequest(string EmailOrDocument, string Password);
+public class LoginRequest
+{
+    public string? EmailOrDocument { get; set; }
+    public string? Identifier { get; set; }
+    public string Password { get; set; } = "";
+    public string ResolvedLogin => !string.IsNullOrWhiteSpace(EmailOrDocument) ? EmailOrDocument : Identifier ?? "";
+}
 public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Email, string Code, string NewPassword);
 public record KeycloakLoginRequest(string Cpf, string Password);

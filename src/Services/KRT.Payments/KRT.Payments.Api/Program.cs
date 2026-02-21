@@ -244,7 +244,7 @@ for (int attempt = 1; attempt <= 10; attempt++)
         using var payerSeedCmd = conn.CreateCommand();
         payerSeedCmd.CommandText = @"
             INSERT INTO ""Accounts"" (""Id"", ""CustomerName"", ""Document"", ""Email"", ""Phone"", ""Balance"", ""Status"", ""Type"", ""Role"", ""RowVersion"", ""CreatedAt"")
-            VALUES ('a1b2c3d4-0000-0000-0000-aabbccddeeff', 'Klístenes Lima', '12345678901', 'klistenes@email.com', '', 50000.00, 'Active', 'Checking', 'User', decode('00000000000000000000000000000002', 'hex'), NOW())
+            VALUES ('a1b2c3d4-0000-0000-0000-aabbccddeeff', 'Klístenes Lima', '12345678901', 'klistenes@email.com', '', 300000.00, 'Active', 'Checking', 'User', decode('00000000000000000000000000000002', 'hex'), NOW())
             ON CONFLICT (""Id"") DO NOTHING;
         ";
         await payerSeedCmd.ExecuteNonQueryAsync();
@@ -279,7 +279,7 @@ for (int attempt = 1; attempt <= 10; attempt++)
                 'a1b2c3d4-0000-0000-0000-aabbccddeeff',
                 '4532789012347890', 'KLISTENES LIMA',
                 '12', '2031', '742', '7890', 0, 0,
-                5000.00, 0.00, true, true, false,
+                15000.00, 0.00, true, true, false,
                 NOW() + INTERVAL '24 hours', NOW(), NOW()
             )
             ON CONFLICT (""Id"") DO NOTHING;
