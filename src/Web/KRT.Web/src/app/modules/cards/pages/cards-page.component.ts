@@ -424,6 +424,30 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
 
     .fade-in { animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 480px) {
+      .card-display { padding: 20px 14px; }
+      .credit-card { padding: 22px 18px; border-radius: 16px; }
+      .card-brand { font-size: 0.95rem; }
+      .card-number span { font-size: 1.05rem; letter-spacing: 2px; }
+      .card-value { font-size: 0.78rem; }
+      .card-info, .bill-container, .pay-container, .success-container { padding: 0 14px; }
+      .info-row span { font-size: 0.82rem; }
+      .info-row strong { font-size: 0.88rem; }
+      .info-card { padding: 4px 16px; }
+      .charges-list { padding: 0 16px; }
+      .charge-desc { font-size: 0.85rem; }
+      .charge-amount { font-size: 0.88rem; }
+    }
+
+    @media (max-width: 360px) {
+      .card-display { padding: 16px 10px; }
+      .credit-card { padding: 18px 14px; }
+      .card-number span { font-size: 0.92rem; letter-spacing: 1.5px; }
+      .card-info, .bill-container, .pay-container, .success-container { padding: 0 10px; }
+      .page-header { padding: 14px 12px; }
+      .page-header h1 { font-size: 0.95rem; }
+    }
   `]
 })
 export class CardsPageComponent implements OnInit, OnDestroy {

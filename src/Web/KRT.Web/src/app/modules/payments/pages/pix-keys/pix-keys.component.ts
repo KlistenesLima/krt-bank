@@ -2,6 +2,7 @@
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-pix-keys',
@@ -141,6 +142,19 @@ import { HttpClient } from '@angular/common/http';
     .limit-info span { font-size: 0.82rem; color: #9CA3AF; }
     .limit-bar { height: 4px; background: #E5E7EB; border-radius: 2px; margin-top: 8px; overflow: hidden; }
     .limit-fill { height: 100%; background: #0047BB; border-radius: 2px; transition: width 0.3s; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .content { padding: 20px 16px 100px; }
+      .type-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .type-btn { padding: 12px 8px; }
+      .type-btn span { font-size: 0.75rem; }
+      .key-card { padding: 14px 12px; }
+      .info-banner { padding: 12px; font-size: 0.78rem; }
+    }
+    @media (max-width: 360px) {
+      .type-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   `]
 })
 export class PixKeysComponent implements OnInit {
@@ -174,7 +188,7 @@ export class PixKeysComponent implements OnInit {
   loadKeys() {
     const accountId = this.getAccountId();
     if (!accountId) return;
-    this.http.get<any[]>('http://localhost:5000/api/v1/pix-keys/account/' + accountId, this.getHeaders()).subscribe({
+    this.http.get<any[]>(environment.apiUrl + '/pix-keys/account/' + accountId, this.getHeaders()).subscribe({
       next: (keys) => {
         const typeMap: any = {
           Cpf: { label: 'CPF', icon: 'badge', color: '#0047BB' },
@@ -226,7 +240,7 @@ export class PixKeysComponent implements OnInit {
     if (!accountId) return;
     const body: any = { accountId: accountId, keyType: this.newType };
     if (this.newType !== 'random') { body.keyValue = this.newValue; }
-    this.http.post<any>('http://localhost:5000/api/v1/pix-keys/register', body, this.getHeaders()).subscribe({
+    this.http.post<any>(environment.apiUrl + '/pix-keys/register', body, this.getHeaders()).subscribe({
       next: () => {
         this.snackBar.open('Chave PIX registrada!', '', { duration: 2000 });
         this.showForm = false; this.newValue = '';
@@ -246,7 +260,7 @@ export class PixKeysComponent implements OnInit {
 
   removeKey(key: any) {
     if (!confirm('Tem certeza que deseja remover esta chave?')) return;
-    this.http.delete('http://localhost:5000/api/v1/pix-keys/' + key.id, this.getHeaders()).subscribe({
+    this.http.delete(environment.apiUrl + '/pix-keys/' + key.id, this.getHeaders()).subscribe({
       next: () => {
         this.snackBar.open('Chave removida!', '', { duration: 2000 });
         this.loadKeys();

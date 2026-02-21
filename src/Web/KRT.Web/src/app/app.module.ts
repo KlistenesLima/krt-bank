@@ -66,7 +66,12 @@ import { AuthGuard } from './core/guards/auth.guard';
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
-  { path: 'register', component: CreateAccountComponent },
+  { path: 'register', component: RegisterComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'portfolio', component: PortfolioComponent },
+  { path: 'about', component: AboutComponent },
+  { path: 'resume', component: ResumeComponent },
+  { path: 'docs', component: DocsComponent },
 
   // Rotas protegidas (AuthGuard verifica token JWT)
   { path: 'dashboard', component: DashboardPageComponent, canActivate: [AuthGuard] },
@@ -86,6 +91,7 @@ const routes: Routes = [
   { path: 'inbox', component: InboxPageComponent, canActivate: [AuthGuard] },
   { path: 'success', component: PaymentSuccessComponent, canActivate: [AuthGuard] },
   { path: 'admin', component: AdminComponent, canActivate: [AdminGuard] },
+  { path: 'admin/users', component: AdminUsersComponent, canActivate: [AdminGuard] },
   { path: '**', redirectTo: 'login' }
 ];
 
@@ -114,9 +120,18 @@ const routes: Routes = [
     PixAreaComponent
   ],
   imports: [
+    DemoBannerComponent,
+    PortfolioComponent,
+    AboutComponent,
+    ResumeComponent,
+    DocsComponent,
+    FooterComponent,
     ThemeToggleComponent,
     ToastComponent,
     ConnectionStatusComponent,
+    RegisterComponent,
+    ForgotPasswordComponent,
+    AdminUsersComponent,
     BrowserModule,
     FormsModule,
     HttpClientModule,

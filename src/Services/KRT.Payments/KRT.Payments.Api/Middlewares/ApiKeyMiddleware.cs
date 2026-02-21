@@ -41,7 +41,9 @@ public class ApiKeyMiddleware
             var adminApiKey = _configuration["Security:AdminApiKey"];
             if (string.IsNullOrEmpty(adminApiKey))
             {
-                await _next(context);
+                context.Response.StatusCode = 503;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{\"error\":\"Admin API key not configured\"}");
                 return;
             }
 
@@ -66,7 +68,9 @@ public class ApiKeyMiddleware
             var apiKey = _configuration["Security:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                await _next(context);
+                context.Response.StatusCode = 503;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{\"error\":\"API key not configured\"}");
                 return;
             }
 

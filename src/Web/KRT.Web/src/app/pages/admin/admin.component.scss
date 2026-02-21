@@ -405,3 +405,16 @@ $sidebar-collapsed: 64px;
 .activity-feed::-webkit-scrollbar { width: 4px; }
 .activity-feed::-webkit-scrollbar-thumb { background: $dark-border; border-radius: 2px; }
 
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; gap: 8px; }
+  .system-summary { grid-template-columns: 1fr; }
+  .content-area { padding: 16px 12px; }
+  .chart-canvas-wrapper { height: 200px; }
+  .section-header h2 { font-size: 16px; }
+  .tx-filters { flex-wrap: wrap; }
+  .tx-filter-btn { padding: 6px 12px; font-size: 11px; }
+  .sidebar { display: none; }
+  .content-area { margin-left: 0 !important; }
+}
+

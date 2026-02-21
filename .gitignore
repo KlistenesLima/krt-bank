@@ -70,16 +70,14 @@ docker-compose.override.yml
 
 # ===== SECRETS =====
 .env
-.env.local
-.env.production
-appsettings.Local.json
-appsettings.Development.json
-appsettings.Production.json
-appsettings.*.local.json
-# Keep only the template or the base appsettings.json
-!appsettings.json
-# Keep .env.example (template para novos devs)
+.env.*
 !.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.cert
+*.crt
 
 # ===== .NET Config =====
 appsettings.Development.json

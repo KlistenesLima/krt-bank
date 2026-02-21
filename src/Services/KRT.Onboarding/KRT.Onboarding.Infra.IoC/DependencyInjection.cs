@@ -25,6 +25,7 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPixKeyRepository, PixKeyRepository>();
+        services.AddScoped<IAppUserRepository, AppUserRepository>();
 
         // Redis Cache
         services.Configure<RedisSettings>(configuration.GetSection("Redis"));

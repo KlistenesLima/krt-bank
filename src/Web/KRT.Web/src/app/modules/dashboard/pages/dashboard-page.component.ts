@@ -50,6 +50,9 @@ import { CardService, VirtualCard } from '../../../core/services/card.service';
                     <button class="dd-item admin" *ngIf="isUserAdmin" (click)="router.navigate(['/admin']); showDropdown=false">
                       <mat-icon>admin_panel_settings</mat-icon> Command Center
                     </button>
+                    <button class="dd-item admin" *ngIf="isUserAdmin" (click)="router.navigate(['/admin/users']); showDropdown=false">
+                      <mat-icon>group</mat-icon> Gerenciar Usuarios
+                    </button>
                     <div class="dd-sep"></div>
                     <button class="dd-item logout" (click)="logout()">
                       <mat-icon>logout</mat-icon> Sair
@@ -408,6 +411,29 @@ import { CardService, VirtualCard } from '../../../core/services/card.service';
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .hero-inner { padding: 0 16px; }
+      .content-area { padding: 0 16px; }
+      .dropdown-card { width: calc(100vw - 40px); right: 20px; max-width: 300px; }
+      .balance-value { font-size: 1.75rem; }
+      .actions-grid { gap: 8px; }
+      .action-card { padding: 14px 6px; border-radius: 14px; }
+      .action-icon { width: 44px; height: 44px; border-radius: 14px; }
+      .action-card span { font-size: 0.72rem; }
+      .tx-item { padding: 14px 14px; gap: 12px; }
+      .tx-desc { font-size: 0.85rem; }
+      .tx-val { font-size: 0.85rem; }
+    }
+    @media (max-width: 360px) {
+      .actions-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .action-card { padding: 12px 4px; }
+      .action-icon { width: 40px; height: 40px; }
+      .action-card span { font-size: 0.68rem; }
+      .balance-value { font-size: 1.5rem; }
+      .user-name { font-size: 1rem; }
     }
   `]
 })
