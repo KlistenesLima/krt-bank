@@ -14,12 +14,14 @@ public class AuthController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IKeycloakAdminService _keycloak;
     private readonly IAccountRepository _repository;
+    private readonly IAppUserRepository _userRepo;
 
-    public AuthController(IMediator mediator, IKeycloakAdminService keycloak, IAccountRepository repository)
+    public AuthController(IMediator mediator, IKeycloakAdminService keycloak, IAccountRepository repository, IAppUserRepository userRepo)
     {
         _mediator = mediator;
         _keycloak = keycloak;
         _repository = repository;
+        _userRepo = userRepo;
     }
 
     /// <summary>
@@ -81,13 +83,11 @@ public class AuthController : ControllerBase
             ? await _repository.GetByEmailAsync(cleanLogin, CancellationToken.None)
             : await _repository.GetByCpfAsync(cleanLogin, CancellationToken.None);
 
-        return Ok(new
+        // Fallback to AppUser data when no Account record exists
+        object? accountInfo = null;
+        if (account != null)
         {
-            success = true,
-            token = result.Token,
-            accessToken = result.Token,
-            role = result.Role?.ToString(),
-            account = account != null ? new
+            accountInfo = new
             {
                 id = account.Id,
                 name = account.CustomerName,
@@ -96,7 +96,35 @@ public class AuthController : ControllerBase
                 balance = account.Balance,
                 status = account.Status.ToString(),
                 role = account.Role ?? "User"
-            } : null
+            };
+        }
+        else
+        {
+            var appUser = login.Contains('@')
+                ? await _userRepo.GetByEmailAsync(cleanLogin)
+                : await _userRepo.GetByDocumentAsync(cleanLogin);
+            if (appUser != null)
+            {
+                accountInfo = new
+                {
+                    id = appUser.Id,
+                    name = appUser.FullName,
+                    document = appUser.Document,
+                    email = appUser.Email,
+                    balance = 0m,
+                    status = appUser.Status.ToString(),
+                    role = appUser.Role.ToString()
+                };
+            }
+        }
+
+        return Ok(new
+        {
+            success = true,
+            token = result.Token,
+            accessToken = result.Token,
+            role = result.Role?.ToString(),
+            account = accountInfo
         });
     }
 
