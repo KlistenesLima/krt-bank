@@ -45,6 +45,14 @@ interface Education {
     <!-- Portfolio Page -->
     <div class="portfolio-page">
 
+      <!-- Back to KRT Bank Bar -->
+      <div class="krt-back-bar">
+        <a routerLink="/dashboard" class="krt-back-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <span>Voltar ao KRT Bank</span>
+        </a>
+      </div>
+
       <!-- Hero Section -->
       <section class="hero">
         <div class="hero-pattern"></div>
@@ -286,6 +294,36 @@ interface Education {
       overflow-x: hidden;
     }
 
+    /* Back to KRT Bank Bar */
+    .krt-back-bar {
+      position: fixed;
+      top: 36px;
+      left: 0;
+      right: 0;
+      z-index: 9998;
+      background: #0047BB;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .krt-back-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-family: var(--font);
+      transition: background 0.2s;
+    }
+    .krt-back-link:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .krt-back-link svg {
+      flex-shrink: 0;
+    }
+
     .container {
       max-width: 1100px;
       margin: 0 auto;
@@ -302,6 +340,7 @@ interface Education {
       text-align: center;
       background: linear-gradient(160deg, #001a4d 0%, #0047BB 40%, #002a70 70%, #0a0f1e 100%);
       overflow: hidden;
+      padding-top: 48px;
     }
 
     .hero-pattern {
