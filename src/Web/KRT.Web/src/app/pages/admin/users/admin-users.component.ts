@@ -598,10 +598,10 @@ export class AdminUsersComponent implements OnInit {
         action$ = this.userService.reject(userId);
         break;
       case 'desativar':
-        action$ = this.userService.changeStatus(userId, 'Inactive');
+        action$ = this.userService.changeStatus(userId, false);
         break;
       case 'ativar':
-        action$ = this.userService.changeStatus(userId, 'Active');
+        action$ = this.userService.changeStatus(userId, true);
         break;
       default:
         this.actionLoading = false;

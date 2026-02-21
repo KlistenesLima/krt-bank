@@ -260,6 +260,7 @@ interface Education {
     /* ========== Base & Reset ========== */
     :host {
       display: block;
+      background: #0a0f1e;
       --blue: #0047BB;
       --blue-dark: #002a70;
       --blue-light: #3375d6;
@@ -484,8 +485,9 @@ interface Education {
     }
 
     .stat-card {
-      background: var(--surface-light);
-      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      background: rgba(17, 24, 35, 0.8);
+      border: 1px solid rgba(0, 71, 187, 0.15);
       border-radius: var(--radius-sm);
       padding: 24px 20px;
       text-align: center;
@@ -530,8 +532,9 @@ interface Education {
     }
 
     .tech-category {
-      background: var(--surface-light);
-      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      background: rgba(17, 24, 35, 0.8);
+      border: 1px solid rgba(0, 71, 187, 0.15);
       border-radius: var(--radius);
       padding: 24px;
       transition: all 0.3s ease;
@@ -625,8 +628,9 @@ interface Education {
     }
 
     .timeline-content {
-      background: var(--surface-light);
-      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      background: rgba(17, 24, 35, 0.8);
+      border: 1px solid rgba(0, 71, 187, 0.15);
       border-radius: var(--radius);
       padding: 24px;
       transition: all 0.3s ease;
@@ -869,8 +873,9 @@ interface Education {
       align-items: center;
       gap: 14px;
       padding: 16px 20px;
-      background: var(--surface-light);
-      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      background: rgba(17, 24, 35, 0.8);
+      border: 1px solid rgba(0, 71, 187, 0.15);
       border-radius: var(--radius-sm);
       transition: all 0.3s ease;
     }
