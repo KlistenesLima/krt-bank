@@ -183,12 +183,12 @@ import { CardService, VirtualCard } from '../../../core/services/card.service';
     /* === HERO HEADER === */
     .hero-header {
       background: linear-gradient(135deg, #0047BB 0%, #0035a0 40%, #002a70 100%);
-      padding: 0 0 32px;
+      padding: 0 0 40px;
       position: relative;
     }
     .hero-header::after {
-      content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 24px;
-      background: #f0f2f5; border-radius: 24px 24px 0 0;
+      content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 28px;
+      background: #f0f2f5; border-radius: 28px 28px 0 0;
     }
     .hero-inner {
       max-width: 500px; margin: 0 auto; padding: 0 20px;
@@ -296,8 +296,10 @@ import { CardService, VirtualCard } from '../../../core/services/card.service';
 
     /* === CONTENT === */
     .content-area {
-      max-width: 500px; margin: 0 auto;
+      max-width: 500px; margin: -4px auto 0;
       padding: 0 20px;
+      position: relative;
+      z-index: 1;
     }
     .section { margin-bottom: 16px; }
     .section-title {

@@ -29,7 +29,7 @@ export class UserService {
     return this.http.put(`${this.apiUrl}/${id}/role`, { newRole });
   }
 
-  changeStatus(id: string, newStatus: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}/status`, { newStatus });
+  changeStatus(id: string, activate: boolean): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}/status`, { activate });
   }
 }
