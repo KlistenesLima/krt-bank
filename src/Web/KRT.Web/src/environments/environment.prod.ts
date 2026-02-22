@@ -1,9 +1,9 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api-krt.klisteneslima.dev/api/v1',
+  apiUrl: '/api/v1',
   adminApiKey: '',
   keycloak: {
-    url: 'https://api-krt.klisteneslima.dev/auth',
+    url: '/auth',
     realm: 'krt-bank',
     clientId: 'krt-web'
   }
