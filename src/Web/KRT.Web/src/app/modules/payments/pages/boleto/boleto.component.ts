@@ -93,7 +93,7 @@ import { environment } from '../../../../../environments/environment';
         </div>
         <h2>Pagamento recebido!</h2>
         <p class="compensacao-msg">Boleto em compensacao bancaria</p>
-        <p class="compensacao-timer">Prazo estimado: ~2 minutos</p>
+        <p class="compensacao-timer">Prazo estimado: ~1 minuto</p>
         <p class="success-amount">{{ formatCurrency(chargeData?.amount || 0) }}</p>
         <p class="success-dest">AUREA Maison Joalheria</p>
         <p class="success-balance" *ngIf="newBalance !== null">Novo saldo: {{ formatCurrency(newBalance!) }}</p>

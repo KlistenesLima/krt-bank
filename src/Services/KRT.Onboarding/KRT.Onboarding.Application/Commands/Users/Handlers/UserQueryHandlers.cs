@@ -14,7 +14,7 @@ public class GetAllUsersHandler : IRequestHandler<GetAllUsersQuery, List<UserDto
         var users = await _userRepo.GetAllAsync();
         return users.Select(u => new UserDto(
             u.Id, u.FullName, u.Email, u.Document,
-            u.Role, u.Status, u.CreatedAt, u.ApprovedAt)).ToList();
+            u.Role.ToString(), u.Status.ToString(), u.CreatedAt, u.ApprovedAt)).ToList();
     }
 }
 
@@ -29,7 +29,7 @@ public class GetPendingUsersHandler : IRequestHandler<GetPendingUsersQuery, List
         var users = await _userRepo.GetPendingApprovalAsync();
         return users.Select(u => new UserDto(
             u.Id, u.FullName, u.Email, u.Document,
-            u.Role, u.Status, u.CreatedAt, u.ApprovedAt)).ToList();
+            u.Role.ToString(), u.Status.ToString(), u.CreatedAt, u.ApprovedAt)).ToList();
     }
 }
 
@@ -45,6 +45,6 @@ public class GetUserByIdHandler : IRequestHandler<GetUserByIdQuery, UserDto?>
         if (user == null) return null;
         return new UserDto(
             user.Id, user.FullName, user.Email, user.Document,
-            user.Role, user.Status, user.CreatedAt, user.ApprovedAt);
+            user.Role.ToString(), user.Status.ToString(), user.CreatedAt, user.ApprovedAt);
     }
 }
