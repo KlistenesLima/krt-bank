@@ -24,6 +24,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   systemMetrics: any = null;
   activeSection = 'dashboard';
   loading = true;
+  loadError = false;
   currentTime = '';
   activityFeed: any[] = [];
   sidebarCollapsed = false;
@@ -51,13 +52,15 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   loadAll(): void {
     this.loading = true;
+    this.loadError = false;
     this.http.get<any>(`${environment.apiUrl}/admin/dashboard`).subscribe({
       next: d => {
         this.dashboard = d;
         this.loading = false;
+        this.loadError = false;
         setTimeout(() => this.renderCharts(), 150);
       },
-      error: () => this.loading = false
+      error: () => { this.loading = false; this.loadError = true; }
     });
     this.http.get<any>(`${environment.apiUrl}/admin/accounts/pending`).subscribe({
       next: d => this.pendingAccounts = d.accounts || [],

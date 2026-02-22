@@ -63,6 +63,16 @@
       <span>Carregando dados...</span>
     </div>
 
+    <!-- ERROR STATE -->
+    <div class="error-state" *ngIf="!loading && loadError && !dashboard">
+      <mat-icon style="font-size:48px;width:48px;height:48px;color:#f59e0b;margin-bottom:16px;">warning</mat-icon>
+      <h2 style="color:#f1f5f9;font-size:1.3rem;margin:0 0 8px;">Falha ao carregar dados</h2>
+      <p style="color:#94a3b8;font-size:0.9rem;margin:0 0 20px;">Nao foi possivel conectar ao servidor. Verifique se os servicos estao rodando.</p>
+      <button style="background:#0047BB;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;" (click)="loadAll()">
+        Tentar novamente
+      </button>
+    </div>
+
     <!-- ========== DASHBOARD ========== -->
     <div class="content-area" *ngIf="!loading && activeSection === 'dashboard' && dashboard">
       <!-- KPI CARDS -->

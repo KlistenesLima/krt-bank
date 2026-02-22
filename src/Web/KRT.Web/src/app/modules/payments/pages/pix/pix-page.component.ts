@@ -600,6 +600,7 @@ export class PixPageComponent {
   }
 
   onConfirmBack() {
+    this.errorMsg = '';
     if (this.isBrCode) {
       this.step = 1;
     } else {
@@ -652,7 +653,7 @@ export class PixPageComponent {
       next: (dest: any) => {
         if (dest.accountId === accountId) {
           this.errorMsg = 'Nao e possivel enviar PIX para sua propria conta.';
-          this.isLoading = false; this.step = 1; return;
+          this.isLoading = false; return;
         }
         this.http.post(environment.apiUrl + '/pix', {
           sourceAccountId: accountId,
@@ -666,7 +667,7 @@ export class PixPageComponent {
           error: () => { this.errorMsg = 'Erro ao enviar PIX'; this.finishPix(); }
         });
       },
-      error: () => { this.errorMsg = 'Chave PIX nao encontrada'; this.step = 1; this.isLoading = false; }
+      error: () => { this.errorMsg = 'Chave PIX nao encontrada. Verifique e tente novamente.'; this.isLoading = false; }
     });
   }
 

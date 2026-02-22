@@ -134,7 +134,7 @@ interface Education {
                 {{ category.title }}
               </h3>
               <div class="tech-grid">
-                <span class="tech-badge" *ngFor="let item of category.items" [style.border-color]="item.color + '40'" [style.color]="item.color">
+                <span class="tech-badge" *ngFor="let item of category.items">
                   {{ item.name }}
                 </span>
               </div>
@@ -613,7 +613,8 @@ interface Education {
       border-radius: 20px;
       font-size: 0.8rem;
       font-weight: 600;
-      border: 1px solid;
+      border: 1px solid rgba(0,71,187,0.25);
+      color: var(--blue-light);
       background: rgba(0,71,187,0.06);
       transition: all 0.2s ease;
     }
@@ -621,6 +622,7 @@ interface Education {
     .tech-badge:hover {
       transform: translateY(-2px);
       background: rgba(0,71,187,0.12);
+      border-color: rgba(0,71,187,0.4);
     }
 
     /* ========== Experience Timeline ========== */
