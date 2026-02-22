@@ -10,6 +10,7 @@ interface NavItem {
   badge?: number;
   group?: string;
   adminOnly?: boolean;
+  staffOnly?: boolean;
 }
 
 @Component({
@@ -68,6 +69,7 @@ export class SidebarComponent implements OnInit {
 
   collapsed = false;
   isAdmin = false;
+  isStaff = false;
 
   private allNavItems: NavItem[] = [
     { label: 'Dashboard', icon: '📊', route: '/dashboard', group: 'Principal' },
@@ -83,7 +85,7 @@ export class SidebarComponent implements OnInit {
     { label: 'Notificacoes', icon: '🔔', route: '/notifications', group: 'Conta' },
     { label: 'Perfil', icon: '👤', route: '/profile', group: 'Conta' },
     { label: 'Chatbot', icon: '🤖', route: '/chatbot', group: 'Conta' },
-    { label: 'Admin', icon: '⚙️', route: '/admin', group: 'Sistema', adminOnly: true },
+    { label: 'Admin', icon: '⚙️', route: '/admin', group: 'Sistema', staffOnly: true },
     { label: 'Monitoramento', icon: '📈', route: '/monitoring', group: 'Sistema' },
   ];
 
@@ -93,7 +95,9 @@ export class SidebarComponent implements OnInit {
 
   ngOnInit(): void {
     this.isAdmin = this.auth.isAdmin();
-    this.navItems = this.allNavItems.filter(i => !i.adminOnly || this.isAdmin);
+    this.isStaff = this.auth.isStaff();
+    this.navItems = this.allNavItems.filter(i =>
+      (!i.adminOnly || this.isAdmin) && (!i.staffOnly || this.isStaff));
   }
 
   get groups(): string[] {
