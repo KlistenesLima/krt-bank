@@ -106,11 +106,31 @@ public class CardChargesController : ControllerBase
         card.AddSpending(request.Amount);
         _db.VirtualCards.Update(card);
 
-        // Debitar conta corrente do comprador + creditar merchant + statements
-        var payResult = await _paymentService.PreparePaymentAsync(
-            card.AccountId, null, request.Amount,
-            "Cartao", request.Description ?? "Compra cartao credito",
-            "AUREA Maison Joalheria", ct);
+        // Cartão de crédito: NÃO debita conta corrente do cliente.
+        // Apenas credita o merchant — o débito ocorre quando o cliente paga a fatura.
+        var merchantAccountId = ChargePaymentService.MerchantAccountId;
+        var merchant = await _db.BankAccounts.FindAsync([merchantAccountId], ct);
+        if (merchant != null)
+        {
+            merchant.Balance += request.Amount;
+            merchant.UpdatedAt = DateTime.UtcNow;
+            merchant.RowVersion = Guid.NewGuid().ToByteArray();
+
+            _db.StatementEntries.Add(new StatementEntry
+            {
+                Id = Guid.NewGuid(),
+                AccountId = merchant.Id,
+                Date = DateTime.UtcNow,
+                Type = "Cartao",
+                Category = "Receivable",
+                Amount = request.Amount,
+                Description = $"Cartao credito recebido - {request.Description ?? "Compra cartao credito"}",
+                CounterpartyName = "Cliente cartao credito",
+                CounterpartyBank = "KRT Bank",
+                IsCredit = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
 
         _db.CardCharges.Add(charge);
         await _db.SaveChangesAsync(ct);
