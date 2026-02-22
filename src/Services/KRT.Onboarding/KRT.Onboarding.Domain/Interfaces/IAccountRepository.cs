@@ -11,4 +11,5 @@ public interface IAccountRepository
     Task<Account?> GetByCpfAsync(string cpf, CancellationToken cancellationToken);
     Task<Account?> GetByEmailAsync(string email, CancellationToken cancellationToken);
     Task CreateVirtualCardForAccountAsync(Guid accountId, string holderName, CancellationToken cancellationToken);
+    Task<List<Account>> GetAllAsync(CancellationToken cancellationToken);
 }
