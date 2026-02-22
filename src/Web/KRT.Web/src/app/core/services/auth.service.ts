@@ -97,6 +97,10 @@ export class AuthService {
     return role === 'Admin' || role === 'Administrador';
   }
 
+  isStaff(): boolean {
+    return this.isAdmin() || ['Tecnico', 'tecnico'].includes(this.getRole());
+  }
+
   get currentSession(): any {
     return {
       name: localStorage.getItem('krt_account_name') || 'Usuario',
