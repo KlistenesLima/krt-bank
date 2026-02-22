@@ -59,7 +59,7 @@ import { DocsComponent } from './pages/docs/docs.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password.component';
-import { AdminUsersComponent } from './pages/admin/users/admin-users.component';
+// AdminUsersComponent removido — gestão unificada na seção Contas do Command Center
 
 // Guard
 import { AuthGuard } from './core/guards/auth.guard';
@@ -92,7 +92,6 @@ const routes: Routes = [
   { path: 'inbox', component: InboxPageComponent, canActivate: [AuthGuard] },
   { path: 'success', component: PaymentSuccessComponent, canActivate: [AuthGuard] },
   { path: 'admin', component: AdminComponent, canActivate: [AdminGuard] },
-  { path: 'admin/users', component: AdminUsersComponent, canActivate: [AdminGuard] },
   { path: '**', redirectTo: 'login' }
 ];
 
@@ -132,7 +131,6 @@ const routes: Routes = [
     ConnectionStatusComponent,
     RegisterComponent,
     ForgotPasswordComponent,
-    AdminUsersComponent,
     BrowserModule,
     FormsModule,
     HttpClientModule,
