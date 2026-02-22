@@ -47,11 +47,8 @@ import { CardService, VirtualCard } from '../../../core/services/card.service';
                     <button class="dd-item" (click)="router.navigate(['/extract']); showDropdown=false">
                       <mat-icon>receipt_long</mat-icon> Extrato
                     </button>
-                    <button class="dd-item admin" *ngIf="isUserAdmin" (click)="router.navigate(['/admin']); showDropdown=false">
+                    <button class="dd-item admin" *ngIf="isUserStaff" (click)="router.navigate(['/admin']); showDropdown=false">
                       <mat-icon>admin_panel_settings</mat-icon> Command Center
-                    </button>
-                    <button class="dd-item admin" *ngIf="isUserAdmin" (click)="router.navigate(['/admin/users']); showDropdown=false">
-                      <mat-icon>group</mat-icon> Gerenciar Usuarios
                     </button>
                     <div class="dd-sep"></div>
                     <button class="dd-item logout" (click)="logout()">
@@ -449,6 +446,7 @@ export class DashboardPageComponent implements OnInit {
   transactions: any[] = [];
   loading = true;
   isUserAdmin = false;
+  isUserStaff = false;
   showDropdown = false;
   userEmail = '';
   cardLimit = 0;
@@ -468,6 +466,7 @@ export class DashboardPageComponent implements OnInit {
     this.balance = parseFloat(localStorage.getItem('krt_account_balance') || '0');
     this.showBalance = localStorage.getItem('krt_show_balance') !== 'false';
     this.isUserAdmin = this.auth.isAdmin();
+    this.isUserStaff = this.auth.isStaff();
     this.userEmail = localStorage.getItem('krt_account_email') || '';
     this.loading = false;
 
