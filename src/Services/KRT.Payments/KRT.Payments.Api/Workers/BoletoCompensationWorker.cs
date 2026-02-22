@@ -8,14 +8,14 @@ using Microsoft.Extensions.Logging;
 namespace KRT.Payments.Api.Workers;
 
 /// <summary>
-/// Worker que compensa boletos após 2 minutos de processamento.
+/// Worker que compensa boletos após 1 minuto de processamento.
 /// Simula o prazo real de compensação bancária (D+1~D+3) de forma acelerada.
 /// </summary>
 public class BoletoCompensationWorker : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<BoletoCompensationWorker> _logger;
-    private static readonly TimeSpan CompensationDelay = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan CompensationDelay = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(15);
 
     public BoletoCompensationWorker(IServiceScopeFactory scopeFactory, ILogger<BoletoCompensationWorker> logger)

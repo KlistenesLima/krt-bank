@@ -12,7 +12,7 @@ public record UserDto(
     string FullName,
     string Email,
     string Document,
-    UserRole Role,
-    UserStatus Status,
+    string Role,
+    string Status,
     DateTime CreatedAt,
     DateTime? ApprovedAt);

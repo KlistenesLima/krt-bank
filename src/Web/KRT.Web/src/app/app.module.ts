@@ -4,6 +4,7 @@ import { ChatbotComponent } from './pages/chatbot/chatbot.component';
 import { ThemeToggleComponent } from './shared/components/theme-toggle/theme-toggle.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { ConnectionStatusComponent } from './shared/components/connection-status/connection-status.component';
+import { LOCALE_ID } from '@angular/core';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AdminKeyInterceptor } from './core/interceptors/admin-key.interceptor';
@@ -153,6 +154,7 @@ const routes: Routes = [
     MatBadgeModule
   ],
   providers: [
+    { provide: LOCALE_ID, useValue: 'pt-BR' },
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: AdminKeyInterceptor, multi: true }
   ],

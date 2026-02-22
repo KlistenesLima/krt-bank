@@ -35,9 +35,17 @@ public class ApiKeyMiddleware
             return;
         }
 
-        // Admin endpoints — require admin API key
+        // Admin endpoints — require admin API key OR valid Bearer token
         if (path.StartsWith("/api/v1/admin", StringComparison.OrdinalIgnoreCase))
         {
+            // Allow through if request has a Bearer token (JWT auth handled by [Authorize])
+            var bearerToken = context.Request.Headers["Authorization"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(bearerToken) && bearerToken.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
             var adminApiKey = _configuration["Security:AdminApiKey"];
             if (string.IsNullOrEmpty(adminApiKey))
             {
@@ -62,9 +70,17 @@ public class ApiKeyMiddleware
             return;
         }
 
-        // Charges endpoints — require standard API key
+        // Charges endpoints — require standard API key OR valid Bearer token
         if (ProtectedPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
         {
+            // Allow through if request has a Bearer token (JWT auth handled by [Authorize])
+            var chargeBearer = context.Request.Headers["Authorization"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(chargeBearer) && chargeBearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
             var apiKey = _configuration["Security:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {

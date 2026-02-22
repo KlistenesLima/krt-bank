@@ -106,7 +106,7 @@ public class BoletoChargesController : ControllerBase
         if (!result.Success)
             return BadRequest(new { error = result.Error });
 
-        // Boleto entra em compensação — será confirmado após 2 minutos pelo worker
+        // Boleto entra em compensação — será confirmado após 1 minuto pelo worker
         charge.Status = BoletoChargeStatus.Processing;
         charge.PaidAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
@@ -115,7 +115,7 @@ public class BoletoChargesController : ControllerBase
         {
             chargeId = charge.Id,
             status = "Processing",
-            message = "Pagamento recebido. Boleto em compensacao (prazo: ~2 minutos).",
+            message = "Pagamento recebido. Boleto em compensacao (prazo: ~1 minuto).",
             paidAt = charge.PaidAt,
             amount = charge.Amount,
             payerAccountId = result.PayerAccountId,

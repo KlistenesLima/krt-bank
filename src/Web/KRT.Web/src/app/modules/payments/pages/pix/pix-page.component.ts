@@ -625,10 +625,7 @@ export class PixPageComponent {
         hdrs
       ).subscribe({
         next: (res) => {
-          if (res.newBalance !== undefined && res.newBalance !== null) {
-            localStorage.setItem('krt_account_balance', String(res.newBalance));
-          }
-          this.finishPix();
+          this.finishPix(res.newBalance);
         },
         error: (err) => {
           this.errorMsg = err.error?.error || 'Erro ao processar pagamento';
@@ -671,9 +668,11 @@ export class PixPageComponent {
     });
   }
 
-  finishPix() {
+  finishPix(apiNewBalance?: number) {
     this.isLoading = false;
-    const newBal = Math.max(0, this.getBalance() - this.getAmount());
+    const newBal = (apiNewBalance !== undefined && apiNewBalance !== null)
+      ? apiNewBalance
+      : Math.max(0, this.getBalance() - this.getAmount());
     localStorage.setItem('krt_account_balance', String(newBal));
     const txs = JSON.parse(localStorage.getItem('krt_transactions') || '[]');
     const destLabel = this.isBrCode && this.brCodeData ? this.brCodeData.merchantName : this.pixKey;

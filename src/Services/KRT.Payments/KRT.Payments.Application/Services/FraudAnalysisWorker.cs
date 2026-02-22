@@ -47,6 +47,7 @@ public class FraudAnalysisWorker : BackgroundService
                 var onboardingClient = scope.ServiceProvider.GetRequiredService<IOnboardingServiceClient>();
                 var outbox = scope.ServiceProvider.GetRequiredService<IOutboxWriter>();
                 var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+                var statementService = scope.ServiceProvider.GetRequiredService<IPixStatementService>();
 
                 var pendingTxs = await repository.GetByStatusAsync(
                     PixTransactionStatus.PendingAnalysis, limit: 10, ct: stoppingToken);
@@ -54,7 +55,7 @@ public class FraudAnalysisWorker : BackgroundService
                 foreach (var tx in pendingTxs)
                 {
                     await ProcessTransactionAsync(
-                        tx, fraudEngine, onboardingClient, outbox, repository, messageBus, stoppingToken);
+                        tx, fraudEngine, onboardingClient, outbox, repository, messageBus, statementService, stoppingToken);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -73,6 +74,7 @@ public class FraudAnalysisWorker : BackgroundService
         IOutboxWriter outbox,
         IPixTransactionRepository repository,
         IMessageBus messageBus,
+        IPixStatementService statementService,
         CancellationToken ct)
     {
         try
@@ -142,7 +144,7 @@ public class FraudAnalysisWorker : BackgroundService
                         tx.Id, result.Score);
 
                     // === STEP 2: Saga Execution ===
-                    await ExecuteSagaAsync(tx, onboardingClient, outbox, repository, messageBus, ct);
+                    await ExecuteSagaAsync(tx, onboardingClient, outbox, repository, messageBus, statementService, ct);
                     break;
             }
         }
@@ -161,6 +163,7 @@ public class FraudAnalysisWorker : BackgroundService
         IOutboxWriter outbox,
         IPixTransactionRepository repository,
         IMessageBus messageBus,
+        IPixStatementService statementService,
         CancellationToken ct)
     {
         // Transita de Approved → Pending (início da saga)
@@ -219,6 +222,18 @@ public class FraudAnalysisWorker : BackgroundService
         tx.Complete();
         repository.Update(tx);
         await repository.UnitOfWork.CommitAsync(ct);
+
+        // Statement entries for extrato
+        try
+        {
+            await statementService.CreatePixStatementEntriesAsync(
+                tx.SourceAccountId, tx.DestinationAccountId,
+                tx.Amount, tx.PixKey, tx.Description, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create statement entries for Pix {TxId}", tx.Id);
+        }
 
         outbox.Add(OutboxMessage.Create(new PixTransferCompletedEvent(
             tx.Id, tx.SourceAccountId, tx.DestinationAccountId,
