@@ -98,7 +98,7 @@ export class AuthService {
   }
 
   isStaff(): boolean {
-    return this.isAdmin() || ['Tecnico', 'tecnico'].includes(this.getRole());
+    return this.isAdmin() || ['Tecnico', 'tecnico', 'Operador', 'operador'].includes(this.getRole());
   }
 
   get currentSession(): any {
