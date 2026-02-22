@@ -21,7 +21,7 @@
         <mat-icon class="nav-icon">receipt_long</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Transações</span>
       </button>
-      <button [class.active]="activeSection === 'accounts'" (click)="setSection('accounts')">
+      <button *ngIf="isAdmin" [class.active]="activeSection === 'accounts'" (click)="setSection('accounts')">
         <mat-icon class="nav-icon">people</mat-icon>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Contas</span>
       </button>

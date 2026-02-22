@@ -1,6 +1,7 @@
-﻿import { Component, Input, Output, EventEmitter } from '@angular/core';
+﻿import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
 
 interface NavItem {
   label: string;
@@ -8,6 +9,7 @@ interface NavItem {
   route: string;
   badge?: number;
   group?: string;
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -59,14 +61,15 @@ interface NavItem {
     .sidebar.dark { background: #0f0f23; }
   ]
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   @Input() darkMode = false;
   @Input() unreadNotifications = 0;
   @Output() collapsedChange = new EventEmitter<boolean>();
 
   collapsed = false;
+  isAdmin = false;
 
-  navItems: NavItem[] = [
+  private allNavItems: NavItem[] = [
     { label: 'Dashboard', icon: '📊', route: '/dashboard', group: 'Principal' },
     { label: 'Extrato', icon: '📋', route: '/statement', group: 'Principal' },
     { label: 'Pix', icon: '⚡', route: '/pix-qrcode', group: 'Transacoes' },
@@ -80,9 +83,18 @@ export class SidebarComponent {
     { label: 'Notificacoes', icon: '🔔', route: '/notifications', group: 'Conta' },
     { label: 'Perfil', icon: '👤', route: '/profile', group: 'Conta' },
     { label: 'Chatbot', icon: '🤖', route: '/chatbot', group: 'Conta' },
-    { label: 'Admin', icon: '⚙️', route: '/admin', group: 'Sistema' },
+    { label: 'Admin', icon: '⚙️', route: '/admin', group: 'Sistema', adminOnly: true },
     { label: 'Monitoramento', icon: '📈', route: '/monitoring', group: 'Sistema' },
   ];
+
+  navItems: NavItem[] = [];
+
+  constructor(private auth: AuthService) {}
+
+  ngOnInit(): void {
+    this.isAdmin = this.auth.isAdmin();
+    this.navItems = this.allNavItems.filter(i => !i.adminOnly || this.isAdmin);
+  }
 
   get groups(): string[] {
     return [...new Set(this.navItems.map(i => i.group || ''))];

@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { environment } from '../../../environments/environment';
 import { AccountService, AccountAdminDto, AccountStats } from '../../core/services/account.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -48,9 +49,13 @@ export class AdminComponent implements OnInit, OnDestroy {
   // Action dialog
   accountAction: { type: string; account: AccountAdminDto | null; selectedRole: string } = { type: '', account: null, selectedRole: 'Cliente' };
 
-  constructor(private http: HttpClient, public router: Router, private accountService: AccountService) {}
+  // Role-based visibility
+  isAdmin = false;
+
+  constructor(private http: HttpClient, public router: Router, private accountService: AccountService, private auth: AuthService) {}
 
   ngOnInit(): void {
+    this.isAdmin = this.auth.isAdmin();
     this.loadAll();
     this.updateTime();
     this.intervals.push(setInterval(() => this.updateTime(), 1000));
