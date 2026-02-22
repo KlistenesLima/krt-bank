@@ -87,7 +87,7 @@ import { RouterModule } from '@angular/router';
         <h2>Stack <span class="accent">Técnico</span></h2>
         <div class="tech-grid">
           <div class="tech-card" *ngFor="let tech of techStack">
-            <div class="tech-icon" [style.background]="tech.color + '25'" [style.border-color]="tech.color + '50'">
+            <div class="tech-icon">
               {{ tech.name.charAt(0) }}
             </div>
             <h4>{{ tech.name }}</h4>
@@ -116,7 +116,8 @@ import { RouterModule } from '@angular/router';
     </div>
   `,
   styles: [`
-    .about-page { opacity: 0; transition: opacity 0.7s ease; }
+    :host { display: block; background: #0a0f1e; }
+    .about-page { opacity: 0; transition: opacity 0.7s ease; background: #0a0f1e; color: #e2e8f0; min-height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif; }
     .about-page.visible { opacity: 1; }
 
     .krt-back-bar { position: fixed; top: 36px; left: 0; right: 0; z-index: 9998; background: #0047BB; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
@@ -146,7 +147,7 @@ import { RouterModule } from '@angular/router';
     .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
     .tech-card { padding: 20px; border-radius: 12px; background: rgba(26,35,50,0.6); border: 1px solid rgba(0,71,187,0.15); text-align: center; transition: all 0.3s; }
     .tech-card:hover { border-color: rgba(0,71,187,0.4); transform: translateY(-2px); }
-    .tech-icon { width: 40px; height: 40px; margin: 0 auto 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; border: 1px solid; }
+    .tech-icon { width: 40px; height: 40px; margin: 0 auto 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #4d9fff; background: rgba(0,71,187,0.15); border: 1px solid rgba(0,71,187,0.3); }
     .tech-card h4 { color: #fff; font-size: 13px; font-weight: 600; margin: 0 0 4px; }
     .tech-card p { color: #94a3b8; font-size: 12px; margin: 0; }
 

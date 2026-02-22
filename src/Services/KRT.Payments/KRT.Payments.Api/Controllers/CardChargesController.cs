@@ -106,6 +106,12 @@ public class CardChargesController : ControllerBase
         card.AddSpending(request.Amount);
         _db.VirtualCards.Update(card);
 
+        // Debitar conta corrente do comprador + creditar merchant + statements
+        var payResult = await _paymentService.PreparePaymentAsync(
+            card.AccountId, null, request.Amount,
+            "Cartao", request.Description ?? "Compra cartao credito",
+            "AUREA Maison Joalheria", ct);
+
         _db.CardCharges.Add(charge);
         await _db.SaveChangesAsync(ct);
 

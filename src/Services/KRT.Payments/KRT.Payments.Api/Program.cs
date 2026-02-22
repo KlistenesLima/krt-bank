@@ -287,6 +287,39 @@ for (int attempt = 1; attempt <= 10; attempt++)
         ";
         await cardSeedCmd.ExecuteNonQueryAsync();
 
+        // Seed 30 demo accounts with PIX keys (CPF + Email)
+        using var demoSeedCmd = conn.CreateCommand();
+        var demoSb = new System.Text.StringBuilder();
+        var demoNames = new[] {
+            "Ana Clara Silva", "Bruno Costa Santos", "Camila Oliveira Lima",
+            "Daniel Pereira Souza", "Eduarda Santos Rocha", "Felipe Almeida Cruz",
+            "Gabriela Ferreira Dias", "Henrique Barbosa Melo", "Isabela Rodrigues",
+            "Joao Pedro Martins", "Karla Mendes Nunes", "Lucas Araujo Lima",
+            "Mariana Cardoso Reis", "Nathan Vieira Gomes", "Olivia Nascimento",
+            "Pedro Henrique Ramos", "Raquel Torres Castro", "Samuel Ribeiro Lopes",
+            "Tatiana Duarte Costa", "Ulisses Moreira Pinto", "Valentina Freitas",
+            "Wagner Fonseca Braga", "Ximena Reis Teixeira", "Yuri Cavalcanti",
+            "Zara Monteiro Alves", "Andre Luiz Teixeira", "Bianca Lima Freitas",
+            "Caio Rezende Prado", "Diana Machado Costa", "Eduardo Lima Santos"
+        };
+        for (int i = 0; i < demoNames.Length; i++)
+        {
+            var n = i + 1;
+            var cpf = (10000000000L + n).ToString();
+            var email = $"demo{n:D2}@krtbank.com.br";
+            var aid = $"a0000000-0000-0000-0000-{n:D12}";
+            var pid1 = $"c0000000-0000-0000-0000-{n:D12}";
+            var pid2 = $"e0000000-0000-0000-0000-{n:D12}";
+            var bal = 1000 + n * 500;
+            var rv = Guid.NewGuid().ToString("N");
+            demoSb.AppendLine($@"INSERT INTO ""Accounts"" (""Id"",""CustomerName"",""Document"",""Email"",""Phone"",""Balance"",""Status"",""Type"",""Role"",""RowVersion"",""CreatedAt"") VALUES ('{aid}','{demoNames[i]}','{cpf}','{email}','',{bal},'Active','Checking','User',decode('{rv}','hex'),NOW()) ON CONFLICT DO NOTHING;");
+            demoSb.AppendLine($@"INSERT INTO ""PixKeys"" (""Id"",""AccountId"",""KeyType"",""KeyValue"",""IsActive"",""CreatedAt"") VALUES ('{pid1}','{aid}',1,'{cpf}',true,NOW()) ON CONFLICT DO NOTHING;");
+            demoSb.AppendLine($@"INSERT INTO ""PixKeys"" (""Id"",""AccountId"",""KeyType"",""KeyValue"",""IsActive"",""CreatedAt"") VALUES ('{pid2}','{aid}',2,'{email}',true,NOW()) ON CONFLICT DO NOTHING;");
+        }
+        demoSeedCmd.CommandText = demoSb.ToString();
+        await demoSeedCmd.ExecuteNonQueryAsync();
+        Log.Information("Seeded 30 demo accounts with PIX keys");
+
         Log.Information("Api.Data.PaymentsDbContext: tabelas criadas (tentativa {Attempt})", attempt);
         break;
     }

@@ -9,7 +9,7 @@ namespace KRT.Onboarding.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/users")]
-[Authorize(Roles = "Administrador")]
+[Authorize(Roles = "Admin,Administrador")]
 public class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;

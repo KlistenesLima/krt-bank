@@ -206,7 +206,8 @@ interface Endpoint {
     </div>
   `,
   styles: [`
-    .docs-page { opacity: 0; transition: opacity 0.7s ease; }
+    :host { display: block; background: #0a0f1e; }
+    .docs-page { opacity: 0; transition: opacity 0.7s ease; background: #0a0f1e; color: #e2e8f0; min-height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif; }
     .docs-page.visible { opacity: 1; }
 
     .krt-back-bar { position: fixed; top: 36px; left: 0; right: 0; z-index: 9998; background: #0047BB; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }

@@ -185,7 +185,7 @@ import { CardService, VirtualCard } from '../../../core/services/card.service';
       background: linear-gradient(135deg, #0047BB 0%, #0035a0 40%, #002a70 100%);
       padding: 0 0 40px;
       margin-top: -36px;
-      padding-top: 36px;
+      padding-top: 52px;
       position: relative;
     }
     .hero-header::after {

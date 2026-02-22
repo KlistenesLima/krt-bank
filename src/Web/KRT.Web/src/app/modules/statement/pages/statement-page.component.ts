@@ -10,6 +10,10 @@ import { PaymentService, StatementEntry } from '../../../core/services/payment.s
       <div class="header">
         <button mat-icon-button (click)="goBack()"><mat-icon>arrow_back</mat-icon></button>
         <h2>Extrato</h2>
+        <button mat-icon-button class="download-btn" (click)="downloadCsv()"
+                *ngIf="transactions.length > 0" title="Baixar extrato CSV">
+          <mat-icon>download</mat-icon>
+        </button>
       </div>
 
       <div class="loading" *ngIf="loading">
@@ -98,7 +102,8 @@ import { PaymentService, StatementEntry } from '../../../core/services/payment.s
   styles: [`
     .statement-container { padding: 16px 16px 80px; max-width: 500px; margin: 0 auto; }
     .header { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
-    .header h2 { margin: 0; color: var(--krt-primary); }
+    .header h2 { margin: 0; color: var(--krt-primary); flex: 1; }
+    .download-btn { color: var(--krt-primary, #0047BB); }
     .loading { display: flex; align-items: center; gap: 12px; justify-content: center; padding: 40px; }
     .empty { text-align: center; padding: 60px 20px; color: #999; }
     .empty mat-icon { font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; }
@@ -281,6 +286,25 @@ export class StatementPageComponent implements OnInit {
       'SALARY': 'Salario'
     };
     return labels[type] || type;
+  }
+
+  downloadCsv() {
+    const header = 'Data,Tipo,Descricao,Contraparte,Valor\n';
+    const rows = this.transactions.map(tx => {
+      const date = new Date(tx.date).toLocaleDateString('pt-BR') + ' ' + new Date(tx.date).toLocaleTimeString('pt-BR');
+      const amount = (tx.isCredit ? '+' : '-') + tx.amount.toFixed(2);
+      const desc = (tx.description || '').replace(/,/g, ';');
+      const counter = (tx.counterpartyName || '').replace(/,/g, ';');
+      return `${date},${tx.type},${desc},${counter},${amount}`;
+    }).join('\n');
+    const csv = '\uFEFF' + header + rows;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'extrato-krt-bank.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   goBack() {

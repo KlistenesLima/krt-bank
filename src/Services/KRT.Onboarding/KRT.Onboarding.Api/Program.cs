@@ -11,6 +11,7 @@ using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -127,6 +128,45 @@ using (var scope = app.Services.CreateScope())
         admin.ChangeRole(UserRole.Administrador);
         await userRepo.AddAsync(admin);
         Log.Information("[KRT.Onboarding] Admin seed created: admin@krtbank.com.br / Admin@KRT2026");
+    }
+
+    // Seed 30 demo users with PIX keys (CPF + Email)
+    var firstDemo = await userRepo.GetByEmailAsync("demo01@krtbank.com.br");
+    if (firstDemo == null)
+    {
+        var demoHash = BCrypt.Net.BCrypt.HashPassword("Demo@2026");
+        var names = new[] {
+            "Ana Clara Silva", "Bruno Costa Santos", "Camila Oliveira Lima",
+            "Daniel Pereira Souza", "Eduarda Santos Rocha", "Felipe Almeida Cruz",
+            "Gabriela Ferreira Dias", "Henrique Barbosa Melo", "Isabela Rodrigues",
+            "Joao Pedro Martins", "Karla Mendes Nunes", "Lucas Araujo Lima",
+            "Mariana Cardoso Reis", "Nathan Vieira Gomes", "Olivia Nascimento",
+            "Pedro Henrique Ramos", "Raquel Torres Castro", "Samuel Ribeiro Lopes",
+            "Tatiana Duarte Costa", "Ulisses Moreira Pinto", "Valentina Freitas",
+            "Wagner Fonseca Braga", "Ximena Reis Teixeira", "Yuri Cavalcanti",
+            "Zara Monteiro Alves", "Andre Luiz Teixeira", "Bianca Lima Freitas",
+            "Caio Rezende Prado", "Diana Machado Costa", "Eduardo Lima Santos"
+        };
+        var sb = new StringBuilder();
+        for (int i = 0; i < names.Length; i++)
+        {
+            var n = i + 1;
+            var cpf = (10000000000L + n).ToString();
+            var email = $"demo{n:D2}@krtbank.com.br";
+            var uid = $"d0000000-0000-0000-0000-{n:D12}";
+            var aid = $"a0000000-0000-0000-0000-{n:D12}";
+            var pid1 = $"c0000000-0000-0000-0000-{n:D12}";
+            var pid2 = $"e0000000-0000-0000-0000-{n:D12}";
+            var bal = (1000 + n * 500).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var rv = Guid.NewGuid().ToString("N");
+
+            sb.AppendLine($@"INSERT INTO ""AppUsers"" (""Id"",""FullName"",""Email"",""Document"",""PasswordHash"",""Role"",""Status"",""CreatedAt"") VALUES ('{uid}','{names[i]}','{email}','{cpf}','{demoHash}','Cliente','Active',NOW()) ON CONFLICT DO NOTHING;");
+            sb.AppendLine($@"INSERT INTO ""Accounts"" (""Id"",""CustomerName"",""Document"",""Email"",""Phone"",""Balance"",""Status"",""Type"",""Role"",""RowVersion"",""CreatedAt"") VALUES ('{aid}','{names[i]}','{cpf}','{email}','',{bal},'Active','Checking','User',decode('{rv}','hex'),NOW()) ON CONFLICT DO NOTHING;");
+            sb.AppendLine($@"INSERT INTO ""PixKeys"" (""Id"",""AccountId"",""KeyType"",""KeyValue"",""IsActive"",""CreatedAt"") VALUES ('{pid1}','{aid}',1,'{cpf}',true,NOW()) ON CONFLICT DO NOTHING;");
+            sb.AppendLine($@"INSERT INTO ""PixKeys"" (""Id"",""AccountId"",""KeyType"",""KeyValue"",""IsActive"",""CreatedAt"") VALUES ('{pid2}','{aid}',2,'{email}',true,NOW()) ON CONFLICT DO NOTHING;");
+        }
+        await db.Database.ExecuteSqlRawAsync(sb.ToString());
+        Log.Information("[KRT.Onboarding] Seeded 30 demo users with PIX keys (CPF + Email)");
     }
 }
 
