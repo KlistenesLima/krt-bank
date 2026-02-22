@@ -146,6 +146,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   setSection(section: string): void {
+    if (section === 'accounts' && !this.isAdmin) return;
     this.activeSection = section;
     if (section === 'accounts') this.loadAccounts();
     setTimeout(() => this.renderCharts(), 150);
