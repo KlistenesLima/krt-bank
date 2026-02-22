@@ -184,40 +184,122 @@
 
     <!-- ========== ACCOUNTS ========== -->
     <div class="content-area" *ngIf="!loading && activeSection === 'accounts'">
-      <div class="section-stats">
-        <span class="stat-chip">{{ pendingAccounts.length }} pendentes</span>
-      </div>
-      <div class="data-table">
-        <div class="table-header">
-          <span class="col-name">Nome</span>
-          <span class="col-email">Email</span>
-          <span class="col-status">KYC Status</span>
-          <span class="col-risk">Risco</span>
-          <span class="col-actions">Ações</span>
+
+      <!-- STAT CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Total</span></div>
+          <div class="kpi-value">{{ accountStats.total }}</div>
+          <div class="kpi-sub">Todas as contas</div>
         </div>
-        <div class="table-row" *ngFor="let a of pendingAccounts">
+        <div class="kpi-card accent-green">
+          <div class="kpi-header"><span class="kpi-label">Ativas</span></div>
+          <div class="kpi-value">{{ accountStats.active }}</div>
+          <div class="kpi-sub">Operacionais</div>
+        </div>
+        <div class="kpi-card accent-red">
+          <div class="kpi-header"><span class="kpi-label">Inativas</span></div>
+          <div class="kpi-value">{{ accountStats.inactive }}</div>
+          <div class="kpi-sub">Desativadas</div>
+        </div>
+        <div class="kpi-card accent-blue">
+          <div class="kpi-header"><span class="kpi-label">Pendentes</span></div>
+          <div class="kpi-value">{{ accountStats.pending }}</div>
+          <div class="kpi-sub">Aguardando</div>
+        </div>
+      </div>
+
+      <!-- TABS + SEARCH -->
+      <div class="accounts-toolbar">
+        <div class="accounts-tabs">
+          <button [class.active]="accountsTab === 'all'" (click)="setAccountsTab('all')">Todas ({{ accountStats.total }})</button>
+          <button [class.active]="accountsTab === 'active'" (click)="setAccountsTab('active')">Ativas ({{ accountStats.active }})</button>
+          <button [class.active]="accountsTab === 'inactive'" (click)="setAccountsTab('inactive')">Inativas ({{ accountStats.inactive }})</button>
+          <button [class.active]="accountsTab === 'pending'" (click)="setAccountsTab('pending')">Pendentes ({{ accountStats.pending }})</button>
+          <button [class.active]="accountsTab === 'blocked'" (click)="setAccountsTab('blocked')">Bloqueadas ({{ accountStats.blocked }})</button>
+        </div>
+        <div class="accounts-search">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input type="text" placeholder="Buscar por nome, email ou CPF..." [(ngModel)]="accountSearch" (input)="onAccountSearch()" />
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading-state" *ngIf="accountsLoading" style="height:120px;">
+        <div class="spinner"></div>
+        <span>Carregando contas...</span>
+      </div>
+
+      <!-- TABLE -->
+      <div class="data-table accounts-table" *ngIf="!accountsLoading && filteredAccounts.length > 0">
+        <div class="table-header acc-table-header">
+          <span>Nome</span>
+          <span>Email</span>
+          <span>CPF</span>
+          <span class="col-right">Saldo</span>
+          <span>Status</span>
+          <span>Role</span>
+          <span>Criado em</span>
+          <span>Ações</span>
+        </div>
+        <div class="table-row acc-table-row" *ngFor="let a of filteredAccounts">
           <span class="col-name">
-            <div class="user-avatar">{{ a.name.charAt(0) }}</div>
-            <div>
-              <strong>{{ a.name }}</strong>
-              <small>{{ a.cpf }}</small>
-            </div>
+            <div class="user-avatar">{{ a.customerName.charAt(0) }}</div>
+            <strong>{{ a.customerName }}</strong>
           </span>
           <span class="col-email">{{ a.email }}</span>
-          <span class="col-status">
-            <span class="status-chip kyc">{{ a.kycStatus }}</span>
+          <span class="col-cpf">{{ formatCpf(a.document) }}</span>
+          <span class="col-right col-balance">R$ {{ formatCurrency(a.balance) }}</span>
+          <span><span class="status-chip" [ngClass]="getStatusClass(a.status)">{{ getStatusLabel(a.status) }}</span></span>
+          <span><span class="role-chip" [ngClass]="getRoleClass(a.role)">{{ getRoleLabel(a.role) }}</span></span>
+          <span class="col-date">{{ formatDate(a.createdAt) }}</span>
+          <span class="col-actions acc-actions">
+            <button class="action-btn approve" *ngIf="a.status === 'Inactive' || a.status === 'Blocked' || a.status === 'Suspended'" (click)="openAccountAction('activate', a)" title="Ativar">
+              <mat-icon style="font-size:16px;width:16px;height:16px;">check_circle</mat-icon>
+            </button>
+            <button class="action-btn reject" *ngIf="a.status === 'Active'" (click)="openAccountAction('deactivate', a)" title="Inativar">
+              <mat-icon style="font-size:16px;width:16px;height:16px;">block</mat-icon>
+            </button>
+            <button class="action-btn approve" *ngIf="a.status === 'Pending'" (click)="openAccountAction('approve', a)" title="Aprovar">
+              <mat-icon style="font-size:16px;width:16px;height:16px;">thumb_up</mat-icon>
+            </button>
+            <button class="action-btn reject" *ngIf="a.status === 'Pending'" (click)="openAccountAction('reject', a)" title="Rejeitar">
+              <mat-icon style="font-size:16px;width:16px;height:16px;">thumb_down</mat-icon>
+            </button>
+            <button class="action-btn investigate" (click)="openAccountAction('role', a)" title="Mudar Role">
+              <mat-icon style="font-size:16px;width:16px;height:16px;">person</mat-icon>
+            </button>
           </span>
-          <span class="col-risk">
-            <div class="risk-bar">
-              <div class="risk-fill" [style.width.%]="a.riskScore"
-                   [class.low]="a.riskScore < 30" [class.med]="a.riskScore >= 30 && a.riskScore < 70" [class.high]="a.riskScore >= 70"></div>
-            </div>
-            <small>{{ a.riskScore }}%</small>
-          </span>
-          <span class="col-actions">
-            <button class="action-btn approve" (click)="reviewAccount(a.id, true)">Aprovar</button>
-            <button class="action-btn reject" (click)="reviewAccount(a.id, false)">Rejeitar</button>
-          </span>
+        </div>
+      </div>
+      <div class="feed-empty" *ngIf="!accountsLoading && filteredAccounts.length === 0" style="padding: 40px; text-align: center; color: #94a3b8;">
+        Nenhuma conta encontrada
+      </div>
+
+      <!-- ACTION DIALOG (overlay) -->
+      <div class="dialog-overlay" *ngIf="accountAction.type" (click)="closeAccountAction()">
+        <div class="dialog-box" (click)="$event.stopPropagation()">
+          <h3 *ngIf="accountAction.type !== 'role'">Confirmar ação</h3>
+          <h3 *ngIf="accountAction.type === 'role'">Alterar Role</h3>
+
+          <p *ngIf="accountAction.type === 'activate'">Ativar a conta de <strong>{{ accountAction.account?.customerName }}</strong> ({{ accountAction.account?.email }})?</p>
+          <p *ngIf="accountAction.type === 'deactivate'">Inativar a conta de <strong>{{ accountAction.account?.customerName }}</strong> ({{ accountAction.account?.email }})?</p>
+          <p *ngIf="accountAction.type === 'approve'">Aprovar a conta de <strong>{{ accountAction.account?.customerName }}</strong>?</p>
+          <p *ngIf="accountAction.type === 'reject'">Rejeitar a conta de <strong>{{ accountAction.account?.customerName }}</strong>?</p>
+
+          <div *ngIf="accountAction.type === 'role'" class="role-select-area">
+            <p>Alterar role de <strong>{{ accountAction.account?.customerName }}</strong>:</p>
+            <select [(ngModel)]="accountAction.selectedRole" class="role-select">
+              <option value="Cliente">Cliente</option>
+              <option value="Operador">Operador</option>
+              <option value="Administrador">Administrador</option>
+            </select>
+          </div>
+
+          <div class="dialog-buttons">
+            <button class="dialog-btn cancel" (click)="closeAccountAction()">Cancelar</button>
+            <button class="dialog-btn confirm" (click)="confirmAccountAction()">Confirmar</button>
+          </div>
         </div>
       </div>
     </div>

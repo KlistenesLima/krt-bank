@@ -54,9 +54,18 @@ public class Account : AggregateRoot
 
     public void SetRole(string role)
     {
-        if (role != "User" && role != "Admin")
+        var validRoles = new[] { "User", "Admin", "Administrador", "Operador", "Cliente" };
+        if (!validRoles.Contains(role))
             throw new BusinessRuleException("Role invalido");
         Role = role;
+        UpdateAudit();
+    }
+
+    public void Deactivate()
+    {
+        if (Status != AccountStatus.Active)
+            throw new BusinessRuleException("Apenas contas ativas podem ser inativadas");
+        Status = AccountStatus.Inactive;
         UpdateAudit();
     }
 
@@ -73,7 +82,6 @@ public class Account : AggregateRoot
         if (Status == AccountStatus.Closed)
             throw new BusinessRuleException("Contas encerradas não podem ser reativadas");
         Status = AccountStatus.Active;
-        Role = "User";
         UpdateAudit();
     }
 

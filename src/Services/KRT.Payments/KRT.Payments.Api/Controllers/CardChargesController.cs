@@ -236,33 +236,8 @@ public class CardChargesController : ControllerBase
         if (charge.Status != CardChargeStatus.Approved)
             return BadRequest(new { error = $"Cobranca em status {charge.Status}, nao pode ser paga" });
 
-        // Cartão de crédito: NÃO debita conta corrente do cliente.
-        // Apenas credita o merchant — o débito ocorre quando o cliente paga a fatura.
-        var merchantAccountId = ChargePaymentService.MerchantAccountId;
-        var merchant = await _db.BankAccounts.FindAsync([merchantAccountId], ct);
-        if (merchant == null)
-            return BadRequest(new { error = "Conta do recebedor nao encontrada" });
-
-        merchant.Balance += charge.Amount;
-        merchant.UpdatedAt = DateTime.UtcNow;
-        merchant.RowVersion = Guid.NewGuid().ToByteArray();
-
-        // Statement: merchant recebe crédito
-        _db.StatementEntries.Add(new StatementEntry
-        {
-            Id = Guid.NewGuid(),
-            AccountId = merchant.Id,
-            Date = DateTime.UtcNow,
-            Type = "Cartao",
-            Category = "Receivable",
-            Amount = charge.Amount,
-            Description = $"Cartao credito recebido - {charge.Description}",
-            CounterpartyName = "Cliente cartao credito",
-            CounterpartyBank = "KRT Bank",
-            IsCredit = true,
-            CreatedAt = DateTime.UtcNow
-        });
-
+        // Cartão de crédito: merchant já foi creditado no CreateCharge.
+        // SimulatePayment apenas marca como Settled (liquidado).
         charge.Status = CardChargeStatus.Settled;
         await _db.SaveChangesAsync(ct);
 

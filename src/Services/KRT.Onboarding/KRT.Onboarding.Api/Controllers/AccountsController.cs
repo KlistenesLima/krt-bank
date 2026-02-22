@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KRT.Onboarding.Application.Commands;
+using KRT.Onboarding.Domain.Enums;
 using KRT.Onboarding.Domain.Interfaces;
 using MediatR;
 
@@ -15,18 +16,110 @@ public class AccountsController : ControllerBase
     private readonly IAccountRepository _repository;
     private readonly ICacheService _cache;
     private readonly ILogger<AccountsController> _logger;
+    private readonly IAppUserRepository _userRepository;
 
     public AccountsController(
         IMediator mediator,
         IAccountRepository repository,
         ICacheService cache,
-        ILogger<AccountsController> logger)
+        ILogger<AccountsController> logger,
+        IAppUserRepository userRepository)
     {
         _mediator = mediator;
         _repository = repository;
         _cache = cache;
         _logger = logger;
+        _userRepository = userRepository;
     }
+
+    // ==================== ADMIN ENDPOINTS ====================
+
+    [HttpGet]
+    [Authorize(Roles = "Admin,Administrador")]
+    public async Task<IActionResult> GetAll([FromQuery] string? status = null)
+    {
+        var accounts = await _repository.GetAllAsync(CancellationToken.None);
+
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<AccountStatus>(status, true, out var parsed))
+            accounts = accounts.Where(a => a.Status == parsed).ToList();
+
+        var dtos = accounts.Select(a => new AccountAdminDto(
+            a.Id, a.CustomerName, a.Document, a.Email,
+            a.Balance, a.Status.ToString(), a.Type.ToString(), a.Role, a.CreatedAt
+        )).OrderByDescending(a => a.CreatedAt).ToList();
+
+        return Ok(dtos);
+    }
+
+    [HttpGet("stats")]
+    [Authorize(Roles = "Admin,Administrador")]
+    public async Task<IActionResult> GetStats()
+    {
+        var accounts = await _repository.GetAllAsync(CancellationToken.None);
+        return Ok(new
+        {
+            total = accounts.Count,
+            active = accounts.Count(a => a.Status == AccountStatus.Active),
+            inactive = accounts.Count(a => a.Status == AccountStatus.Inactive),
+            blocked = accounts.Count(a => a.Status == AccountStatus.Blocked),
+            pending = accounts.Count(a => a.Status == AccountStatus.Pending),
+            suspended = accounts.Count(a => a.Status == AccountStatus.Suspended),
+            closed = accounts.Count(a => a.Status == AccountStatus.Closed)
+        });
+    }
+
+    public record ChangeStatusRequest(bool Activate);
+    public record ChangeRoleRequest(string Role);
+
+    [HttpPut("{id}/status")]
+    [Authorize(Roles = "Admin,Administrador")]
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeStatusRequest request)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null) return NotFound();
+
+        try
+        {
+            if (request.Activate)
+                account.Activate();
+            else
+                account.Deactivate();
+
+            await _repository.UnitOfWork.CommitAsync(CancellationToken.None);
+            await _cache.RemoveAsync($"account:{id}");
+            await _cache.RemoveAsync($"account:doc:{account.Document}");
+
+            return Ok(new { id = account.Id, status = account.Status.ToString() });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("{id}/role")]
+    [Authorize(Roles = "Admin,Administrador")]
+    public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeRoleRequest request)
+    {
+        var account = await _repository.GetByIdAsync(id, CancellationToken.None);
+        if (account == null) return NotFound();
+
+        try
+        {
+            account.SetRole(request.Role);
+            await _repository.UnitOfWork.CommitAsync(CancellationToken.None);
+            await _cache.RemoveAsync($"account:{id}");
+            await _cache.RemoveAsync($"account:doc:{account.Document}");
+
+            return Ok(new { id = account.Id, role = account.Role });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    // ==================== EXISTING ENDPOINTS ====================
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateAccountCommand command)
@@ -185,4 +278,17 @@ public record AccountDto(
     decimal Balance,
     string Status,
     string Type
+);
+
+// DTO admin com campos extras
+public record AccountAdminDto(
+    Guid Id,
+    string CustomerName,
+    string Document,
+    string Email,
+    decimal Balance,
+    string Status,
+    string Type,
+    string Role,
+    DateTime CreatedAt
 );

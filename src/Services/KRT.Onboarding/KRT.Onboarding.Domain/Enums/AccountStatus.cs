@@ -28,5 +28,10 @@ public enum AccountStatus
     /// <summary>
     /// Conta suspensa por compliance
     /// </summary>
-    Suspended = 5
+    Suspended = 5,
+
+    /// <summary>
+    /// Conta inativada pelo admin
+    /// </summary>
+    Inactive = 6
 }

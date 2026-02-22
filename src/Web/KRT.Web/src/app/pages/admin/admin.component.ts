@@ -1,9 +1,11 @@
 ﻿import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { environment } from '../../../environments/environment';
+import { AccountService, AccountAdminDto, AccountStats } from '../../core/services/account.service';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -11,7 +13,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
@@ -36,7 +38,17 @@ export class AdminComponent implements OnInit, OnDestroy {
   private charts: Chart[] = [];
   private intervals: any[] = [];
 
-  constructor(private http: HttpClient, public router: Router) {}
+  // === ACCOUNTS MANAGEMENT ===
+  allAccounts: AccountAdminDto[] = [];
+  filteredAccounts: AccountAdminDto[] = [];
+  accountStats: AccountStats = { total: 0, active: 0, inactive: 0, blocked: 0, pending: 0, suspended: 0, closed: 0 };
+  accountsTab = 'all';
+  accountSearch = '';
+  accountsLoading = false;
+  // Action dialog
+  accountAction: { type: string; account: AccountAdminDto | null; selectedRole: string } = { type: '', account: null, selectedRole: 'Cliente' };
+
+  constructor(private http: HttpClient, public router: Router, private accountService: AccountService) {}
 
   ngOnInit(): void {
     this.loadAll();
@@ -130,6 +142,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   setSection(section: string): void {
     this.activeSection = section;
+    if (section === 'accounts') this.loadAccounts();
     setTimeout(() => this.renderCharts(), 150);
   }
 
@@ -344,6 +357,116 @@ export class AdminComponent implements OnInit, OnDestroy {
   getDayLabel(dateStr: string): string {
     const d = new Date(dateStr + 'T00:00:00');
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+
+  // ==================== ACCOUNTS MANAGEMENT ====================
+
+  loadAccounts(): void {
+    this.accountsLoading = true;
+    this.accountService.getAll().subscribe({
+      next: data => { this.allAccounts = data; this.applyAccountFilters(); this.accountsLoading = false; },
+      error: () => { this.accountsLoading = false; }
+    });
+    this.accountService.getStats().subscribe({
+      next: stats => this.accountStats = stats,
+      error: () => {}
+    });
+  }
+
+  setAccountsTab(tab: string): void {
+    this.accountsTab = tab;
+    this.applyAccountFilters();
+  }
+
+  applyAccountFilters(): void {
+    let list = [...this.allAccounts];
+    if (this.accountsTab === 'active') list = list.filter(a => a.status === 'Active');
+    else if (this.accountsTab === 'inactive') list = list.filter(a => a.status === 'Inactive');
+    else if (this.accountsTab === 'pending') list = list.filter(a => a.status === 'Pending');
+    else if (this.accountsTab === 'blocked') list = list.filter(a => a.status === 'Blocked');
+
+    if (this.accountSearch.trim()) {
+      const q = this.accountSearch.toLowerCase().trim();
+      list = list.filter(a =>
+        a.customerName.toLowerCase().includes(q) ||
+        a.email.toLowerCase().includes(q) ||
+        a.document.includes(q)
+      );
+    }
+    this.filteredAccounts = list;
+  }
+
+  onAccountSearch(): void {
+    this.applyAccountFilters();
+  }
+
+  getStatusLabel(s: string): string {
+    const map: any = { Active: 'Ativa', Inactive: 'Inativa', Pending: 'Pendente', Blocked: 'Bloqueada', Closed: 'Encerrada', Suspended: 'Suspensa' };
+    return map[s] || s;
+  }
+
+  getStatusClass(s: string): string {
+    const map: any = { Active: 'status-active', Inactive: 'status-inactive', Pending: 'status-pending', Blocked: 'status-blocked', Closed: 'status-closed', Suspended: 'status-suspended' };
+    return map[s] || '';
+  }
+
+  getRoleLabel(r: string): string {
+    const map: any = { User: 'Cliente', Admin: 'Administrador', Administrador: 'Administrador', Operador: 'Operador', Cliente: 'Cliente' };
+    return map[r] || r;
+  }
+
+  getRoleClass(r: string): string {
+    if (r === 'Admin' || r === 'Administrador') return 'role-admin';
+    if (r === 'Operador') return 'role-operador';
+    return 'role-cliente';
+  }
+
+  formatCpf(doc: string): string {
+    if (!doc || doc.length !== 11) return doc;
+    return doc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  }
+
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // Actions
+  openAccountAction(type: string, account: AccountAdminDto): void {
+    this.accountAction = { type, account, selectedRole: account.role === 'User' ? 'Cliente' : account.role };
+  }
+
+  closeAccountAction(): void {
+    this.accountAction = { type: '', account: null, selectedRole: 'Cliente' };
+  }
+
+  confirmAccountAction(): void {
+    const { type, account, selectedRole } = this.accountAction;
+    if (!account) return;
+
+    if (type === 'activate') {
+      this.accountService.changeStatus(account.id, true).subscribe({
+        next: () => { this.loadAccounts(); this.closeAccountAction(); },
+        error: (e) => alert('Erro: ' + (e.error?.error || 'Falha ao ativar'))
+      });
+    } else if (type === 'deactivate') {
+      this.accountService.changeStatus(account.id, false).subscribe({
+        next: () => { this.loadAccounts(); this.closeAccountAction(); },
+        error: (e) => alert('Erro: ' + (e.error?.error || 'Falha ao inativar'))
+      });
+    } else if (type === 'role') {
+      this.accountService.changeRole(account.id, selectedRole).subscribe({
+        next: () => { this.loadAccounts(); this.closeAccountAction(); },
+        error: (e) => alert('Erro: ' + (e.error?.error || 'Falha ao mudar role'))
+      });
+    } else if (type === 'approve') {
+      this.http.post(`${environment.apiUrl}/admin/accounts/${account.id}/review`, {
+        approved: true, notes: 'Aprovado pelo admin'
+      }).subscribe({ next: () => { this.loadAccounts(); this.closeAccountAction(); } });
+    } else if (type === 'reject') {
+      this.http.post(`${environment.apiUrl}/admin/accounts/${account.id}/review`, {
+        approved: false, notes: 'Documentação insuficiente'
+      }).subscribe({ next: () => { this.loadAccounts(); this.closeAccountAction(); } });
+    }
   }
 
   reviewAccount(id: string, approved: boolean): void {

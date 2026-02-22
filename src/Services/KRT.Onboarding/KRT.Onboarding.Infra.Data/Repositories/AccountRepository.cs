@@ -36,6 +36,11 @@ public class AccountRepository : IAccountRepository
         return await _context.Accounts.FirstOrDefaultAsync(a => a.Email == email, cancellationToken);
     }
 
+    public async Task<List<Account>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        return await _context.Accounts.AsNoTracking().ToListAsync(cancellationToken);
+    }
+
     public async Task CreateVirtualCardForAccountAsync(Guid accountId, string holderName, CancellationToken cancellationToken)
     {
         var rng = new Random();
