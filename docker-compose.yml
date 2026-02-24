@@ -68,8 +68,8 @@ services:
       Keycloak__ClientId: "krt-bank-app"
       Keycloak__AdminUser: "${KEYCLOAK_ADMIN:-admin}"
       Keycloak__AdminPassword: "${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}"
-      Email__SmtpPassword: "${SMTP_PASSWORD:-mdpg gyum rzqg czed}"
-      Email__FromAddress: "klisteneswar3@gmail.com"
+      Email__SmtpPassword: "${SMTP_PASSWORD:?Set SMTP_PASSWORD in .env}"
+      Email__FromAddress: "${EMAIL_FROM_ADDRESS:?Set EMAIL_FROM_ADDRESS in .env}"
       Serilog__WriteTo__1__Args__serverUrl: "http://krt-seq:5341"
     networks:
       - kll-krt-network

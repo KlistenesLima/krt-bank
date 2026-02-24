@@ -41,7 +41,7 @@ builder.Services.AddMediatR(cfg =>
         typeof(CreateAccountCommand).Assembly));
 
 // 6. SECURITY (JWT — Dual: Keycloak + JWT próprio)
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "KRT-Bank-Super-Secret-Key-2026-Minimum-32-Chars!";
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "KRT.Onboarding";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "KRT.Bank";
 var keycloakAuthority = builder.Configuration["Keycloak:Authority"] ?? "http://localhost:8080/realms/krt-bank";
