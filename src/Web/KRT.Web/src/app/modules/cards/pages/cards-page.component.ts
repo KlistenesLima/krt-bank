@@ -448,6 +448,127 @@ import { CardService, VirtualCard, CardBill, CardBillCharge } from '../../../cor
       .page-header { padding: 14px 12px; }
       .page-header h1 { font-size: 0.95rem; }
     }
+
+    /* === RESPONSIVE FIXES === */
+
+    /* Virtual card: never overflow container, scale text safely */
+    .credit-card {
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .card-number span {
+      word-break: break-all;
+      overflow-wrap: break-word;
+    }
+    .card-value {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Show number button: adequate touch target */
+    .show-number-btn {
+      min-height: 44px;
+    }
+
+    /* Action buttons: already full-width, ensure touch target */
+    .action-btn {
+      min-height: 44px;
+    }
+
+    /* Info rows: wrap to prevent overflow of long values */
+    .info-row {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .info-row strong {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Charge items: prevent amount from overflowing or clipping description */
+    .charge-item {
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: flex-start;
+    }
+    .charge-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .charge-desc {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .charge-amount {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* Pay options: ensure adequate touch target per option */
+    .pay-option {
+      min-height: 44px;
+    }
+
+    /* Custom amount input: ensure full-width and proper sizing */
+    .custom-amount input {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 44px;
+    }
+
+    /* Primary and secondary bill action buttons */
+    .btn-primary {
+      min-height: 44px;
+    }
+    .btn-secondary {
+      min-height: 44px;
+    }
+
+    /* Bill progress label: wrap on small screens */
+    .progress-label {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    /* Card info container: prevent horizontal overflow */
+    .card-info, .bill-container, .pay-container, .success-container {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 360px) {
+      /* On very small screens, stack info rows vertically */
+      .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 12px 0;
+      }
+      .info-row strong {
+        font-size: 0.85rem;
+      }
+
+      /* Charge items: stack vertically */
+      .charge-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .charge-amount {
+        align-self: flex-end;
+        white-space: nowrap;
+      }
+
+      /* Card header text size */
+      .card-ref { font-size: 0.78rem; }
+
+      /* Pay option: keep layout but scale text */
+      .pay-option strong { font-size: 0.85rem; }
+      .pay-option span { font-size: 0.75rem; }
+
+      /* Bill actions: full width buttons */
+      .bill-actions { padding: 16px 0; gap: 8px; }
+    }
   `]
 })
 export class CardsPageComponent implements OnInit, OnDestroy {

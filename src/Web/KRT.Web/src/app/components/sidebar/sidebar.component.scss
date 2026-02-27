@@ -119,3 +119,28 @@
   .nav-item { justify-content: center; padding: 12px 0; }
   .nav-icon { width: auto; }
 }
+
+/* Mobile: sidebar hidden by default, shown as overlay */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease, width 0.3s;
+    width: 260px !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .nav-item {
+    min-height: 44px;
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: min(260px, 85vw) !important;
+  }
+}

@@ -215,6 +215,102 @@ import { environment } from '../../../../../environments/environment';
       .page-header { padding: 14px 12px; }
       .page-header h1 { font-size: 0.95rem; }
     }
+
+    /* === RESPONSIVE FIXES === */
+
+    /* Back button: adequate touch target */
+    .back-btn {
+      min-width: 44px;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Primary and secondary buttons: ensure min touch target */
+    .btn-primary {
+      min-height: 44px;
+    }
+    .btn-secondary {
+      min-height: 44px;
+    }
+
+    /* Input: always full width */
+    .input-wrap input {
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* Input wrap: prevent overflow from long boleto codes */
+    .input-wrap {
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    /* Info rows: wrap when content is too wide; prevent overflow of long digitable lines */
+    .info-row {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .info-row span {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .info-row strong {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Info card: prevent horizontal overflow */
+    .info-card {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Error msg: wrap long text */
+    .error-msg span {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Success content */
+    .success-dest {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .success-amount {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Boleto content: always within screen */
+    .boleto-content {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 360px) {
+      /* Stack info rows vertically on very small screens */
+      .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 12px 14px;
+      }
+      .info-row strong {
+        max-width: 100%;
+        text-align: left;
+        font-size: 0.82rem;
+      }
+
+      /* Barcode area smaller */
+      .barcode-area { padding: 20px 12px; }
+      .barcode-area mat-icon { font-size: 30px; width: 30px; height: 30px; }
+      .barcode-area p { font-size: 0.8rem; }
+
+      /* Buttons full height for touch */
+      .btn-primary { height: 50px; }
+      .btn-secondary { height: 50px; }
+    }
   `]
 })
 export class BoletoComponent {
