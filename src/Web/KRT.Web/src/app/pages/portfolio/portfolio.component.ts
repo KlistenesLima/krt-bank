@@ -453,6 +453,10 @@ interface Education {
       box-shadow: 0 4px 20px rgba(0,71,187,0.3);
     }
 
+    .social-btn, .contact-btn, .back-btn, .project-link {
+      min-height: 44px;
+    }
+
     .social-btn svg {
       flex-shrink: 0;
     }
@@ -565,7 +569,7 @@ interface Education {
     /* ========== Tech Stack Section ========== */
     .tech-categories {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
       gap: 24px;
       margin-top: 40px;
     }
@@ -1125,7 +1129,7 @@ interface Education {
     @media (max-width: 600px) {
       .hero {
         min-height: auto;
-        padding: 80px 0 60px;
+        padding: 100px 0 60px;
       }
 
       .hero-name {
@@ -1134,6 +1138,12 @@ interface Education {
 
       .hero-title {
         font-size: 0.85rem;
+      }
+
+      .hero-avatar {
+        width: 90px;
+        height: 90px;
+        margin-bottom: 20px;
       }
 
       .hero-links {
@@ -1182,13 +1192,31 @@ interface Education {
         gap: 8px;
       }
 
+      .project-body {
+        padding: 20px 16px;
+      }
+
+      .project-header {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .project-name {
+        font-size: 1.1rem;
+      }
+
       .project-metrics {
         flex-wrap: wrap;
         gap: 12px;
+        padding: 12px;
       }
 
       .metric {
         flex: 0 0 calc(50% - 6px);
+      }
+
+      .metric-value {
+        font-size: 1.1rem;
       }
 
       .contact-links {
@@ -1202,8 +1230,76 @@ interface Education {
         justify-content: center;
       }
 
+      .ecosystem-badge {
+        font-size: 0.78rem;
+        padding: 12px 16px;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .edu-card {
+        padding: 14px 16px;
+      }
+
       .container {
         padding: 0 16px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .hero-name {
+        font-size: 1.5rem;
+      }
+
+      .hero-title {
+        font-size: 0.8rem;
+      }
+
+      .hero-avatar {
+        width: 72px;
+        height: 72px;
+      }
+
+      .section-title {
+        font-size: 1.35rem;
+      }
+
+      .social-btn span {
+        font-size: 0.78rem;
+      }
+
+      .tech-badge {
+        padding: 5px 10px;
+        font-size: 0.72rem;
+      }
+
+      .stats-grid {
+        gap: 8px;
+      }
+
+      .stat-card {
+        padding: 12px 8px;
+      }
+
+      .counter-value {
+        font-size: 1.6rem;
+      }
+
+      .stat-label {
+        font-size: 0.7rem;
+      }
+
+      .lang-badges {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .lang-badge {
+        text-align: center;
+      }
+
+      .container {
+        padding: 0 12px;
       }
     }
   `]

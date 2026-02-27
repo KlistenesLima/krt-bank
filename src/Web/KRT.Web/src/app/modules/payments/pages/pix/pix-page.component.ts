@@ -431,6 +431,109 @@ import { environment } from '../../../../../environments/environment';
       .amount-input { font-size: 1.8rem; }
       .currency-sign { font-size: 1.1rem; }
     }
+
+    /* === RESPONSIVE FIXES === */
+
+    /* Back button: adequate touch target */
+    .back-btn {
+      min-width: 44px;
+      min-height: 44px;
+      justify-content: center;
+    }
+
+    /* Inputs: always full-width inside their wrapper */
+    .input-wrap input {
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* BRCode textarea: full width, prevent horizontal overflow */
+    .brcode-textarea {
+      max-width: 100%;
+    }
+
+    /* Key type buttons: minimum touch target */
+    .key-type-btn {
+      min-height: 44px;
+    }
+
+    /* Confirm card values: prevent overflow on long keys/descriptions */
+    .confirm-val {
+      word-break: break-word;
+      overflow-wrap: break-word;
+      text-align: right;
+      max-width: 60%;
+    }
+
+    /* Confirm item: wrap on very small screens */
+    .confirm-item {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    /* Amount input: never overflow its container */
+    .amount-box {
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .amount-input {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    /* Button row: ensure secondary button has adequate touch target */
+    .btn-secondary {
+      min-height: 44px;
+    }
+
+    /* btn-text: ensure touch target */
+    .btn-text {
+      min-height: 44px;
+      padding: 8px 16px;
+    }
+
+    /* Success page amount: prevent overflow on very small screens */
+    .success-amount {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .success-dest {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    @media (max-width: 360px) {
+      .pix-content { padding: 16px 12px; }
+      .page-header { padding: 12px 14px; }
+      .page-header h1 { font-size: 0.95rem; }
+
+      /* On very small screens, key types use 3 columns — already declared above */
+      .key-type-btn { min-height: 48px; }
+      .key-icon { width: 32px; height: 32px; }
+
+      /* Step line can be shorter on tiny screens */
+      .step-line { width: 24px; }
+
+      /* Amount input: scale down further */
+      .amount-input { font-size: 1.6rem; }
+
+      /* Confirm item: stack label/value vertically */
+      .confirm-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 14px 16px;
+      }
+      .confirm-val { max-width: 100%; text-align: left; }
+
+      /* Btn row: stack buttons on very small screens */
+      .btn-row {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .btn-secondary { width: 100%; }
+      .flex-btn { width: 100%; margin-top: 0; }
+    }
   `]
 })
 export class PixPageComponent {

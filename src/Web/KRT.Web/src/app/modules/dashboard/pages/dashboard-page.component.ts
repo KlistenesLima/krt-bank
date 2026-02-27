@@ -436,6 +436,89 @@ import { CardService, VirtualCard } from '../../../core/services/card.service';
       .balance-value { font-size: 1.5rem; }
       .user-name { font-size: 1rem; }
     }
+
+    /* === RESPONSIVE FIXES === */
+
+    /* Touch targets: glass buttons must be at least 44px */
+    .glass-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* Eye button: ensure adequate touch target */
+    .eye-btn {
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Action cards: ensure 44px touch target on all sizes */
+    .action-card {
+      min-height: 44px;
+    }
+
+    /* Prevent transaction description and value from overflowing */
+    .tx-desc {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .tx-val {
+      flex-shrink: 0;
+    }
+
+    /* Card limit row: prevent text overflow on small screens */
+    .card-limit-row {
+      flex-wrap: wrap;
+    }
+    .card-limit-row span {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Transaction list: prevent horizontal overflow */
+    .tx-list {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    .tx-info {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    /* Dropdown: ensure it never overflows viewport */
+    @media (max-width: 360px) {
+      .dropdown-card {
+        width: calc(100vw - 24px);
+        right: 12px;
+        top: 60px;
+      }
+
+      /* At 360px, action cards need to retain usable touch target */
+      .action-card {
+        min-height: 80px;
+      }
+
+      /* Balance label can wrap on very small screens */
+      .balance-row {
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      /* Section row: allow wrapping so "Ver tudo" doesn't get cut */
+      .section-row {
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      /* Pix keys card text: prevent overflow */
+      .pix-left strong,
+      .pix-left span {
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+    }
   `]
 })
 export class DashboardPageComponent implements OnInit {

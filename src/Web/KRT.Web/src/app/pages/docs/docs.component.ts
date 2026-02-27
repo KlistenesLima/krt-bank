@@ -220,7 +220,7 @@ interface Endpoint {
     h1 { font-size: 32px; font-weight: 800; color: #fff; margin: 0 0 8px; font-family: 'Plus Jakarta Sans', sans-serif; }
     .accent { color: #4d9fff; }
     .subtitle { color: #94a3b8; font-size: 16px; margin: 0 0 20px; }
-    .btn { padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; border: none; }
+    .btn { padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; border: none; min-height: 44px; }
     .btn-primary { background: #0047BB; color: #fff; }
     .btn-primary:hover { background: #0055DD; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -232,7 +232,7 @@ interface Endpoint {
     .toggle-arrow.open { transform: rotate(180deg); }
 
     .sidebar { width: 240px; flex-shrink: 0; position: sticky; top: 56px; align-self: flex-start; display: flex; flex-direction: column; gap: 4px; }
-    .nav-item { text-align: left; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif; color: #94a3b8; background: transparent; border: none; cursor: pointer; transition: all 0.2s; }
+    .nav-item { text-align: left; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif; color: #94a3b8; background: transparent; border: none; cursor: pointer; transition: all 0.2s; min-height: 44px; display: flex; align-items: center; }
     .nav-item:hover { color: #fff; background: rgba(26,35,50,0.5); }
     .nav-item.active { color: #4d9fff; background: rgba(0,71,187,0.15); font-weight: 600; }
 
@@ -272,9 +272,27 @@ interface Endpoint {
       .sidebar { position: static; width: 100%; display: none; }
       .sidebar.open { display: flex; }
       h1 { font-size: 24px; }
+      .hero { padding: 96px 16px 32px; }
       .key-grid { grid-template-columns: 1fr; }
       .endpoint { flex-direction: column; align-items: flex-start; gap: 4px; }
       .ep-desc { display: block; }
+      .step { padding: 14px; gap: 12px; }
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 20px; }
+      .subtitle { font-size: 14px; }
+      .hero { padding: 92px 12px 24px; }
+      .docs-layout { padding: 0 12px 60px; }
+      .content h2 { font-size: 20px; }
+      .content h3 { font-size: 16px; }
+      .content p, .content li { font-size: 13px; }
+      .step { padding: 12px; gap: 10px; }
+      .step-num { width: 28px; height: 28px; font-size: 12px; }
+      .step h4 { font-size: 13px; }
+      .endpoint code { font-size: 11px; word-break: break-all; }
+      .btn { width: 100%; text-align: center; padding: 14px 20px; }
+      .mobile-toggle { font-size: 13px; padding: 14px 16px; }
     }
   `]
 })

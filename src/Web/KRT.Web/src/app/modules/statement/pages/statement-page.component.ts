@@ -189,6 +189,126 @@ import { PaymentService, StatementEntry } from '../../../core/services/payment.s
     .badge-transfer_in, .badge-salary { background: #E8F5E9; color: #2E7D32; }
 
     .load-more-btn { margin-top: 12px; }
+
+    /* === RESPONSIVE FIXES === */
+
+    /* Statement container: ensure no horizontal overflow */
+    .statement-container {
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    /* Header: prevent title overflow */
+    .header h2 {
+      word-break: break-word;
+      overflow-wrap: break-word;
+      min-width: 0;
+    }
+
+    /* Download button and back button: adequate touch targets */
+    .header button {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* Transaction row: minimum touch target height */
+    .tx-row {
+      min-height: 44px;
+    }
+
+    /* Transaction info: prevent long descriptions from overflowing */
+    .tx-info {
+      min-width: 0;
+      overflow: hidden;
+    }
+    .tx-info strong {
+      word-break: break-word;
+      overflow-wrap: break-word;
+      display: block;
+    }
+
+    /* Transaction right: prevent amount from being cut off */
+    .tx-right {
+      flex-shrink: 0;
+    }
+    .tx-amount {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Transaction ID: allow more width on small screens */
+    .tx-id {
+      max-width: 100%;
+      word-break: break-all;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+
+    /* Detail rows: wrap on small screens */
+    .detail-row {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .detail-value {
+      word-break: break-word;
+      overflow-wrap: break-word;
+      text-align: right;
+      min-width: 0;
+    }
+
+    /* Load more button: adequate touch target */
+    .load-more-btn {
+      min-height: 44px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 480px) {
+      .statement-container { padding: 12px 12px 80px; }
+      .tx-row { padding: 12px 14px; }
+      .tx-info strong { font-size: 0.85rem; }
+      .tx-amount { font-size: 0.88rem; }
+      .tx-date { font-size: 0.7rem; }
+      .detail-label { font-size: 0.78rem; }
+      .detail-value { font-size: 0.82rem; }
+    }
+
+    @media (max-width: 360px) {
+      .statement-container { padding: 10px 10px 80px; }
+
+      /* Transaction row: slightly more compact */
+      .tx-row { padding: 10px 12px; gap: 10px; }
+
+      /* Transaction icon: slightly smaller */
+      .tx-icon { width: 36px; height: 36px; border-radius: 10px; }
+      .tx-icon mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+      /* Amount: keep it readable at small size */
+      .tx-amount { font-size: 0.82rem; }
+
+      /* Details: stack label/value vertically */
+      .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 4px 0;
+      }
+      .detail-value {
+        text-align: left;
+      }
+
+      /* Header */
+      .header h2 { font-size: 1rem; }
+
+      /* Status badges: smaller */
+      .status-badge { font-size: 0.68rem; padding: 2px 8px; }
+
+      /* Load more: full width */
+      .load-more-btn { margin-top: 8px; }
+    }
   `]
 })
 export class StatementPageComponent implements OnInit {

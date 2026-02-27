@@ -117,12 +117,96 @@ html, body {
 
 /* Prevent horizontal overflow globally */
 html { overflow-x: hidden; }
+body { overflow-x: hidden; }
 
-/* Ensure minimum touch targets */
+/* Ensure minimum touch targets on touch devices */
 @media (hover: none) and (pointer: coarse) {
   button, a, [role="button"] {
     min-height: 44px;
     min-width: 44px;
+  }
+}
+
+/* ============================================
+   GLOBAL RESPONSIVE IMPROVEMENTS
+   ============================================ */
+
+/* Images and media: never overflow their containers */
+img, video, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tables: scroll horizontally rather than overflow */
+table {
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+/* Long text (IDs, keys, codes) should wrap */
+.krt-break-word {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Touch-action: use manipulation to avoid 300ms tap delay */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Form inputs: prevent zooming on iOS by ensuring font-size >= 16px */
+@media (max-width: 480px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Utility: full-width inputs on mobile */
+@media (max-width: 480px) {
+  .field input,
+  .field textarea,
+  .field select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Scrollable containers: smooth scroll on mobile */
+.tx-list,
+.charges-list,
+.statement-container {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   VERY SMALL SCREENS — 360px and below
+   ============================================ */
+@media (max-width: 360px) {
+  /* Slightly reduce base font for readability at small sizes */
+  body {
+    font-size: 14px;
+  }
+
+  /* Headings: scale down slightly */
+  h1 { font-size: 1.1rem; }
+  h2 { font-size: 1rem; }
+  h3 { font-size: 0.9rem; }
+
+  /* Ensure padded containers don't waste space */
+  .page-with-nav {
+    padding-bottom: 100px;
   }
 }
 

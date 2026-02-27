@@ -158,7 +158,7 @@ import { RouterModule } from '@angular/router';
     .metric-label { color: #94a3b8; font-size: 13px; }
 
     .links-section { text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding-bottom: 80px; }
-    .btn { display: inline-block; padding: 12px 32px; border-radius: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .btn { display: inline-block; padding: 12px 32px; border-radius: 12px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s; font-family: 'Plus Jakarta Sans', sans-serif; min-height: 44px; }
     .btn-primary { background: #0047BB; color: #fff; }
     .btn-primary:hover { background: #0055DD; }
     .btn-outline { border: 1px solid rgba(0,71,187,0.4); color: #4d9fff; }
@@ -170,7 +170,39 @@ import { RouterModule } from '@angular/router';
       h1 { font-size: 32px; }
       .cards-grid { grid-template-columns: 1fr; }
       .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-      .hero { padding: 60px 16px 40px; }
+      .hero { padding: 100px 16px 40px; }
+      .section { padding: 40px 16px; }
+      .links-section { padding-bottom: 60px; }
+      .tech-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 26px; }
+      .subtitle { font-size: 15px; }
+      .badge { font-size: 11px; padding: 5px 12px; letter-spacing: 1.5px; }
+      .hero { padding: 96px 12px 32px; }
+      .section { padding: 32px 12px; }
+      h2 { font-size: 22px; margin-bottom: 20px; }
+      .card { padding: 18px; }
+      .card h3 { font-size: 15px; }
+      .card p { font-size: 13px; }
+      .metrics-grid { gap: 10px; }
+      .metric-card { padding: 16px 12px; }
+      .metric-value { font-size: 28px; }
+      .metric-label { font-size: 12px; }
+      .tech-card { padding: 14px; }
+      .tech-card h4 { font-size: 12px; }
+      .tech-card p { font-size: 11px; }
+      .tech-icon { width: 32px; height: 32px; font-size: 12px; }
+      .links-section { flex-direction: column; align-items: center; }
+      .btn { width: 100%; max-width: 260px; text-align: center; padding: 14px 24px; }
+    }
+
+    @media (max-width: 380px) {
+      h1 { font-size: 22px; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .metric-value { font-size: 24px; }
+      .tech-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
     }
   `]
 })
