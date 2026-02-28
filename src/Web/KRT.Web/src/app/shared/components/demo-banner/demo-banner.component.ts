@@ -132,14 +132,11 @@ interface BannerLink {
 
     @media (max-width: 768px) {
       .banner-content {
-        flex-direction: column;
-        justify-content: center;
-        padding: 4px 12px;
-        gap: 2px;
+        padding: 4px 8px;
+        gap: 4px;
       }
       .banner-text {
-        text-align: center;
-        font-size: 12px;
+        font-size: 11px;
       }
       .title-suffix {
         display: none;
@@ -148,16 +145,19 @@ interface BannerLink {
         display: none;
       }
       .banner-link {
-        padding: 4px 8px;
+        padding: 2px 6px;
       }
     }
 
     @media (max-width: 480px) {
       .banner-text {
-        font-size: 11px;
+        font-size: 10px;
+      }
+      .banner-link {
+        padding: 2px 4px;
       }
       .banner-links {
-        gap: 8px;
+        gap: 2px;
       }
     }
   `]
