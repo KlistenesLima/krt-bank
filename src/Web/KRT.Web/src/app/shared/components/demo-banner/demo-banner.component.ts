@@ -93,7 +93,7 @@ interface BannerLink {
       font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
       font-size: 13px;
       color: #e0e0e0;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
     .banner-text {
       display: flex;
@@ -130,6 +130,8 @@ interface BannerLink {
       color: #a0a0b0;
       text-decoration: none;
       transition: all 0.2s;
+      min-height: auto;
+      min-width: auto;
     }
     .banner-link:hover {
       background: rgba(201, 169, 98, 0.2);
@@ -142,8 +144,9 @@ interface BannerLink {
 
     @media (max-width: 600px) {
       .banner-inner {
-        padding: 6px 12px;
-        gap: 8px;
+        justify-content: space-between;
+        padding: 6px 10px;
+        gap: 6px;
         font-size: 12px;
       }
       .banner-text {
@@ -155,25 +158,38 @@ interface BannerLink {
       .banner-prefix-short {
         display: inline;
       }
+      .banner-links {
+        gap: 4px;
+      }
       .banner-link {
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         border-radius: 6px;
       }
       .banner-link svg {
-        width: 14px;
-        height: 14px;
+        width: 13px;
+        height: 13px;
       }
     }
 
     @media (max-width: 380px) {
       .banner-inner {
-        padding: 4px 8px;
-        gap: 6px;
+        padding: 4px 6px;
+        gap: 4px;
+      }
+      .banner-text {
+        font-size: 10px;
+      }
+      .banner-links {
+        gap: 3px;
       }
       .banner-link {
-        width: 26px;
-        height: 26px;
+        width: 24px;
+        height: 24px;
+      }
+      .banner-link svg {
+        width: 12px;
+        height: 12px;
       }
     }
   `]
