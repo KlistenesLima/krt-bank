@@ -199,10 +199,10 @@ export class DemoBannerComponent implements OnInit {
 
   links: BannerLink[] = [
     { id: 'linkedin', href: 'https://linkedin.com/in/klisteneslima', label: 'LinkedIn', external: true },
-    { id: 'about', href: '/about', label: 'Sobre', external: false },
+    { id: 'about', href: '/portfolio', label: 'Sobre', external: false },
     { id: 'github', href: 'https://github.com/KlistenesLima', label: 'GitHub', external: true },
     { id: 'docs', href: '/docs', label: 'Documentação', external: false },
-    { id: 'portfolio', href: '/portfolio', label: 'Portfólio', external: false }
+    { id: 'portfolio', href: '/about', label: 'Portfólio', external: false }
   ];
 
   ngOnInit() {

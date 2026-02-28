@@ -40,12 +40,13 @@ interface Project {
       <section class="hero">
         <div class="hero-bg"></div>
         <div class="hero-content">
+          <img src="assets/foto-perfil.png" alt="Kl&iacute;stenes Lima" class="profile-photo" />
           <h1>Kl&iacute;stenes de Lima <span class="accent">Leite</span></h1>
-          <p class="title">Senior Full Stack Engineer (.NET)</p>
-          <p class="subtitle">Sistemas Distribu&iacute;dos | Arquitetura Backend</p>
+          <p class="title">Senior Software Engineer | .NET Specialist</p>
+          <p class="subtitle">Sistemas Distribu&iacute;dos | Arquitetura Backend | Microsservi&ccedil;os</p>
           <div class="badges">
             <span class="badge">+7 anos exp</span>
-            <span class="badge">Itaporanga, PB</span>
+            <span class="badge">Jo&atilde;o Pessoa, PB</span>
             <span class="badge">Dispon&iacute;vel</span>
           </div>
           <div class="actions">
@@ -62,11 +63,11 @@ interface Project {
       <section class="section">
         <h2>Resumo <span class="accent">Profissional</span></h2>
         <div class="summary-card">
-          <p>Senior Full Stack Engineer com mais de 7 anos de experi&ecirc;ncia projetando e escalando sistemas distribu&iacute;dos,
-          APIs cr&iacute;ticas e plataformas backend modernas em ambientes enterprise e governamentais.
-          Especialista em Domain-Driven Design (DDD), arquitetura de mensageria, integra&ccedil;&atilde;o de sistemas complexos e
-          desenvolvimento de arquiteturas resilientes e escal&aacute;veis. Hist&oacute;rico comprovado na entrega de plataformas que
-          reduzem riscos sist&ecirc;micos, melhoram throughput de entregas e elevam padr&otilde;es de engenharia.</p>
+          <p>Engenheiro de Software S&ecirc;nior com 7+ anos de experi&ecirc;ncia em desenvolvimento de sistemas distribu&iacute;dos de alta performance.
+          Especialista em ecossistemas .NET e arquitetura de microsservi&ccedil;os para o setor financeiro e banc&aacute;rio.
+          Experi&ecirc;ncia comprovada na constru&ccedil;&atilde;o de plataformas banc&aacute;rias digitais completas com processamento de pagamentos em tempo real,
+          detec&ccedil;&atilde;o de fraude e conformidade regulat&oacute;ria. Apaixonado por Clean Architecture, Domain-Driven Design e pr&aacute;ticas de
+          engenharia que garantem escalabilidade, resili&ecirc;ncia e seguran&ccedil;a.</p>
         </div>
       </section>
 
@@ -155,6 +156,7 @@ interface Project {
     .krt-back-link { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; color: #fff; text-decoration: none; font-size: 0.88rem; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.2s; }
     .krt-back-link:hover { background: rgba(255,255,255,0.1); }
 
+    .profile-photo { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; object-position: center top; border: 3px solid rgba(0,71,187,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.3); margin: 0 auto 20px; display: block; }
     .hero { position: relative; padding: 128px 16px 60px; text-align: center; overflow: hidden; }
     .hero-bg { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,47,98,0.3) 0%, transparent 100%); pointer-events: none; }
     .hero-content { position: relative; max-width: 700px; margin: 0 auto; }
@@ -229,6 +231,8 @@ interface Project {
     @media (max-width: 768px) {
       h1 { font-size: 28px; }
       .two-cols { grid-template-columns: 1fr; }
+      .profile-photo { width: 120px; height: 120px; }
+      .stack-grid { grid-template-columns: 1fr; }
     }
   `]
 })
@@ -237,16 +241,35 @@ export class ResumeComponent implements OnInit {
   generating = false;
 
   stackCategories: StackCategory[] = [
-    { title: 'Backend e Frameworks', items: ['.NET Framework', '.NET Core 3.1', '.NET 5', '.NET 7', '.NET 8', 'ASP.NET MVC', 'Web API', 'Minimal APIs', 'Entity Framework Core', 'Dapper', 'LINQ'] },
-    { title: 'Arquitetura e Mensageria', items: ['Domain-Driven Design (DDD)', 'Event-Driven Architecture', 'RabbitMQ', 'Apache Kafka', 'REST APIs', 'gRPC', 'Microservices', 'Clean Architecture', 'CQRS', 'Saga Pattern'] },
-    { title: 'Bancos de Dados', items: ['SQL Server', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis'] },
-    { title: 'Cloud e DevOps', items: ['Microsoft Azure', 'Amazon Web Services (AWS)', 'GitHub Actions', 'Azure DevOps', 'GitLab CI/CD', 'Docker', 'Kubernetes', 'Terraform', 'Nginx'] },
-    { title: 'Frontend e Web', items: ['JavaScript', 'TypeScript', 'React', 'Redux', 'Vue.js', 'Angular', 'HTML5', 'CSS3', 'Bootstrap', 'Tailwind CSS'] },
-    { title: 'Auth e Observabilidade', items: ['Keycloak (OAuth2/OIDC)', 'JWT', 'Seq', 'Serilog', 'Grafana', 'OpenTelemetry'] },
-    { title: 'Testes', items: ['xUnit', 'NSubstitute', 'Testcontainers', 'Vitest'] },
+    { title: '\uD83D\uDD27 Backend & Runtime', items: ['C# 12', '.NET 8', 'ASP.NET Core Web API', 'Entity Framework Core 8', 'Dapper', 'LINQ', 'FluentValidation', 'MediatR (CQRS)', 'SignalR (WebSockets)', 'Polly (Resili\u00eancia)', 'Hangfire', 'Background Services', 'gRPC'] },
+    { title: '\uD83C\uDFD7\uFE0F Arquitetura & Padr\u00f5es', items: ['Clean Architecture', 'Domain-Driven Design (DDD)', 'CQRS', 'Event-Driven Architecture', 'Saga Pattern (Orquestra\u00e7\u00e3o + Coreografia)', 'Outbox Pattern', 'Anti-Corruption Layer (ACL)', 'Repository Pattern', 'Unit of Work', 'Specification Pattern', 'Circuit Breaker / Retry / Timeout', 'Event Sourcing', 'API Gateway (YARP)', 'Compensating Transaction'] },
+    { title: '\uD83C\uDFE6 Sistemas Financeiros & Banc\u00e1rios', items: ['Processamento de Pagamentos (PIX / Boleto / Cart\u00e3o)', 'Transfer\u00eancias em Tempo Real (PIX Instant)', 'Detec\u00e7\u00e3o de Fraude (Scoring & Analysis)', 'Gera\u00e7\u00e3o de QR Code (PIX/EMV)', 'Cart\u00f5es Virtuais (Luhn / CVV Rotation)', 'Emiss\u00e3o de Boletos', 'Concilia\u00e7\u00e3o Banc\u00e1ria', 'KYC (Know Your Customer)', 'Idempot\u00eancia em Transa\u00e7\u00f5es', 'Optimistic Concurrency Control'] },
+    { title: '\uD83D\uDDC4\uFE0F Banco de Dados', items: ['PostgreSQL 16', 'SQL Server', 'MongoDB 7', 'Redis 7 (Cache & Session)', 'EF Core Migrations', 'Query Optimization / Indexing', 'Transa\u00e7\u00f5es Distribu\u00eddas'] },
+    { title: '\uD83D\uDCE8 Mensageria & Event Streaming', items: ['Apache Kafka (Confluent)', 'RabbitMQ (Exchanges / Queues / DLX)', 'Event Bus / Integration Events', 'Dead Letter Queues', 'Idempotent Consumers', 'Kafka Topics & Consumer Groups', 'Message Ordering & Partitioning'] },
+    { title: '\u2601\uFE0F Cloud & DevOps', items: ['AWS EC2', 'AWS S3 / Backblaze B2', 'Docker & Docker Compose (26+ containers)', 'Nginx (Reverse Proxy & SSL)', "Let's Encrypt (SSL/TLS)", 'CI/CD Pipelines', 'GitHub Actions', 'Linux Administration (Ubuntu)', 'SSH & Firewall (UFW)'] },
+    { title: '\uD83D\uDD10 Seguran\u00e7a', items: ['JWT (HS256/RS256)', 'Keycloak 23 (IAM)', 'OAuth 2.0 / OpenID Connect', 'RBAC', 'BCrypt Password Hashing', 'API Key Authentication', 'Rate Limiting & Throttling', 'Security Headers (CSP / HSTS)', 'CORS Configuration', 'Credential Rotation'] },
+    { title: '\uD83D\uDCCA Observabilidade & Logging', items: ['Serilog + Seq', 'OpenTelemetry', 'Grafana Cloud (Tempo / Mimir / Loki)', 'Structured Logging', 'Distributed Tracing', 'Health Checks', 'APM'] },
+    { title: '\uD83C\uDFA8 Frontend', items: ['Angular 17 + Material 17', 'React 18 + TypeScript 5', 'Tailwind CSS 3', 'Material-UI (MUI) v5', 'Zustand', 'TanStack React Query', 'Vite 5', 'Responsive Design (Mobile-First)'] },
+    { title: '\uD83E\uDDEA Testes', items: ['xUnit / NUnit', 'Integration Tests (WebApplicationFactory)', 'Vitest + React Testing Library', 'Test Containers', 'Moq / NSubstitute', 'TDD / BDD Practices', '244+ testes automatizados'] },
+    { title: '\uD83D\uDD04 Metodologias & Pr\u00e1ticas', items: ['SOLID Principles', 'Design Patterns (GoF)', 'Conventional Commits', 'Git Flow', 'Code Review', 'Agile / Scrum / Kanban', 'API-First Design', 'RESTful API Design', 'Semantic Versioning'] },
   ];
 
   experiences: Experience[] = [
+    {
+      company: 'Projetos Independentes',
+      role: 'Senior Software Engineer',
+      period: '2024 \u2014 Presente',
+      points: [
+        'Arquitetei e desenvolvi ecossistema completo de fintech: plataforma banc\u00e1ria digital (KRT Bank) + e-commerce de luxo (KLL Platform) integrados via microsservi\u00e7os',
+        'Implementei processamento de pagamentos em tempo real (PIX, Boleto, Cart\u00e3o) com detec\u00e7\u00e3o de fraude, saga pattern para transa\u00e7\u00f5es distribu\u00eddas e compensa\u00e7\u00e3o autom\u00e1tica',
+        'Constru\u00ed infraestrutura de 26 containers Docker em produ\u00e7\u00e3o na AWS EC2 com PostgreSQL, MongoDB, Redis, Kafka, RabbitMQ, Keycloak e Seq',
+        'Desenvolvi 3 frontends (Angular 17 + React 18) com design responsivo, autentica\u00e7\u00e3o JWT/Keycloak e RBAC para 5 tipos de usu\u00e1rio',
+        'Implementei event-driven architecture com Kafka para integra\u00e7\u00e3o entre sistemas e RabbitMQ para notifica\u00e7\u00f5es, garantindo entrega at-least-once via outbox pattern',
+        'Conduzi auditoria de seguran\u00e7a completa com remedia\u00e7\u00e3o de vulnerabilidades cr\u00edticas, rota\u00e7\u00e3o de credenciais e hardening de infraestrutura',
+        'Alcancei 244+ testes automatizados (unit\u00e1rios + integra\u00e7\u00e3o) com cobertura de dom\u00ednio, handlers e APIs',
+      ],
+      expanded: true,
+    },
     {
       company: 'QINTESS',
       role: 'Senior Software Engineer .NET',
@@ -323,28 +346,38 @@ export class ResumeComponent implements OnInit {
   projects: Project[] = [
     {
       title: 'KRT Bank \u2014 Plataforma Banc\u00e1ria Digital',
-      stack: '.NET 8, Angular 17, PostgreSQL, Kafka, RabbitMQ, Redis, Keycloak, Docker, YARP',
+      stack: '.NET 8, PostgreSQL, Redis, Kafka, RabbitMQ, SignalR, Keycloak, Angular 17',
       points: [
-        'Plataforma banc\u00e1ria completa com abertura de contas, PIX (QR Code EMV), Boleto e Cart\u00e3o de Cr\u00e9dito Virtual',
-        'Opera\u00e7\u00f5es banc\u00e1rias at\u00f4micas (d\u00e9bito/cr\u00e9dito/extrato) com garantia de consist\u00eancia',
-        '10 microsservi\u00e7os Docker com Gateway (YARP), Rate Limiting e API Key Authentication',
-        '145 testes automatizados (unit\u00e1rios + integra\u00e7\u00e3o)',
-        'Comprovantes PDF gerados server-side, QR Code EMV padr\u00e3o Banco Central',
+        'Banco digital completo com contas, PIX, boletos, cart\u00f5es virtuais',
+        'Saga pattern para transfer\u00eancias PIX com an\u00e1lise de fraude em tempo real',
+        'Dashboard admin com m\u00e9tricas via SignalR (WebSocket)',
+        'API RESTful com rate limiting, health checks e observabilidade via OpenTelemetry',
       ],
       url: 'https://bank.klisteneslima.dev',
       expanded: false,
     },
     {
-      title: 'KLL Platform (AUREA Maison) \u2014 E-commerce de Joias de Luxo',
-      stack: '.NET 8, React 18, TypeScript, PostgreSQL, MongoDB, Kafka, RabbitMQ, Redis, Keycloak, Docker, YARP',
+      title: 'KLL Platform \u2014 E-commerce de Luxo (AUREA Maison)',
+      stack: '.NET 8, PostgreSQL, MongoDB, Kafka, RabbitMQ, React 18, Tailwind CSS',
       points: [
-        'E-commerce completo com cat\u00e1logo, carrinho, checkout multi-pagamento (PIX, Boleto, Cart\u00e3o)',
-        'Integra\u00e7\u00e3o real com plataforma banc\u00e1ria (KRT Bank) via Anti-Corruption Layer (DDD)',
-        '15 microsservi\u00e7os Docker incluindo Gateway, Store, Pay, Logistics e Notifications',
-        'Saga Pattern para orquestra\u00e7\u00e3o de pedidos, Circuit Breaker com Polly',
-        '244 testes automatizados (unit\u00e1rios + integra\u00e7\u00e3o + vitest)',
+        '3 microsservi\u00e7os (Store, Pay, Logistics) + 3 frontends',
+        'Anti-Corruption Layer para integra\u00e7\u00e3o com sistema banc\u00e1rio',
+        'Saga de pedidos: reserva de estoque \u2192 pagamento \u2192 entrega',
+        'Admin dashboard com MUI Data Grid e React Query',
       ],
       url: 'https://store.klisteneslima.dev',
+      expanded: false,
+    },
+    {
+      title: 'Infraestrutura Cloud (AWS)',
+      stack: 'AWS EC2, Docker Compose, Nginx, Let\'s Encrypt, GitHub Actions',
+      points: [
+        '26 containers em produ\u00e7\u00e3o com limites de mem\u00f3ria otimizados (~4GB total)',
+        'SSL/TLS autom\u00e1tico via certbot para 5 dom\u00ednios personalizados',
+        'Reverse proxy Nginx para roteamento de m\u00faltiplos servi\u00e7os',
+        'Deploy automatizado com scripts bash e git workflow',
+      ],
+      url: 'https://github.com/KlistenesLima',
       expanded: false,
     },
   ];
@@ -386,12 +419,12 @@ export class ResumeComponent implements OnInit {
         <div style="font-family:'Helvetica Neue',Arial,sans-serif;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto;line-height:1.5;">
           <div style="border-bottom:3px solid #0047BB;padding-bottom:16px;margin-bottom:20px;">
             <h1 style="font-size:26px;margin:0 0 4px;color:#1a1a1a;">KL\u00cdSTENES DE LIMA LEITE</h1>
-            <p style="font-size:14px;color:#0047BB;margin:0 0 8px;font-weight:600;">Senior Full Stack Engineer (.NET) | Sistemas Distribu\u00eddos | Arquitetura Backend</p>
-            <p style="font-size:11px;color:#666;margin:0;">Itaporanga, PB | (83) 9 8177-9792 | klisteneswar2@hotmail.com | linkedin.com/in/klistenes-de-lima-leite-257209194 | github.com/KlistenesLima</p>
+            <p style="font-size:14px;color:#0047BB;margin:0 0 8px;font-weight:600;">Senior Software Engineer | .NET Specialist</p>
+            <p style="font-size:11px;color:#666;margin:0;">Jo\u00e3o Pessoa, PB | (83) 9 8177-9792 | klisteneswar2@hotmail.com | linkedin.com/in/klisteneslima | github.com/KlistenesLima</p>
           </div>
           <div style="margin-bottom:18px;">
             <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:2px;color:#0047BB;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">Resumo Profissional</h2>
-            <p style="font-size:12px;color:#333;">Senior Full Stack Engineer com mais de 7 anos de experi\u00eancia projetando e escalando sistemas distribu\u00eddos, APIs cr\u00edticas e plataformas backend modernas em ambientes enterprise e governamentais. Especialista em Domain-Driven Design (DDD), arquitetura de mensageria, integra\u00e7\u00e3o de sistemas complexos e desenvolvimento de arquiteturas resilientes e escal\u00e1veis.</p>
+            <p style="font-size:12px;color:#333;">Engenheiro de Software S\u00eanior com 7+ anos de experi\u00eancia em desenvolvimento de sistemas distribu\u00eddos de alta performance. Especialista em ecossistemas .NET e arquitetura de microsservi\u00e7os para o setor financeiro e banc\u00e1rio. Experi\u00eancia comprovada na constru\u00e7\u00e3o de plataformas banc\u00e1rias digitais completas com processamento de pagamentos em tempo real, detec\u00e7\u00e3o de fraude e conformidade regulat\u00f3ria.</p>
           </div>
           <div style="margin-bottom:18px;">
             <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:2px;color:#0047BB;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">Compet\u00eancias T\u00e9cnicas</h2>

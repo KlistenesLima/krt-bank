@@ -58,17 +58,7 @@ interface Education {
         <div class="hero-pattern"></div>
         <div class="hero-content">
           <div class="hero-avatar">
-            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="60" cy="60" r="58" stroke="url(#avatarGrad)" stroke-width="3" fill="rgba(0,71,187,0.15)"/>
-              <circle cx="60" cy="45" r="18" fill="rgba(0,71,187,0.4)"/>
-              <ellipse cx="60" cy="85" rx="28" ry="20" fill="rgba(0,71,187,0.4)"/>
-              <defs>
-                <linearGradient id="avatarGrad" x1="0" y1="0" x2="120" y2="120">
-                  <stop offset="0%" stop-color="#0047BB"/>
-                  <stop offset="100%" stop-color="#00D4AA"/>
-                </linearGradient>
-              </defs>
-            </svg>
+            <img src="assets/foto-perfil.png" alt="Klístenes Lima" class="hero-avatar-img" />
           </div>
           <h1 class="hero-name">Klístenes de Lima Leite</h1>
           <p class="hero-title">
@@ -376,10 +366,14 @@ interface Education {
       animation: float 6s ease-in-out infinite;
     }
 
-    .hero-avatar svg {
+    .hero-avatar-img {
       width: 100%;
       height: 100%;
-      filter: drop-shadow(0 0 30px rgba(0,71,187,0.4));
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center top;
+      border: 3px solid rgba(0,71,187,0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     }
 
     .hero-name {
@@ -1307,7 +1301,7 @@ interface Education {
 export class PortfolioComponent implements AfterViewInit, OnDestroy {
   typedText = '';
   typingDone = false;
-  private fullTitle = 'Senior Full Stack Engineer (.NET) | Sistemas Distribuídos | Arquitetura Backend';
+  private fullTitle = 'Senior Software Engineer | .NET Specialist | Sistemas Distribuídos';
   private typeTimer: any;
   private observer?: IntersectionObserver;
   private statsObserver?: IntersectionObserver;
@@ -1315,90 +1309,128 @@ export class PortfolioComponent implements AfterViewInit, OnDestroy {
   stats = [
     { value: 7, suffix: '+', label: 'Anos de Experiência' },
     { value: 2, suffix: '', label: 'Sistemas Completos' },
-    { value: 25, suffix: '', label: 'Containers Docker' },
+    { value: 26, suffix: '', label: 'Containers Docker' },
     { value: 389, suffix: '', label: 'Testes (0 falhas)' }
   ];
 
   techCategories: TechCategory[] = [
     {
-      title: 'Backend',
+      title: 'Backend & Runtime',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
       items: [
+        { name: 'C# 12', color: '#68217A' },
         { name: '.NET 8', color: '#512BD4' },
         { name: 'ASP.NET Core', color: '#512BD4' },
-        { name: 'C#', color: '#68217A' },
-        { name: 'EF Core', color: '#512BD4' },
+        { name: 'EF Core 8', color: '#512BD4' },
         { name: 'Dapper', color: '#2196F3' },
-        { name: 'Minimal APIs', color: '#512BD4' },
-        { name: 'Web API', color: '#512BD4' },
-        { name: 'LINQ', color: '#68217A' }
+        { name: 'MediatR', color: '#512BD4' },
+        { name: 'SignalR', color: '#512BD4' },
+        { name: 'Polly', color: '#00B894' },
+        { name: 'Hangfire', color: '#3375d6' },
+        { name: 'gRPC', color: '#244c5a' }
       ]
     },
     {
       title: 'Arquitetura',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
       items: [
-        { name: 'DDD', color: '#00D4AA' },
         { name: 'Clean Architecture', color: '#00D4AA' },
+        { name: 'DDD', color: '#00D4AA' },
         { name: 'CQRS', color: '#00B894' },
         { name: 'Event-Driven', color: '#00B894' },
-        { name: 'Microservices', color: '#0047BB' },
-        { name: 'REST', color: '#3375d6' },
-        { name: 'gRPC', color: '#244c5a' }
+        { name: 'Saga Pattern', color: '#00B894' },
+        { name: 'Outbox Pattern', color: '#00B894' },
+        { name: 'ACL', color: '#0047BB' },
+        { name: 'Event Sourcing', color: '#0047BB' },
+        { name: 'API Gateway (YARP)', color: '#3375d6' }
+      ]
+    },
+    {
+      title: 'Financeiro',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      items: [
+        { name: 'PIX / Boleto / Cart\u00e3o', color: '#00B894' },
+        { name: 'Detec\u00e7\u00e3o de Fraude', color: '#FF6600' },
+        { name: 'QR Code EMV', color: '#0047BB' },
+        { name: 'Cart\u00f5es Virtuais', color: '#3375d6' },
+        { name: 'KYC', color: '#68217A' },
+        { name: 'Concilia\u00e7\u00e3o', color: '#336791' }
       ]
     },
     {
       title: 'Mensageria',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
       items: [
+        { name: 'Apache Kafka', color: '#231F20' },
         { name: 'RabbitMQ', color: '#FF6600' },
-        { name: 'Kafka', color: '#231F20' }
+        { name: 'Event Bus', color: '#00B894' },
+        { name: 'Dead Letter Queues', color: '#CC2927' }
       ]
     },
     {
       title: 'Bancos de Dados',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
       items: [
+        { name: 'PostgreSQL 16', color: '#336791' },
         { name: 'SQL Server', color: '#CC2927' },
-        { name: 'PostgreSQL', color: '#336791' },
-        { name: 'MySQL', color: '#4479A1' },
-        { name: 'MongoDB', color: '#47A248' },
-        { name: 'Redis', color: '#DC382D' }
+        { name: 'MongoDB 7', color: '#47A248' },
+        { name: 'Redis 7', color: '#DC382D' }
       ]
     },
     {
       title: 'Cloud & DevOps',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',
       items: [
-        { name: 'Azure', color: '#0078D4' },
-        { name: 'AWS', color: '#FF9900' },
-        { name: 'Docker', color: '#2496ED' },
-        { name: 'Kubernetes', color: '#326CE5' },
+        { name: 'AWS EC2', color: '#FF9900' },
+        { name: 'Docker (26+)', color: '#2496ED' },
+        { name: 'Nginx', color: '#009639' },
         { name: 'GitHub Actions', color: '#2088FF' },
-        { name: 'GitLab CI/CD', color: '#FC6D26' },
-        { name: 'Azure DevOps', color: '#0078D4' }
+        { name: 'Linux / Ubuntu', color: '#E95420' }
+      ]
+    },
+    {
+      title: 'Seguran\u00e7a',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+      items: [
+        { name: 'JWT', color: '#3375d6' },
+        { name: 'Keycloak 23', color: '#0047BB' },
+        { name: 'OAuth 2.0 / OIDC', color: '#00B894' },
+        { name: 'RBAC', color: '#68217A' }
       ]
     },
     {
       title: 'Frontend',
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
       items: [
-        { name: 'TypeScript', color: '#3178C6' },
-        { name: 'React', color: '#61DAFB' },
-        { name: 'Angular', color: '#DD0031' },
-        { name: 'Vue.js', color: '#4FC08D' },
-        { name: 'Tailwind', color: '#06B6D4' },
-        { name: 'Bootstrap', color: '#7952B3' }
+        { name: 'Angular 17', color: '#DD0031' },
+        { name: 'React 18', color: '#61DAFB' },
+        { name: 'TypeScript 5', color: '#3178C6' },
+        { name: 'Tailwind CSS', color: '#06B6D4' },
+        { name: 'MUI v5', color: '#007FFF' }
       ]
     }
   ];
 
   experiences: Experience[] = [
     {
+      company: 'Projetos Independentes',
+      role: 'Senior Software Engineer',
+      period: '2024 - Presente',
+      current: true,
+      bullets: [
+        'Ecossistema fintech completo: KRT Bank + KLL Platform integrados via microsservi\u00e7os',
+        'Processamento de pagamentos em tempo real (PIX, Boleto, Cart\u00e3o) com saga pattern',
+        '26 containers Docker em produ\u00e7\u00e3o na AWS EC2',
+        '3 frontends (Angular 17 + React 18) com RBAC para 5 tipos de usu\u00e1rio',
+        'Event-driven architecture com Kafka + RabbitMQ e outbox pattern',
+        'Auditoria de seguran\u00e7a completa e 244+ testes automatizados'
+      ]
+    },
+    {
       company: 'Qintess',
       role: 'Senior Software Engineer .NET',
       period: 'Mar 2025 - Atual',
-      current: true,
+      current: false,
       bullets: [
         'Liderança técnica na arquitetura e evolução de sistemas críticos governamentais e de saúde',
         'Modelagem DDD, APIs resilientes, workflows de mensageria assíncrona com RabbitMQ',
