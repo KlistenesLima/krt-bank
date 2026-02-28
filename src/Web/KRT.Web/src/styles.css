@@ -47,7 +47,7 @@
 
 html, body {
   height: 100%;
-  padding-top: 34px;
+  padding-top: 42px;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--krt-bg);
   color: var(--krt-text);
@@ -108,10 +108,10 @@ html, body {
    RESPONSIVE — Mobile-first adjustments
    ============================================ */
 @media (max-width: 768px) {
-  html, body { padding-top: 30px; }
+  html, body { padding-top: 40px; }
 }
 @media (max-width: 480px) {
-  html, body { padding-top: 28px; }
+  html, body { padding-top: 38px; }
   .page-with-nav { padding-bottom: 90px; }
 }
 
